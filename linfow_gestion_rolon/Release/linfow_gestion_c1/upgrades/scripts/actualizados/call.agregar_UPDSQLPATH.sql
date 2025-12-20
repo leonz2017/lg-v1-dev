@@ -1,0 +1,1 @@
+CALL globalcfg_insert ('UPDSQLPATH', 'C', 'e:\\proyectos\\linfow_gestion_src\\Gestion\\\linfow_gestion_rolon\\upgrades\\scripts');

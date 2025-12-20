@@ -1,0 +1,1 @@
+update bancos set idPlanCta = null where idBanco in (13, 16, 20, 150, 151);

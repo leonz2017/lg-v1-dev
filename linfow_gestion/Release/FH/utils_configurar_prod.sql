@@ -1,0 +1,1 @@
+CALL globalcfg_insert('PRINT_RTO', 'L', 'false', 1);

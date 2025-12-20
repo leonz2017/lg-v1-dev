@@ -1,0 +1,15 @@
+MG Carburaci√≥n - Fecha: 18/12/2019
+
+* Lo primero que voy a hacer es actualizar los procedimientos almacenados en la base de datos siscom_mgc1. OK
+
+* No me tengo que olvidar despues de probar las actualizaciones, de probar por la dudas la registracion de
+  faltantes para asegurarme de poder ejecutar los procedimientos almacenados en producci√on.
+
+* Se detecto que no esta grabando los datos de auditoria
+
+* Con respecto a la actualizacion de la version nueva, tengo que tener cuidado con el tema de las  equivalencias
+* ya que si lanzo esta versi√on el SISCLI no va a actualizar mas las mismas.
+
+
+[[ Me va a convenir modiifcar el reporte de pedidos en la versi√on v28 para lanzarlo urgente y luego preparar
+mejor para lanzar la versi√on V29 ]]

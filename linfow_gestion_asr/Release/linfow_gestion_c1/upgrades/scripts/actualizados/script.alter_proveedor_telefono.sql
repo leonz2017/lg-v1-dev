@@ -1,0 +1,2 @@
+ALTER TABLE `linfowgst_titoc2`.`proveedor` CHANGE COLUMN `telefono` `telefono` VARCHAR(60) NULL DEFAULT NULL ;
+ALTER TABLE `linfowgst_titoc2`.`proveedor` CHANGE COLUMN `fax` `fax` VARCHAR(60) NULL DEFAULT NULL ;

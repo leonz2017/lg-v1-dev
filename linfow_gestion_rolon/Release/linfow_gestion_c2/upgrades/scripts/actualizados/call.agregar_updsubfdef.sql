@@ -1,0 +1,1 @@
+call globalcfg_insert('UPDSUBFDEF', 'N', '18');

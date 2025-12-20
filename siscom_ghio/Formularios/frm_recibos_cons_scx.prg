@@ -1,0 +1,116 @@
+************************************************************
+OBJETO: Dataenvironment
+************************************************************
+*** PROPIEDADES ***
+Top = 0
+Left = 0
+Width = 0
+Height = 0
+DataSource = .NULL.
+Name = "Dataenvironment"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: frm_recibos_cons
+************************************************************
+*** PROPIEDADES ***
+DoCreate = .T.
+Name = "frm_recibos_cons"
+CONTENIDO.CLSETIQUETA1.Name = "CLSETIQUETA1"
+CONTENIDO.CLSETIQUETA2.Name = "CLSETIQUETA2"
+CONTENIDO.CLSETIQUETA3.Name = "CLSETIQUETA3"
+CONTENIDO.CLSETIQUETA4.Name = "CLSETIQUETA4"
+CONTENIDO.sel_clienteDD.TXTCODIGO.Name = "TXTCODIGO"
+CONTENIDO.sel_clienteDD.TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+CONTENIDO.sel_clienteDD.Name = "sel_clienteDD"
+CONTENIDO.sel_clienteHH.TXTCODIGO.Name = "TXTCODIGO"
+CONTENIDO.sel_clienteHH.TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+CONTENIDO.sel_clienteHH.Name = "sel_clienteHH"
+CONTENIDO.txtFechaDD.Name = "txtFechaDD"
+CONTENIDO.txtFechaHH.Name = "txtFechaHH"
+CONTENIDO.BTNACEPTAR.Name = "BTNACEPTAR"
+CONTENIDO.grdRecibos.COLUMN1.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN1.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN1.Name = "COLUMN1"
+CONTENIDO.grdRecibos.COLUMN2.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN2.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN2.Name = "COLUMN2"
+CONTENIDO.grdRecibos.COLUMN3.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN3.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN3.Name = "COLUMN3"
+CONTENIDO.grdRecibos.COLUMN4.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN4.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN4.Name = "COLUMN4"
+CONTENIDO.grdRecibos.COLUMN5.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN5.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN5.Name = "COLUMN5"
+CONTENIDO.grdRecibos.COLUMN6.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN6.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN6.Name = "COLUMN6"
+CONTENIDO.grdRecibos.COLUMN7.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN7.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN7.Name = "COLUMN7"
+CONTENIDO.grdRecibos.COLUMN8.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN8.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN8.Name = "COLUMN8"
+CONTENIDO.grdRecibos.COLUMN9.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN9.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN9.Name = "COLUMN9"
+CONTENIDO.grdRecibos.COLUMN10.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN10.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN10.Name = "COLUMN10"
+CONTENIDO.grdRecibos.COLUMN11.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN11.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN11.Name = "COLUMN11"
+CONTENIDO.grdRecibos.COLUMN12.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN12.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN12.Name = "COLUMN12"
+CONTENIDO.grdRecibos.COLUMN13.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN13.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN13.Name = "COLUMN13"
+CONTENIDO.grdRecibos.COLUMN14.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN14.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN14.Name = "COLUMN14"
+CONTENIDO.grdRecibos.COLUMN15.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN15.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN15.Name = "COLUMN15"
+CONTENIDO.grdRecibos.COLUMN16.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN16.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN16.Name = "COLUMN16"
+CONTENIDO.grdRecibos.COLUMN17.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN17.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN17.Name = "COLUMN17"
+CONTENIDO.grdRecibos.COLUMN18.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN18.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN18.Name = "COLUMN18"
+CONTENIDO.grdRecibos.COLUMN19.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN19.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN19.Name = "COLUMN19"
+CONTENIDO.grdRecibos.COLUMN20.HEADER1.Name = "HEADER1"
+CONTENIDO.grdRecibos.COLUMN20.TEXT1.Name = "TEXT1"
+CONTENIDO.grdRecibos.COLUMN20.Name = "COLUMN20"
+CONTENIDO.grdRecibos.Name = "grdRecibos"
+CONTENIDO.CLSCERRAR1.Name = "CLSCERRAR1"
+CONTENIDO.btnDetalles.Name = "btnDetalles"
+CONTENIDO.btnCancelar.Name = "btnCancelar"
+CONTENIDO.Clsetiqueta5.Name = "Clsetiqueta5"
+CONTENIDO.Clsetiqueta6.Name = "Clsetiqueta6"
+CONTENIDO.txtNroRecDD.Name = "txtNroRecDD"
+CONTENIDO.txtNroRecHH.Name = "txtNroRecHH"
+CONTENIDO.Name = "CONTENIDO"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: 
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+
+*** METODOS ***
+
+

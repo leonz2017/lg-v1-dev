@@ -1,0 +1,1 @@
+CALL globalcfg_insert('FE_IVAREC', 'L', 'true', 1);

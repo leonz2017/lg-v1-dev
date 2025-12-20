@@ -1,0 +1,1 @@
+CALL globalcfg_insert ('UPDFAMDEF', 'N', '6');

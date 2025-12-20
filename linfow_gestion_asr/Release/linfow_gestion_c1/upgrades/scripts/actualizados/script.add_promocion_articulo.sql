@@ -1,0 +1,1 @@
+ALTER TABLE articulos ADD promocion bit NOT NULL DEFAULT 0 COMMENT 'Indica si es merchandising o no';

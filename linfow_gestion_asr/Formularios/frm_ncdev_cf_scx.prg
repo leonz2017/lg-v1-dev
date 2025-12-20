@@ -1,0 +1,249 @@
+************************************************************
+OBJETO: Dataenvironment
+************************************************************
+*** PROPIEDADES ***
+Top = 0
+Left = 0
+Width = 0
+Height = 0
+DataSource = .NULL.
+Name = "Dataenvironment"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: FRM_NCDEV_CF
+************************************************************
+*** PROPIEDADES ***
+DoCreate = .T.
+Name = "FRM_NCDEV_CF"
+contenido.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.sel_cliente.txtCodigo.Name = "txtCodigo"
+contenido.sel_cliente.txtDescripcion.Name = "txtDescripcion"
+contenido.sel_cliente.Name = "sel_cliente"
+contenido.btnBuscarFC.Name = "btnBuscarFC"
+contenido.paginas.ErasePage = .T.
+contenido.paginas.Page1.grdItems.COLUMN1.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN1.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN1.Name = "COLUMN1"
+contenido.paginas.Page1.grdItems.COLUMN2.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN2.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN2.Name = "COLUMN2"
+contenido.paginas.Page1.grdItems.COLUMN3.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN3.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN3.Name = "COLUMN3"
+contenido.paginas.Page1.grdItems.COLUMN4.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN4.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN4.Name = "COLUMN4"
+contenido.paginas.Page1.grdItems.COLUMN5.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN5.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN5.Name = "COLUMN5"
+contenido.paginas.Page1.grdItems.COLUMN6.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN6.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN6.Name = "COLUMN6"
+contenido.paginas.Page1.grdItems.COLUMN7.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN7.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN7.Name = "COLUMN7"
+contenido.paginas.Page1.grdItems.COLUMN8.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN8.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN8.Name = "COLUMN8"
+contenido.paginas.Page1.grdItems.COLUMN9.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN9.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN9.Name = "COLUMN9"
+contenido.paginas.Page1.grdItems.COLUMN10.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN10.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN10.Name = "COLUMN10"
+contenido.paginas.Page1.grdItems.COLUMN11.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN11.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN11.Name = "COLUMN11"
+contenido.paginas.Page1.grdItems.COLUMN12.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN12.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN12.Name = "COLUMN12"
+contenido.paginas.Page1.grdItems.COLUMN13.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN13.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN13.Name = "COLUMN13"
+contenido.paginas.Page1.grdItems.COLUMN14.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN14.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN14.Name = "COLUMN14"
+contenido.paginas.Page1.grdItems.COLUMN15.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN15.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN15.Name = "COLUMN15"
+contenido.paginas.Page1.grdItems.COLUMN16.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN16.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN16.Name = "COLUMN16"
+contenido.paginas.Page1.grdItems.COLUMN17.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN17.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN17.Name = "COLUMN17"
+contenido.paginas.Page1.grdItems.COLUMN18.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN18.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN18.Name = "COLUMN18"
+contenido.paginas.Page1.grdItems.COLUMN19.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN19.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN19.Name = "COLUMN19"
+contenido.paginas.Page1.grdItems.COLUMN20.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItems.COLUMN20.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItems.COLUMN20.Name = "COLUMN20"
+contenido.paginas.Page1.grdItems.Name = "grdItems"
+contenido.paginas.Page1.grdItemNC.COLUMN1.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN1.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN1.Name = "COLUMN1"
+contenido.paginas.Page1.grdItemNC.COLUMN2.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN2.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN2.Name = "COLUMN2"
+contenido.paginas.Page1.grdItemNC.COLUMN3.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN3.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN3.Name = "COLUMN3"
+contenido.paginas.Page1.grdItemNC.COLUMN4.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN4.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN4.Name = "COLUMN4"
+contenido.paginas.Page1.grdItemNC.COLUMN5.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN5.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN5.Name = "COLUMN5"
+contenido.paginas.Page1.grdItemNC.COLUMN6.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN6.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN6.Name = "COLUMN6"
+contenido.paginas.Page1.grdItemNC.COLUMN7.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN7.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN7.Name = "COLUMN7"
+contenido.paginas.Page1.grdItemNC.COLUMN8.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN8.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN8.Name = "COLUMN8"
+contenido.paginas.Page1.grdItemNC.COLUMN9.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN9.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN9.Name = "COLUMN9"
+contenido.paginas.Page1.grdItemNC.COLUMN10.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN10.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN10.Name = "COLUMN10"
+contenido.paginas.Page1.grdItemNC.COLUMN11.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN11.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN11.Name = "COLUMN11"
+contenido.paginas.Page1.grdItemNC.COLUMN12.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN12.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN12.Name = "COLUMN12"
+contenido.paginas.Page1.grdItemNC.COLUMN13.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN13.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN13.Name = "COLUMN13"
+contenido.paginas.Page1.grdItemNC.COLUMN14.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN14.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN14.Name = "COLUMN14"
+contenido.paginas.Page1.grdItemNC.COLUMN15.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN15.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN15.Name = "COLUMN15"
+contenido.paginas.Page1.grdItemNC.COLUMN16.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN16.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN16.Name = "COLUMN16"
+contenido.paginas.Page1.grdItemNC.COLUMN17.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN17.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN17.Name = "COLUMN17"
+contenido.paginas.Page1.grdItemNC.COLUMN18.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN18.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN18.Name = "COLUMN18"
+contenido.paginas.Page1.grdItemNC.COLUMN19.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN19.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN19.Name = "COLUMN19"
+contenido.paginas.Page1.grdItemNC.COLUMN20.Header1.Name = "Header1"
+contenido.paginas.Page1.grdItemNC.COLUMN20.Text1.Name = "Text1"
+contenido.paginas.Page1.grdItemNC.COLUMN20.Name = "COLUMN20"
+contenido.paginas.Page1.grdItemNC.Name = "grdItemNC"
+contenido.paginas.Page1.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.paginas.Page1.Clsetiqueta2.Name = "Clsetiqueta2"
+contenido.paginas.Page1.btnAceptar.Top = 169
+contenido.paginas.Page1.btnAceptar.Left = 941
+contenido.paginas.Page1.btnAceptar.Height = 44
+contenido.paginas.Page1.btnAceptar.Picture = ..\..\clases\imagen\iconos bajados\aceptar-comprobar-si-puede-icono-9389.ico
+contenido.paginas.Page1.btnAceptar.Name = "btnAceptar"
+contenido.paginas.Page1.btnCancelar.Height = 44
+contenido.paginas.Page1.btnCancelar.Picture = ..\..\clases\imagen\iconos bajados\deshacer-icono-5403.ico
+contenido.paginas.Page1.btnCancelar.Name = "btnCancelar"
+contenido.paginas.Page1.Name = "Page1"
+contenido.paginas.Page2.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.paginas.Page2.Clsetiqueta2.Name = "Clsetiqueta2"
+contenido.paginas.Page2.Clsetiqueta3.Name = "Clsetiqueta3"
+contenido.paginas.Page2.Clsetiqueta4.Name = "Clsetiqueta4"
+contenido.paginas.Page2.Clsetiqueta5.Name = "Clsetiqueta5"
+contenido.paginas.Page2.Clsetiqueta6.Name = "Clsetiqueta6"
+contenido.paginas.Page2.Clsetiqueta7.Name = "Clsetiqueta7"
+contenido.paginas.Page2.Clsetiqueta8.Name = "Clsetiqueta8"
+contenido.paginas.Page2.Clsetiqueta9.Name = "Clsetiqueta9"
+contenido.paginas.Page2.Clslinea1.Name = "Clslinea1"
+contenido.paginas.Page2.CLSLINEA2.Name = "CLSLINEA2"
+contenido.paginas.Page2.Clsetiqueta10.Name = "Clsetiqueta10"
+contenido.paginas.Page2.Clsetiqueta11.Name = "Clsetiqueta11"
+contenido.paginas.Page2.txtFCImpNeto.Name = "txtFCImpNeto"
+contenido.paginas.Page2.txtFCPorDto1.Name = "txtFCPorDto1"
+contenido.paginas.Page2.txtFCPorDto2.Name = "txtFCPorDto2"
+contenido.paginas.Page2.txtFCPorDto3.Name = "txtFCPorDto3"
+contenido.paginas.Page2.txtFCPorDto4.Name = "txtFCPorDto4"
+contenido.paginas.Page2.txtFCImpFinal.Name = "txtFCImpFinal"
+contenido.paginas.Page2.txtFCImpIVA21.Name = "txtFCImpIVA21"
+contenido.paginas.Page2.txtFCImpIVA105.Name = "txtFCImpIVA105"
+contenido.paginas.Page2.txtFCTotFact.Name = "txtFCTotFact"
+contenido.paginas.Page2.txtFCImpDto1.Name = "txtFCImpDto1"
+contenido.paginas.Page2.txtFCImpDto2.Name = "txtFCImpDto2"
+contenido.paginas.Page2.txtFCImpDto3.Name = "txtFCImpDto3"
+contenido.paginas.Page2.txtFCImpDto4.Name = "txtFCImpDto4"
+contenido.paginas.Page2.txtNCImpNeto.Name = "txtNCImpNeto"
+contenido.paginas.Page2.txtNCPorDto1.Name = "txtNCPorDto1"
+contenido.paginas.Page2.txtNCPorDto2.Name = "txtNCPorDto2"
+contenido.paginas.Page2.txtNCPorDto3.Name = "txtNCPorDto3"
+contenido.paginas.Page2.txtNCPorDto4.Name = "txtNCPorDto4"
+contenido.paginas.Page2.txtNCImpFinal.Name = "txtNCImpFinal"
+contenido.paginas.Page2.txtNCImpIVA21.Name = "txtNCImpIVA21"
+contenido.paginas.Page2.txtNCImpIVA105.Name = "txtNCImpIVA105"
+contenido.paginas.Page2.txtNCTotFact.Name = "txtNCTotFact"
+contenido.paginas.Page2.txtNCImpDto1.Name = "txtNCImpDto1"
+contenido.paginas.Page2.txtNCImpDto2.Name = "txtNCImpDto2"
+contenido.paginas.Page2.txtNCImpDto3.Name = "txtNCImpDto3"
+contenido.paginas.Page2.txtNCImpDto4.Name = "txtNCImpDto4"
+contenido.paginas.Page2.Clslinea3.Name = "Clslinea3"
+contenido.paginas.Page2.Clslinea4.Name = "Clslinea4"
+contenido.paginas.Page2.Clsetiqueta12.Name = "Clsetiqueta12"
+contenido.paginas.Page2.txtFCPorIIBB.Name = "txtFCPorIIBB"
+contenido.paginas.Page2.txtFCimpIIBB.Name = "txtFCimpIIBB"
+contenido.paginas.Page2.txtNCPorIIBB.Name = "txtNCPorIIBB"
+contenido.paginas.Page2.txtNCImpIIBB.Name = "txtNCImpIIBB"
+contenido.paginas.Page2.Name = "Page2"
+contenido.paginas.Name = "paginas"
+contenido.btnCerrar.Top = 438
+contenido.btnCerrar.Left = 1005
+contenido.btnCerrar.Height = 44
+contenido.btnCerrar.Picture = ..\..\clases\imagen\iconos bajados\salir-de-mi-perfil-icono-3964.ico
+contenido.btnCerrar.Name = "btnCerrar"
+contenido.btnGrabar.Top = 438
+contenido.btnGrabar.Left = 958
+contenido.btnGrabar.Height = 44
+contenido.btnGrabar.Picture = ..\..\clases\imagen\iconos bajados\disquetes-excepto-icono-7120-32.png
+contenido.btnGrabar.Name = "btnGrabar"
+contenido.btnNuevo.Top = 438
+contenido.btnNuevo.Left = 13
+contenido.btnNuevo.Height = 44
+contenido.btnNuevo.Picture = ..\..\clases\imagen\document.ico
+contenido.btnNuevo.Name = "btnNuevo"
+contenido.CLSETIQUETA2.Name = "CLSETIQUETA2"
+contenido.txtcbte.Name = "txtcbte"
+contenido.txttipo.Name = "txttipo"
+contenido.txtnrocbte.Name = "txtnrocbte"
+contenido.Name = "contenido"
+datos_cbtes.Top = 420
+datos_cbtes.Left = 120
+datos_cbtes.Name = "datos_cbtes"
+FISCAL.Top = 420
+FISCAL.Left = 156
+FISCAL.Height = 100
+FISCAL.Width = 100
+FISCAL.Name = "FISCAL"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: 
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+
+*** METODOS ***
+
+

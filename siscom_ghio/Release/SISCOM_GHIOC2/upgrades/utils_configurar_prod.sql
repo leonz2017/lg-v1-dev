@@ -1,0 +1,1 @@
+CALL globalcfg_insert('UPD_URL', 'C', 'D:\\Compartido\\LINFOW\\upgrades\\ghio\\', 1);
