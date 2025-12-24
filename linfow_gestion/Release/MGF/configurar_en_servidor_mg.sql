@@ -3,7 +3,8 @@
 */
 
 -- Saco la pregunta de imprimir remitos
-CALL globalcfg_insert('PRINT_RTO', 'L', 'false', 1);
+CALL globalcfg_insert('PRINT_RTO', 'L', 'true', 1);
+CALL globalcfg_insert('RTOIMPXFC', 'L', 'true', 1);
 
 -- Agrego menú para la pantalla de facturación de mostrador.
 CALL `agregar_menu`('4.21', '\\-', '', 1, 4, '', 4021);

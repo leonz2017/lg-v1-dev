@@ -1,7 +1,7 @@
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ventascab_getById $$
 
-CREATE PROCEDURE `ventascab_getById`(_idVentasC int)
+CREATE PROCEDURE IF NOT EXISTS `ventascab_getById`(_idVentasC int)
 begin
 	select ventascab.*, tipodoc.CodAfip, sitiva.conivareid
 	from ventascab

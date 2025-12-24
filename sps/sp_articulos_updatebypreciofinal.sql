@@ -2,7 +2,7 @@ DELIMITER $$
 
 DROP PROCEDURE IF EXISTS sp_articulos_updateByPrecioFinal $$
 
-CREATE PROCEDURE sp_articulos_updateByPrecioFinal (
+CREATE PROCEDURE IF NOT EXISTS sp_articulos_updateByPrecioFinal (
 	IN `pIdArticulo` INT,
 	IN `pPreVtaFinal` DOUBLE,
 	IN `pUsuario` VARCHAR(5),

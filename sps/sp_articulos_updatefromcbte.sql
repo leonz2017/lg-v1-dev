@@ -2,7 +2,7 @@ DELIMITER $$
 
 DROP PROCEDURE IF EXISTS articulos_updateFromCbte $$
 
-CREATE PROCEDURE articulos_updateFromCbte (
+CREATE PROCEDURE IF NOT EXISTS articulos_updateFromCbte (
 	IN `pIdArticulo` INT,
 	IN `pPreVtaFinal` DOUBLE,
 	IN `pUsuario` VARCHAR(5),

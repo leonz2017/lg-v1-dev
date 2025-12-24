@@ -1,6 +1,6 @@
 DELIMITER $$
 DROP PROCEDURE IF EXISTS citicpas_generarCabecera $$
-CREATE PROCEDURE `citicpas_generarCabecera`(p_anio int, p_mes int)
+CREATE PROCEDURE IF NOT EXISTS `citicpas_generarCabecera`(p_anio int, p_mes int)
 begin
 	set binlog_format = mixed;   
     drop table if exists tmp_percIIBB;    

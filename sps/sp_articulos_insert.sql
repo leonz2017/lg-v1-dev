@@ -1,7 +1,7 @@
 DELIMITER $$
 DROP PROCEDURE IF EXISTS articulos_insert $$
 
-CREATE PROCEDURE articulos_insert(
+CREATE PROCEDURE IF NOT EXISTS articulos_insert(
 	p_idprov int, 
 	p_idfamilia int, 
 	p_idsubfam int, 

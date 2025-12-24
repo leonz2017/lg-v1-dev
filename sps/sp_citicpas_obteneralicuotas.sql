@@ -1,6 +1,6 @@
 DELIMITER $$
 DROP PROCEDURE IF EXISTS citicpas_obtenerAlicuotas $$
-CREATE PROCEDURE `citicpas_obtenerAlicuotas`()
+CREATE PROCEDURE IF NOT EXISTS `citicpas_obtenerAlicuotas`()
 begin
 	select
 		tipoCbte,

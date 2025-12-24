@@ -1448,645 +1448,6 @@ Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 
 ************************************************************
-OBJETO: cls_vtasrtos_dao
-************************************************************
-*** PROPIEDADES ***
-error_message = 
-idtransp = 0
-codtrans = 
-razsoc = 
-impresora = 
-copias = 0
-cbte = 
-tipodoc = 
-ptovta = 0
-id_num = 0
-repname = 
-direcciontrn = 
-idlocalid_transp = 0
-localidad_transp = 
-idprovin_transp = 
-provincia_transp = 0
-cod_postal_transp = 
-nro_rto = 
-Name = "cls_vtasrtos_dao"
-
-*** METODOS ***
-PROCEDURE crear_cursores
-*********************************************************************
-* Permite crear los cursores requeridos para la emisión de remitos.
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 01/12/2025
-*********************************************************************
-	
-* Cursor para mostrar facturas a seleccionar
-CREATE CURSOR cur_facturas ( 			 ;
-	idVentasC	int NOT NULL 			,;
-	idCliente	int NOT null			,;
-	razSoc		varchar(60) NOT NULL	,;
-	direccion	varchar(60) NOT null	,;
-	codPostal	varchar(10) NOT NULL	,;
-	localidad	varchar(60) NOT NULL	,;
-	provincia	varchar(60) NOT null	,;
-	pais		varchar(60) NOT NULL	,;
-	tipoIVA		varchar(60) NOT NULL	,;	
-	nroCUIT		varchar(20) NOT null	,;	
-	fecEmision	datetime NOT NULL 		,;
-	fecVto		datetime NOT NULL 		,;
-	nroComp		varchar(20) NOT NULL 	,;
-	totFact		N(20, 2)				,;
-	nroOC		int NULL				,;
-	tipoDoc		varchar(1) NOT null		,;
-	nroCbte		int NOT NULL			,;
-	ptovta		int NOT NULL			,;
-	observ		M NULL)
-
-	
-* Cursor para imprimir el detalle del remito.
-* Dejo el nombre cur_aux para no cambiarlo en el report.
-CREATE CURSOR cur_aux (			 		 ;
-	idVentasD 	int NOT NULL 			,;
-	idVentasC	int NOT NULL 			,;
-	idArticulo	int NOT NULL 			,;
-	cantidad	N(20, 2) NOT NULL 		,;
-	codArt		varchar(20) NOT NULL 	,;
-	Descripcio	varchar(200) NOT NULL)	
-	
-* Cursor para la grilal de consulta y reimpresión de remitos
-CREATE CURSOR cur_rtos ( 		 	 	 	;
-	idVtaRto 		int NOT NULL			,;
-	idVentasC		int NOT NULL			,;
-	fecha			D NOT NULL				,;
-	nrocomp			varchar(20) NOT NULL	,;
-	idCliente		int NOT NULL			,;
-	razSoc			varchar(60) NOT NULL	,;
-	razSocTrn		varchar(60) NOT NULL	,;
-	direccionTrn 	varchar(60) NULL		,;
-	codPostalTrn	varchar(10) NULL		,;
-	localidadTrn	varchar(60) NULL		,;
-	provinciaTrn	varchar(60) NULL)
-
-ENDPROC
-PROCEDURE grabar
-*******************************************************************
-* Permite grabar un remito.
-* Parámetros:
-*	tnIdVentasC => Id. del comprobante de venta asociado
-*	tnIdTransp => Transporte
-*	tnFecha => Fecha de emisión del remito
-*	tnPtoVta => Punto de venta
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 01/12/2025
-*******************************************************************
-LPARAMETERS ;
-	tnIdVentasC,;
-	tnIdTransp,;
-	tnFecha
-
-LOCAL loRes
-LOCAL llOk
-LOCAL lcSql
-
-IF !This.get_tipo_cbte() THEN
-	RETURN .F.
-ENDIF
-
-TRY
-	loRes = CREATEOBJECT("odbc_result")
-	llOk = .F.
-	
-	TEXT TO lcSql NOSHOW
-		CALL vtasrtos_generar (
-			?xidVentasC,
-			?xidTransp,
-			?xidNum,
-			?xfecha,
-			?xusuario,
-			?xhost
-		)
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
-	lcSql = loRes.addParameter(lcSql, "xidTransp", ALLTRIM(STR(tnIdTransp)), .F., .F.)
-	lcSql = loRes.addParameter(lcSql, "xidNum", ALLTRIM(STR(this.id_num)), .T., .F.)
-	lcSql = loRes.addParameter(lcSql, "xfecha", tnFecha, .F., .T.)
-	lcSql = loRes.addParameter(lcSql, "xusuario", ALLTRIM(gcCodUsu), .T., .F.)
-	lcSql = loRes.addParameter(lcSql, "xhost", ALLTRIM(SYS(0)), .T., .F.)
-	
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_result"
-	loRes.OpenQuery(lcSql)
-	
-	SELECT cur_result
-	IF ALLTRIM(cur_result.result) != "OK" THEN
-		MESSAGEBOX(cur_result.result, 0+48, Thisform.Caption)
-		llOk = .F.
-	ELSE
-		this.nro_rto = cur_result.nro_rto	
-		llOk = .T.
-	ENDIF
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	RELEASE loCmd
-ENDTRY
-
-RETURN llOk
-ENDPROC
-PROCEDURE buscar_facturas
-*****************************************************************
-* Este método permite buscar las facturas
-* Desarrollado por: Zulli, Leonardo Diego
-* Parámetros:
-*	tnIdCliente => Id. del cliente seleccionado. Si es 0, trae todo.
-*	tnFechaDesde => Fecha de emisión desde.
-*	tnFechaHasta => Fecha de emisión hasta.
-* Fecha: 01/12/2025
-*****************************************************************
-LPARAMETERS ;
-	tnIdCliente, ;
-	tdFechaDesde, ;
-	tdFechaHasta
-
-LOCAL loRes
-LOCAL lcSql
-LOCAL llOk
-
-TRY
-	loRes = CREATEOBJECT("odbc_result")
-	
-	* Limpio el cursor antes de volverlo a cargar
-	SELECT cur_facturas
-	ZAP	
-
-	TEXT TO lcSql NOSHOW
-		SELECT
-			idVentasC, 
-			ventascab.idCliente,
-			clientes.razSoc,
-			clientes.direccion,
-			localidad.codPostal,
-			localidad.descripcio AS 'localidad',
-			provincias.descripcio AS 'provincia',
-			paises.descripcio AS 'pais',
-			sitiva.descripcio AS 'tipoIVA',
-			clientes.nroCUIT,
-			ventascab.fecEmision, 
-			ventascab.fecvto,
-			CONCAT(ventascab.cbte, ' ' , ventascab.tipoDoc, ' ', 
-				REPEAT('0', 5 - LENGTH(ventascab.ptoVta)), ventascab.ptovta,
-				'-', REPEAT('0', 8 - LENGTH(ventascab.numCbte)), ventascab.numCbte) 
-			AS 'nroComp',
-			ventascab.totFact,
-			ventascab.nroOC,
-			ventascab.tipoDoc,
-			ventascab.numCbte AS 'nroCbte',
-			ventascab.ptoVta,
-			ventascab.totFact,
-			ventascab.observ
-		FROM
-			ventascab
-				INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente
-				INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid
-				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
-				INNER JOIN paises ON paises.idPais = localidad.idPais
-				INNER JOIN sitiva ON sitiva.idSitIVA = ventascab.idSitIVA
-		WHERE
-			CASE WHEN ?xidCliente = 0 THEN 1 ELSE ventascab.idCliente = ?xidCliente END AND
-			ventascab.fecEmision BETWEEN ?xfechaDesde AND ?xfechaHasta AND
-			ventascab.aut_Resultado = 'A' AND
-			ventascab.cbte = 'FC' AND
-			ventascab.idVentasC NOT IN (
-				SELECT
-					idVentasC
-				FROM
-					vtasrtos
-			)
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xidCliente", ALLTRIM(STR(tnIdCliente)), .F., .F.)
-	lcSql = loRes.addParameter(lcSql, "xfechaDesde", tdFechaDesde, .F., .T.)
-	lcSql = loRes.addParameter(lcSql, "xfechaHasta", tdFechaHasta, .F., .T.)
-
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.cursor_name = "cur_x"
-	loRes.OpenQuery(lcSql)
-
-	SELECT cur_facturas
-	APPEND FROM DBF("cur_x")
-
-	SELECT cur_facturas
-	GO TOP
-	
-	llOk = .T.
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	* Fuerzo el cierre del cursor
-	IF USED("cur_x") THEN
-		loRes.Close_Query()
-	ENDIF
-ENDTRY
-
-RETURN llOk
-ENDPROC
-PROCEDURE consultar
-******************************************************************
-* Permite realizar la consutla de remitos en la consulta y
-* reimpresión de remitos
-* Parametros:
-*	tnIdCliente => Id. del cliente seleccionado. Si es 0 obvia el filtro
-*	tdFechaDesde => Fecha Desde
-*	tdFechaHasta => Fecha Hasta
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 05/12/2025
-******************************************************************
-LPARAMETERS ;
-	tnIdCliente,;
-	tdFechaDesde,;
-	tdFechaHasta
-	
-LOCAL loRes
-LOCAL lcSql
-LOCAL llOk
-
-TRY
-	llOk = .F.
-	loRes = CREATEOBJECT("odbc_result")
-	
-	TEXT TO lcSql NOSHOW
-		SELECT
-			vtasrtos.idVtaRto,
-			vtasrtos.idVentasC,
-			CAST(vtasrtos.fecha AS DATE) AS 'fecha',
-			vtasrtos.nrocomp,
-			clientes.idCliente,
-			clientes.razSoc,
-			vtasrtos.razSocTrn,
-			transp.direccion AS 'direccionTrn',
-			localidad.codPostal AS 'codPostalTrn',
-			localidad.descripcio AS 'localidadTrn',
-			provincias.descripcio AS 'provinciaTrn'
-			
-		FROM
-			vtasrtos
-				INNER JOIN ventascab ON ventascab.idVentasC = vtasrtos.idVentasC
-				INNER JOIN clientes ON clientes.idCliente = ventascab.idCliente
-				INNER JOIN transp ON transp.idTransp = vtasrtos.idTransp
-				INNER JOIN localidad ON localidad.idLocalid = transp.idLocalid
-				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
-		WHERE
-			CASE WHEN ?xidCliente = 0 THEN 1 ELSE clientes.idCliente = ?xidCliente END AND
-			vtasrtos.fecha BETWEEN ?xfechaDesde AND ?xfechaHasta
-		ORDER BY
-			vtasrtos.fecha DESC
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xidCliente", ALLTRIM(STR(tnIdCliente)), .F., .F.)
-	lcSql = loRes.addParameter(lcSql, "xfechaDesde", tdFechaDesde, .F., .T.)
-	lcSql = loRes.addParameter(lcSql, "xfechaHasta", tdFechaHasta, .F., .T.)
-
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_x"
-	loRes.OpenQuery(lcSql)
-	SELECT cur_rtos
-	ZAP
-	APPEND FROM DBF("cur_x")
-	GO TOP IN "cur_rtos"
-	
-	llOk = .T.
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	IF USED("cur_x") THEN
-		loRes.Close_Query()
-	ENDIF
-	
-	RELEASE loRes
-ENDTRY
-
-RETURN llOk
-
-ENDPROC
-PROCEDURE get_items
-*******************************************************************
-* Prepara los ítems para imprimir en cur_aux
-* Desarrollado por: Zulli, Leonardo Diego
-* Parametros:
-*	tnIdVentasC => Id. del comprobante de venta seleccionado
-* Fecha: 01/12/2025
-*******************************************************************
-LPARAMETERS tnIdVentasC
-
-LOCAL loRes
-LOCAL lcSql
-LOCAL llOk
-
-TRY
-	loRes = CREATEOBJECT("odbc_result")
-	
-	* Limpio el cursor antes de cargarlo para evitar duplicaciones
-	SELECT cur_aux
-	ZAP
-	
-	TEXT TO lcSql NOSHOW
-		SELECT
-			ventasdet.idVentasD, ventasdet.idVentasC, ventasdet.idArticulo,
-			ventasdet.cantidad, articulos.codArt, ventasdet.descripcio
-		FROM
-			ventasdet
-				INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo
-		WHERE
-			ventasdet.idVentasC = ?xidVentasC
-		ORDER BY
-			ventasdet.idVentasD ASC, ventasdet.idVentasC ASC;		
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
-	
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_x"
-	loRes.OpenQuery(lcSql)
-	SELECT cur_aux
-	APPEND FROM DBF("cur_x")
-	
-	SELECT cur_aux
-	GO TOP
-	
-	llOk = .T.
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	IF USED("cur_x") THEN
-		loRes.Close_Query()
-	ENDIF
-	
-	RELEASE loRes
-ENDTRY
-
-RETURN llOk
-ENDPROC
-PROCEDURE get_transporte_por_cliente
-**************************************************************************
-* Permite traer el transporte del cliente asociado a la factura
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 03/12/2025
-**************************************************************************
-LPARAMETERS tnIdCliente
-
-LOCAL loRes
-LOCAL lcSql
-LOCAL llOk
-
-TRY
-	loRes = CREATEOBJECT("odbc_result")
-	
-	TEXT TO lcSql NOSHOW
-		SELECT
-			transp.idTransp,
-			transp.codTrans,
-			transp.razSoc,
-			transp.direccion,
-			localidad.idLocalid,
-			localidad.codPostal,
-			localidad.descripcio AS 'localidad',
-			provincias.idProvin,
-			provincias.descripcio AS 'provincia'
-		FROM
-			transp
-				INNER JOIN clientes ON transp.idTransp = clientes.idTransp
-				INNER JOIN localidad ON localidad.idLocalid = transp.idLocalid
-				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
-		WHERE
-			clientes.idCliente = ?xidCliente	
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xidCliente", ALLTRIM(STR(tnIdCliente)), .F., .F.)
-	
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_x"
-	loRes.OpenQuery(lcSql)
-	
-	SELECT cur_x
-	This.idtransp = cur_x.idTransp
-	This.codtrans = cur_x.codTrans
-	This.razsoc = ALLTRIM(cur_x.razSoc)
-	This.direcciontrn = ALLTRIM(cur_X.direccion)
-	This.idlocalid_transp = cur_x.idLocalid
-	This.cod_postal_transp = ALLTRIM(cur_x.codPostal)
-	This.localidad_transp = ALLTRIM(cur_x.localidad)
-	This.idProvin_transp = cur_x.idProvin
-	This.provincia_transp = ALLTRIM(cur_x.provincia)
-
-	llOk = .T.
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	IF USED("cur_x") THEN
-		loRes.Close_Query()
-	ENDIF
-	
-	RELEASE loRes
-ENDTRY
-
-RETURN llOk
-
-ENDPROC
-PROCEDURE get_tipo_cbte
-******************************************************************
-* Obtiene el tipo de comprobante para saber a qué impresora
-* enviar a imprimir.
-* Desarrollador por: Zulli, Leonardo Diego
-* Parametros:
-*	tcCbte 		=> Código de comprobante
-*	tcTipoDoc 	=> Letra del comprobante
-*	tnPtoVta 	=> Punto de venta del comprobante
-* Fecha: 04/12/2025
-******************************************************************
-LOCAL loRes
-LOCAL lcSql
-LOCAL llOk
-LOCAL lnPtoVta
-
-TRY
-	loRes = CREATEOBJECT("odbc_result")
-	
-	TEXT TO lcSql NOSHOW
-		SELECT
-			numerador.idNum,
-			numerador.cbte,
-			numerador.ptoVta,
-			numerador.tipoDoc,
-			numerador.repname,
-			impresoras.impresora,
-			impresoras.copias
-		FROM
-			numerador
-				INNER JOIN impresoras ON impresoras.idNum = numerador.idNum
-		WHERE
-			numerador.cbte = ?xcbte AND
-			numerador.tipoDoc = ?xtipoDoc AND
-			numerador.ptoVta = ?xptoVta AND
-			impresoras.hostName = ?xHost
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xcbte", ALLTRIM(This.cbte), .T., .F.)
-	lcSql = loRes.addParameter(lcSql, "xtipoDoc", ALLTRIM(This.tipodoc), .T., .F.)
-	lcSql = loRes.addParameter(lcSql, "xptoVta", ALLTRIM(STR(This.ptovta)), .F., .F.)
-	lcSql = loRes.addParameter(lcSql, "xHost", ALLTRIM(SYS(0)), .T., .F.)
-	
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_x"
-	loRes.OpenQuery(lcSql)
-	SELECT cur_x
-	IF RECCOUNT("cur_x") = 0 THEN
-		this.error_message = "No hay numerador y/o impresora configurada para éste comprobante en éste puesto de trabajo"
-	ELSE
-		This.id_num = cur_x.idNum
-		This.impresora = ALLTRIM(cur_x.impresora)
-		this.copias = cur_x.copias
-		This.repname = ALLTRIM(cur_x.repname)
-	ENDIF
-
-	llOk = .T.
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	loRes.Close_Query()
-	RELEASE loRes
-ENDTRY
-ENDPROC
-PROCEDURE eliminar_factura_de_cursor
-************************************************************************
-* Permite eliminar la factura del cursor de selección de facturas para
-* que no se muestre más aquellas que se emitieron remitos.
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 04/12/2025
-************************************************************************
-SELECT cur_facturas
-DELETE
-GO TOP
-
-ENDPROC
-PROCEDURE get_detalle
-*****************************************************************
-* Obtiene el detalle para la consulta y reimpresión 
-* Desarrollado por: Zulli, Leonardo Diego
-* Parámetros:
-*	tnIdVtaRto => Id del remito
-*	tnIdVentasC => Id del comprobante de venta asociado
-* NOTA: Ambos son clave primaria compuesta
-* Fecha: 01/12/2025
-*****************************************************************
-LPARAMETERS ;
-	tnIdVtaRto,;
-	tnIdVentasC
-
-LOCAL loRes
-LOCAL lcSql
-LOCAL llOk
-
-TRY
-	loRes = CREATEOBJECT("odbc_result")
-	
-	* Limpio el cursor antes de volverlo a cargar
-	SELECT cur_facturas
-	ZAP	
-
-	TEXT TO lcSql NOSHOW
-		SELECT
-			ventascab.idVentasC, 
-			ventascab.idCliente,
-			clientes.razSoc,
-			clientes.direccion,
-			localidad.codPostal,
-			localidad.descripcio AS 'localidad',
-			provincias.descripcio AS 'provincia',
-			paises.descripcio AS 'pais',
-			sitiva.descripcio AS 'tipoIVA',
-			clientes.nroCUIT,
-			ventascab.fecEmision, 
-			ventascab.fecvto,
-			CONCAT(ventascab.cbte, ' ' , ventascab.tipoDoc, ' ', 
-				REPEAT('0', 5 - LENGTH(ventascab.ptoVta)), ventascab.ptovta,
-				'-', REPEAT('0', 8 - LENGTH(ventascab.numCbte)), ventascab.numCbte) 
-			AS 'nroComp',
-			ventascab.totFact,
-			ventascab.nroOC,
-			ventascab.tipoDoc,
-			ventascab.numCbte AS 'nroCbte',
-			ventascab.ptoVta,
-			ventascab.observ
-		FROM
-			ventascab
-				INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente
-				INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid
-				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
-				INNER JOIN paises ON paises.idPais = localidad.idPais
-				INNER JOIN sitiva ON sitiva.idSitIVA = ventascab.idSitIVA
-				INNER JOIN vtasrtos ON vtasrtos.idVentasC = ventascab.idVentasC
-		WHERE
-			vtasrtos.idVtaRto = ?xidVtaRto AND
-			vtasrtos.idVentasC = ?xidVentasC
-	ENDTEXT
-	
-	lcSql = loRes.addParameter(lcSql, "xidVtaRto", ALLTRIM(STR(tnIdVtaRto)), .F., .F.)
-	lcSql = loRes.addParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
-	
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.cursor_name = "cur_x"
-	loRes.OpenQuery(lcSql)
-
-	SELECT cur_facturas
-	APPEND FROM DBF("cur_x")
-
-	SELECT cur_facturas
-	GO TOP
-	
-	* Levanto los ítems
-	This.get_items(tnIdVentasC)
-	
-	llOk = .T.
-CATCH TO oException
-	This.error_message = oException.Message + " en " + oException.Procedure + " Detalles: " + oException.Details
-	llOk = .F.
-FINALLY
-	* Fuerzo el cierre del cursor
-	IF USED("cur_x") THEN
-		loRes.Close_Query()
-	ENDIF
-ENDTRY
-
-RETURN llOk
-ENDPROC
-PROCEDURE Destroy
-**********************************************************
-* Cuando se destruye el objeto (Release) elimino los
-* cursores de memoria.
-* Fecha: 05/12/2025
-**********************************************************
-
-IF USED("cur_facturas") THEN
-	USE IN cur_facturas
-ENDIF
-
-IF USED("cur_aux") THEN
-	USE IN cur_aux
-ENDIF
-
-IF USED("cur_rtos") THEN
-	USE IN cur_rtos
-ENDIF
-ENDPROC
-
-
-************************************************************
 OBJETO: cls_frm_detalle_remito
 ************************************************************
 *** PROPIEDADES ***
@@ -2469,5 +1830,870 @@ Arial, 1, 8, 5, 14, 11, 29, 3, 0
 Arial, 0, 9, 5, 15, 12, 32, 3, 0
 
 *** METODOS ***
+
+
+************************************************************
+OBJETO: cls_vtasrtos_dao
+************************************************************
+*** PROPIEDADES ***
+error_message = 
+idtransp = 0
+codtrans = 
+razsoc = 
+impresora = 
+copias = 0
+cbte = 
+tipodoc = 
+ptovta = 0
+id_num = 0
+repname = 
+direcciontrn = 
+idlocalid_transp = 0
+localidad_transp = 
+idprovin_transp = 
+provincia_transp = 0
+cod_postal_transp = 
+nro_rto = 
+cbte_origen = 
+conexion_c2 = 
+Name = "cls_vtasrtos_dao"
+
+*** METODOS ***
+PROCEDURE crear_cursores
+*********************************************************************
+* Permite crear los cursores requeridos para la emisión de remitos.
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 01/12/2025
+*********************************************************************
+	
+* Cursor para mostrar facturas a seleccionar
+CREATE CURSOR cur_facturas ( 			 ;
+	idVentasC	int NOT NULL 			,;
+	idCliente	int NOT null			,;
+	razSoc		varchar(60) NOT NULL	,;
+	direccion	varchar(60) NOT null	,;
+	codPostal	varchar(10) NOT NULL	,;
+	localidad	varchar(60) NOT NULL	,;
+	provincia	varchar(60) NOT null	,;
+	pais		varchar(60) NOT NULL	,;
+	tipoIVA		varchar(60) NOT NULL	,;	
+	nroCUIT		varchar(20) NOT null	,;	
+	fecEmision	datetime NOT NULL 		,;
+	fecVto		datetime NOT NULL 		,;
+	nroComp		varchar(20) NOT NULL 	,;
+	totFact		N(20, 2)				,;
+	nroOC		int NULL				,;
+	tipoDoc		varchar(1) NOT null		,;
+	nroCbte		int NOT NULL			,;
+	ptovta		int NOT NULL			,;
+	observ		M NULL)
+
+	
+* Cursor para imprimir el detalle del remito.
+* Dejo el nombre cur_aux para no cambiarlo en el report.
+CREATE CURSOR cur_aux (			 		 ;
+	idVentasD 	int NOT NULL 			,;
+	idVentasC	int NOT NULL 			,;
+	idArticulo	int NOT NULL 			,;
+	cantidad	N(20, 2) NOT NULL 		,;
+	codArt		varchar(20) NOT NULL 	,;
+	Descripcio	varchar(200) NOT NULL)	
+	
+* Cursor para la grilal de consulta y reimpresión de remitos
+CREATE CURSOR cur_rtos ( 		 	 	 	;
+	idVtaRto 		int NOT NULL			,;
+	idVentasC		int NOT NULL			,;
+	fecha			D NOT NULL				,;
+	nrocomp			varchar(20) NOT NULL	,;
+	idCliente		int NOT NULL			,;
+	razSoc			varchar(60) NOT NULL	,;
+	razSocTrn		varchar(60) NOT NULL	,;
+	direccionTrn 	varchar(60) NULL		,;
+	codPostalTrn	varchar(10) NULL		,;
+	localidadTrn	varchar(60) NULL		,;
+	provinciaTrn	varchar(60) NULL)
+
+ENDPROC
+PROCEDURE grabar_c1
+*******************************************************************
+* Permite grabar un remito.
+* Parámetros:
+*	tnIdVentasC => Id. del comprobante de venta asociado
+*	tnIdTransp => Transporte
+*	tnFecha => Fecha de emisión del remito
+*	tnPtoVta => Punto de venta
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 01/12/2025
+*******************************************************************
+LPARAMETERS ;
+	tnIdVentasC,;
+	tnIdTransp,;
+	tnFecha
+
+LOCAL loRes
+LOCAL llOk
+LOCAL lcSql
+
+IF !This.get_tipo_cbte() THEN
+	RETURN .F.
+ENDIF
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	llOk = .F.
+	
+	TEXT TO lcSql NOSHOW
+		CALL vtasrtos_generar (
+			?xidVentasC,
+			?xidTransp,
+			?xidNum,
+			?xfecha,
+			?xusuario,
+			?xhost
+		)
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
+	lcSql = loRes.addParameter(lcSql, "xidTransp", ALLTRIM(STR(tnIdTransp)), .F., .F.)
+	lcSql = loRes.addParameter(lcSql, "xidNum", ALLTRIM(STR(this.id_num)), .T., .F.)
+	lcSql = loRes.addParameter(lcSql, "xfecha", tnFecha, .F., .T.)
+	lcSql = loRes.addParameter(lcSql, "xusuario", ALLTRIM(gcCodUsu), .T., .F.)
+	lcSql = loRes.addParameter(lcSql, "xhost", ALLTRIM(SYS(0)), .T., .F.)
+	
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_result"
+	loRes.OpenQuery(lcSql)
+	
+	SELECT cur_result
+	IF ALLTRIM(cur_result.result) != "OK" THEN
+		This.error_message = cur_result.result
+		llOk = .F.
+	ELSE
+		this.nro_rto = cur_result.nro_rto	
+		llOk = .T.
+	ENDIF
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	IF USED("cur_result") THEN
+		loRes.Close_Query()
+	ENDIF
+	
+	RELEASE loRes
+	
+ENDTRY
+
+RETURN llOk
+ENDPROC
+PROCEDURE buscar_facturas
+*****************************************************************
+* Este método permite buscar las facturas
+* Desarrollado por: Zulli, Leonardo Diego
+* Parámetros:
+*	tnIdCliente => Id. del cliente seleccionado. Si es 0, trae todo.
+*	tnFechaDesde => Fecha de emisión desde.
+*	tnFechaHasta => Fecha de emisión hasta.
+* Fecha: 01/12/2025
+*****************************************************************
+LPARAMETERS ;
+	tnIdCliente, ;
+	tdFechaDesde, ;
+	tdFechaHasta
+
+LOCAL loRes
+LOCAL lcSql
+LOCAL llOk
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	
+	* Limpio el cursor antes de volverlo a cargar
+	SELECT cur_facturas
+	ZAP	
+
+	TEXT TO lcSql NOSHOW
+		SELECT
+			idVentasC, 
+			ventascab.idCliente,
+			clientes.razSoc,
+			clientes.direccion,
+			localidad.codPostal,
+			localidad.descripcio AS 'localidad',
+			provincias.descripcio AS 'provincia',
+			paises.descripcio AS 'pais',
+			sitiva.descripcio AS 'tipoIVA',
+			clientes.nroCUIT,
+			ventascab.fecEmision, 
+			ventascab.fecvto,
+			CONCAT(ventascab.cbte, ' ' , ventascab.tipoDoc, ' ', 
+				REPEAT('0', 5 - LENGTH(ventascab.ptoVta)), ventascab.ptovta,
+				'-', REPEAT('0', 8 - LENGTH(ventascab.numCbte)), ventascab.numCbte) 
+			AS 'nroComp',
+			ventascab.totFact,
+			ventascab.nroOC,
+			ventascab.tipoDoc,
+			ventascab.numCbte AS 'nroCbte',
+			ventascab.ptoVta,
+			ventascab.totFact,
+			ventascab.observ
+		FROM
+			ventascab
+				INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente
+				INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid
+				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
+				INNER JOIN paises ON paises.idPais = localidad.idPais
+				INNER JOIN sitiva ON sitiva.idSitIVA = ventascab.idSitIVA
+		WHERE
+			CASE WHEN ?xidCliente = 0 THEN 1 ELSE ventascab.idCliente = ?xidCliente END AND
+			ventascab.fecEmision BETWEEN ?xfechaDesde AND ?xfechaHasta AND
+			ventascab.aut_Resultado = 'A' AND
+			ventascab.cbte = 'FC' AND
+			ventascab.idVentasC NOT IN (
+				SELECT
+					idVentasC
+				FROM
+					vtasrtos
+			)
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xidCliente", ALLTRIM(STR(tnIdCliente)), .F., .F.)
+	lcSql = loRes.addParameter(lcSql, "xfechaDesde", tdFechaDesde, .F., .T.)
+	lcSql = loRes.addParameter(lcSql, "xfechaHasta", tdFechaHasta, .F., .T.)
+
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.cursor_name = "cur_x"
+	loRes.OpenQuery(lcSql)
+
+	SELECT cur_facturas
+	APPEND FROM DBF("cur_x")
+
+	SELECT cur_facturas
+	GO TOP
+	
+	llOk = .T.
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	* Fuerzo el cierre del cursor
+	IF USED("cur_x") THEN
+		loRes.Close_Query()
+	ENDIF
+ENDTRY
+
+RETURN llOk
+ENDPROC
+PROCEDURE consultar
+******************************************************************
+* Permite realizar la consutla de remitos en la consulta y
+* reimpresión de remitos
+* Parametros:
+*	tnIdCliente => Id. del cliente seleccionado. Si es 0 obvia el filtro
+*	tdFechaDesde => Fecha Desde
+*	tdFechaHasta => Fecha Hasta
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 05/12/2025
+******************************************************************
+LPARAMETERS ;
+	tnIdCliente,;
+	tdFechaDesde,;
+	tdFechaHasta
+	
+LOCAL loRes
+LOCAL lcSql
+LOCAL llOk
+
+TRY
+	llOk = .F.
+	loRes = CREATEOBJECT("odbc_result")
+	
+	TEXT TO lcSql NOSHOW
+		SELECT
+			vtasrtos.idVtaRto,
+			vtasrtos.idVentasC,
+			CAST(vtasrtos.fecha AS DATE) AS 'fecha',
+			vtasrtos.nrocomp,
+			clientes.idCliente,
+			clientes.razSoc,
+			vtasrtos.razSocTrn,
+			transp.direccion AS 'direccionTrn',
+			localidad.codPostal AS 'codPostalTrn',
+			localidad.descripcio AS 'localidadTrn',
+			provincias.descripcio AS 'provinciaTrn'
+			
+		FROM
+			vtasrtos
+				INNER JOIN ventascab ON ventascab.idVentasC = vtasrtos.idVentasC
+				INNER JOIN clientes ON clientes.idCliente = ventascab.idCliente
+				INNER JOIN transp ON transp.idTransp = vtasrtos.idTransp
+				INNER JOIN localidad ON localidad.idLocalid = transp.idLocalid
+				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
+		WHERE
+			CASE WHEN ?xidCliente = 0 THEN 1 ELSE clientes.idCliente = ?xidCliente END AND
+			vtasrtos.fecha BETWEEN ?xfechaDesde AND ?xfechaHasta
+		ORDER BY
+			vtasrtos.fecha DESC
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xidCliente", ALLTRIM(STR(tnIdCliente)), .F., .F.)
+	lcSql = loRes.addParameter(lcSql, "xfechaDesde", tdFechaDesde, .F., .T.)
+	lcSql = loRes.addParameter(lcSql, "xfechaHasta", tdFechaHasta, .F., .T.)
+
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	loRes.OpenQuery(lcSql)
+	SELECT cur_rtos
+	ZAP
+	APPEND FROM DBF("cur_x")
+	GO TOP IN "cur_rtos"
+	
+	llOk = .T.
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	IF USED("cur_x") THEN
+		loRes.Close_Query()
+	ENDIF
+	
+	RELEASE loRes
+ENDTRY
+
+RETURN llOk
+
+ENDPROC
+PROCEDURE get_items
+*******************************************************************
+* Prepara los ítems para imprimir en cur_aux
+* Desarrollado por: Zulli, Leonardo Diego
+* Parametros:
+*	tnIdVentasC => Id. del comprobante de venta seleccionado
+* Fecha: 01/12/2025
+*******************************************************************
+LPARAMETERS tnIdVentasC
+
+LOCAL loRes
+LOCAL lcSql
+LOCAL llOk
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	
+	* Limpio el cursor antes de cargarlo para evitar duplicaciones
+	SELECT cur_aux
+	ZAP
+	
+	TEXT TO lcSql NOSHOW
+		SELECT
+			ventasdet.idVentasD, ventasdet.idVentasC, ventasdet.idArticulo,
+			ventasdet.cantidad, articulos.codArt, ventasdet.descripcio
+		FROM
+			ventasdet
+				INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo
+		WHERE
+			ventasdet.idVentasC = ?xidVentasC
+		ORDER BY
+			ventasdet.idVentasD ASC, ventasdet.idVentasC ASC;		
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
+	
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	loRes.OpenQuery(lcSql)
+	SELECT cur_aux
+	APPEND FROM DBF("cur_x")
+	
+	SELECT cur_aux
+	GO TOP
+	
+	llOk = .T.
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	IF USED("cur_x") THEN
+		loRes.Close_Query()
+	ENDIF
+	
+	RELEASE loRes
+ENDTRY
+
+RETURN llOk
+ENDPROC
+PROCEDURE get_transporte_por_cliente
+**************************************************************************
+* Permite traer el transporte del cliente asociado a la factura
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 03/12/2025
+**************************************************************************
+LPARAMETERS tnIdCliente
+
+LOCAL loRes
+LOCAL lcSql
+LOCAL llOk
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	
+	TEXT TO lcSql NOSHOW
+		SELECT
+			transp.idTransp,
+			transp.codTrans,
+			transp.razSoc,
+			transp.direccion,
+			localidad.idLocalid,
+			localidad.codPostal,
+			localidad.descripcio AS 'localidad',
+			provincias.idProvin,
+			provincias.descripcio AS 'provincia'
+		FROM
+			transp
+				INNER JOIN clientes ON transp.idTransp = clientes.idTransp
+				INNER JOIN localidad ON localidad.idLocalid = transp.idLocalid
+				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
+		WHERE
+			clientes.idCliente = ?xidCliente	
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xidCliente", ALLTRIM(STR(tnIdCliente)), .F., .F.)
+	
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	loRes.OpenQuery(lcSql)
+	
+	SELECT cur_x
+	This.idtransp = cur_x.idTransp
+	This.codtrans = cur_x.codTrans
+	This.razsoc = ALLTRIM(cur_x.razSoc)
+	This.direcciontrn = ALLTRIM(cur_X.direccion)
+	This.idlocalid_transp = cur_x.idLocalid
+	This.cod_postal_transp = ALLTRIM(cur_x.codPostal)
+	This.localidad_transp = ALLTRIM(cur_x.localidad)
+	This.idProvin_transp = cur_x.idProvin
+	This.provincia_transp = ALLTRIM(cur_x.provincia)
+
+	llOk = .T.
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	IF USED("cur_x") THEN
+		loRes.Close_Query()
+	ENDIF
+	
+	RELEASE loRes
+ENDTRY
+
+RETURN llOk
+
+ENDPROC
+PROCEDURE get_tipo_cbte
+******************************************************************
+* Obtiene el tipo de comprobante para saber a qué impresora
+* enviar a imprimir.
+* Desarrollador por: Zulli, Leonardo Diego
+* Parametros:
+*	tcCbte 		=> Código de comprobante
+*	tcTipoDoc 	=> Letra del comprobante
+*	tnPtoVta 	=> Punto de venta del comprobante
+* Fecha: 04/12/2025
+******************************************************************
+LOCAL loRes
+LOCAL lcSql
+LOCAL llOk
+LOCAL lnPtoVta
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	
+	TEXT TO lcSql NOSHOW
+		SELECT
+			numerador.idNum,
+			numerador.cbte,
+			numerador.ptoVta,
+			numerador.tipoDoc,
+			numerador.repname,
+			impresoras.impresora,
+			impresoras.copias
+		FROM
+			numerador
+				INNER JOIN impresoras ON impresoras.idNum = numerador.idNum
+		WHERE
+			numerador.cbte = ?xcbte AND
+			numerador.tipoDoc = ?xtipoDoc AND
+			numerador.ptoVta = ?xptoVta AND
+			impresoras.hostName = ?xHost
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xcbte", ALLTRIM(This.cbte), .T., .F.)
+	lcSql = loRes.addParameter(lcSql, "xtipoDoc", ALLTRIM(This.tipodoc), .T., .F.)
+	lcSql = loRes.addParameter(lcSql, "xptoVta", ALLTRIM(STR(This.ptovta)), .F., .F.)
+	lcSql = loRes.addParameter(lcSql, "xHost", ALLTRIM(SYS(0)), .T., .F.)
+	
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	loRes.OpenQuery(lcSql)
+	SELECT cur_x
+	IF RECCOUNT("cur_x") = 0 THEN
+		this.error_message = "No hay numerador y/o impresora configurada para éste comprobante en éste puesto de trabajo"
+	ELSE
+		This.id_num = cur_x.idNum
+		This.impresora = ALLTRIM(cur_x.impresora)
+		this.copias = cur_x.copias
+		This.repname = ALLTRIM(cur_x.repname)
+	ENDIF
+
+	llOk = .T.
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	loRes.Close_Query()
+	RELEASE loRes
+ENDTRY
+ENDPROC
+PROCEDURE eliminar_factura_de_cursor
+************************************************************************
+* Permite eliminar la factura del cursor de selección de facturas para
+* que no se muestre más aquellas que se emitieron remitos.
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 04/12/2025
+************************************************************************
+SELECT cur_facturas
+DELETE
+GO TOP
+
+ENDPROC
+PROCEDURE get_detalle
+*****************************************************************
+* Obtiene el detalle para la consulta y reimpresión 
+* Desarrollado por: Zulli, Leonardo Diego
+* Parámetros:
+*	tnIdVtaRto => Id del remito
+*	tnIdVentasC => Id del comprobante de venta asociado
+* NOTA: Ambos son clave primaria compuesta
+* Fecha: 01/12/2025
+*****************************************************************
+LPARAMETERS ;
+	tnIdVtaRto,;
+	tnIdVentasC
+
+LOCAL loRes
+LOCAL lcSql
+LOCAL llOk
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	
+	* Limpio el cursor antes de volverlo a cargar
+	SELECT cur_facturas
+	ZAP	
+
+	TEXT TO lcSql NOSHOW
+		SELECT
+			ventascab.idVentasC, 
+			ventascab.idCliente,
+			clientes.razSoc,
+			clientes.direccion,
+			localidad.codPostal,
+			localidad.descripcio AS 'localidad',
+			provincias.descripcio AS 'provincia',
+			paises.descripcio AS 'pais',
+			sitiva.descripcio AS 'tipoIVA',
+			clientes.nroCUIT,
+			ventascab.fecEmision, 
+			ventascab.fecvto,
+			CONCAT(ventascab.cbte, ' ' , ventascab.tipoDoc, ' ', 
+				REPEAT('0', 5 - LENGTH(ventascab.ptoVta)), ventascab.ptovta,
+				'-', REPEAT('0', 8 - LENGTH(ventascab.numCbte)), ventascab.numCbte) 
+			AS 'nroComp',
+			ventascab.totFact,
+			ventascab.nroOC,
+			ventascab.tipoDoc,
+			ventascab.numCbte AS 'nroCbte',
+			ventascab.ptoVta,
+			ventascab.observ
+		FROM
+			ventascab
+				INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente
+				INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid
+				INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
+				INNER JOIN paises ON paises.idPais = localidad.idPais
+				INNER JOIN sitiva ON sitiva.idSitIVA = ventascab.idSitIVA
+				INNER JOIN vtasrtos ON vtasrtos.idVentasC = ventascab.idVentasC
+		WHERE
+			vtasrtos.idVtaRto = ?xidVtaRto AND
+			vtasrtos.idVentasC = ?xidVentasC
+	ENDTEXT
+	
+	lcSql = loRes.addParameter(lcSql, "xidVtaRto", ALLTRIM(STR(tnIdVtaRto)), .F., .F.)
+	lcSql = loRes.addParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
+	
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.cursor_name = "cur_x"
+	loRes.OpenQuery(lcSql)
+
+	SELECT cur_facturas
+	APPEND FROM DBF("cur_x")
+
+	SELECT cur_facturas
+	GO TOP
+	
+	* Levanto los ítems
+	This.get_items(tnIdVentasC)
+	
+	llOk = .T.
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	* Fuerzo el cierre del cursor
+	IF USED("cur_x") THEN
+		loRes.Close_Query()
+	ENDIF
+ENDTRY
+
+RETURN llOk
+ENDPROC
+PROCEDURE conectar_a_c2
+********************************************************************
+* Permite conectarse a la base demo
+********************************************************************
+LOCAL llOk
+
+llOk = .F.
+
+TRY 
+	This.conexion_c2 = CREATEOBJECT("odbc_connect")
+	This.conexion_c2.ConnectionString = getConfig("DMO_CC")
+	IF !This.conexion_c2.Open() THEN
+		This.error_message = This.conexion_c2.ErrorMessage
+		llOk = .F.
+	ELSE
+		llOk = .T.
+	ENDIF
+CATCH TO oException
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.	
+ENDTRY
+
+RETURN llOk
+
+ENDPROC
+PROCEDURE grabar_c2
+*********************************************************************
+* Permite grabar los remitos en la base de cuenta 2 para el caso
+* de los presupuestos.
+* Parámetros:
+*	tnIdVentasC 	=> Id. de venta asociada de cuenta 2
+*	tnIdTransp 		=> Id. de transporte asociado al remito
+*	tdFecha			=> Fecha de emisión del remito
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 23/12/2025
+*********************************************************************
+LPARAMETERS tnIdVentasC, tnIdTransp, tdFecha
+
+LOCAL lcCbte, lcTipoDoc, lnPtoVta, lnNumCbte
+LOCAL llOk, loResNum, loResSave, loCmdUpdateNum, lcSql
+
+&& Inicializo variables
+llOk = .F.
+STORE "" TO lcCbte, lcTipoDoc, lcSql
+STORE 0 TO lnPtoVta, lnNumCbte
+
+IF !This.get_tipo_cbte() THEN
+	RETURN .F.
+ENDIF
+
+* Me conecto a la base de cuenta dos.
+IF !This.conectar_a_c2() THEN
+	This.error_message = This.conexion_c2.ErrorMessage
+	RETURN .F.
+ENDIF
+
+goConn.BeginTransaction()
+This.conexion_c2.BeginTransaction()
+
+TRY
+	loResNum = CREATEOBJECT("odbc_result")			&& Para ejecutar el numerador
+	loResSave = CREATEOBJECT("odbc_result")			&& Para ejecutar el procedimiento almacenado
+	loCmdUpdateNum = CREATEOBJECT("odbc_command") 	&& Para ejecutar el UPDATE y actualizar el número de remito
+	
+	* Levanto el número de remito desde cuenta 1
+	TEXT TO lcSql NOSHOW PRETEXT 15
+		SELECT
+			numerador.cbte,
+			numerador.tipoDoc,
+			numerador.ptoVta,
+			numerador.numActual + 1 AS 'proxnum'
+		FROM
+			numerador
+		WHERE
+			numerador.idNum = ?xidNum
+	ENDTEXT
+	
+	lcSql = loResNum.addParameter(lcSql, "xidNum", ALLTRIM(STR(This.id_num)), .F., .F.)
+	
+	loResNum.ActiveConnection = goConn.ActiveConnection
+	loResNum.cursor_name = "cur_num"
+	loResNum.OpenQuery(lcSql)
+	
+	SELECT cur_num	
+	IF RECCOUNT("cur_num") = 0 THEN
+		goConn.Rollback()
+		This.conexion_c2.Rollback()
+		
+		This.error_message = "El numerador de remito no se encuentra configurado"
+		llOk = .F.
+		EXIT
+	ELSE
+		lcCbte = cur_num.cbte
+		lcTipoDoc = cur_num.tipoDoc
+		lnPtoVta = cur_num.ptoVta
+		lnNumCbte = INT(VAL(cur_num.proxnum))
+	ENDIF
+	
+	* Ejecuto el SP para cuenta 2 (Recordar que tengo que pasar conexion_c2.ActiveConnection)
+	TEXT TO lcSql NOSHOW PRETEXT 15
+		CALL vtasrtos_generar_c2 (
+			?xidVentasC,
+			?xidTransp,
+			?xcbte,
+			?xtipoDoc,
+			?xptoVta,
+			?xnumCbte,
+			?xfecha,
+			?xusuario,
+			?xhost
+		)
+	ENDTEXT
+	
+	lcSql = loResSave.AddParameter(lcSql, "xidVentasC", ALLTRIM(STR(tnIdVentasC)), .F., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xidTransp", ALLTRIM(STR(tnIdTransp)), .F., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xcbte", ALLTRIM(lcCbte), .T., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xtipoDoc", ALLTRIM(lcTipoDoc), .T., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xptoVta", ALLTRIM(STR(lnPtoVta)), .F., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xnumCbte", ALLTRIM(STR(lnNumCbte)), .F., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xfecha", tdFecha, .F., .T.)
+	lcSql = loResSave.AddParameter(lcSql, "xusuario", ALLTRIM(gcCodUsu), .T., .F.)
+	lcSql = loResSave.AddParameter(lcSql, "xhost", ALLTRIM(SYS(0)), .T., .F.)
+	
+	loResSave.ActiveConnection = This.conexion_c2.ActiveConnection
+	loResSave.Cursor_Name = "cur_result"
+	loResSave.OpenQuery(lcSql)
+	
+	SELECT cur_result
+	IF ALLTRIM(cur_result.result) != "OK" THEN
+		goConn.Rollback()
+		This.conexion_c2.Rollback()
+	
+		This.error_message = cur_result.result
+		llOk = .F.
+		EXIT
+	ENDIF
+	
+	* Actualizo el número de remito
+	TEXT TO loCmdUpdateNum.CommandText NOSHOW PRETEXT 15
+		UPDATE
+			numerador
+		SET
+			numerador.numActual = ?xnumActual,
+			numerador.usuModi = ?xusuario,
+			numerador.fecModi = current_timestamp,
+			numerador.idHostModi = ?xhostModi
+		WHERE
+			numerador.idNum = ?xidNum
+	ENDTEXT
+	
+	loCmdUpdateNum.AddParameter("xnumActual", ALLTRIM(STR(lnNumCbte)), .F., .F.)
+	loCmdUpdateNum.AddParameter("xusuario", ALLTRIM(gcCodUsu), .T., .F.)
+	loCmdUpdateNum.AddParameter("xhostModi", ALLTRIM(SYS(0)), .T., .F.)
+	loCmdUpdateNum.AddParameter("xidNum", ALLTRIM(STR(This.id_num)), .F., .F.)
+	
+	loCmdUpdateNum.ActiveConnection = goConn.ActiveConnection
+	
+	IF !loCmdUpdateNum.Execute() THEN
+		goConn.Rollback()
+		This.conexion_c2.Rollback()
+	
+		This.error_message = loCmdUpdateNum.ErrorMessage
+		llOk = .F.
+		EXIT
+	ELSE
+		llOk = .T.
+	ENDIF
+	
+	IF llOk THEN
+		&& Si todo salió bien, entonces hago el commit.
+		goConn.Commit()
+		This.Conexion_c2.Commit()
+	ELSE
+		&& Si algo salió mal vuelvo para atrás.
+		goConn.Rollback()
+		This.Conexion_c2.Rollback()
+	ENDIF
+CATCH TO oException
+	goConn.Rollback()
+	This.Conexion_c2.Rollback()
+
+	This.error_message = getErrorForCatch(oException)
+	llOk = .F.
+FINALLY
+	&& Libero memoria y cierro conexión
+	
+	IF USED("cur_num") THEN
+		loResNum.Close_Query()
+	ENDIF
+	
+	IF USED("cur_result") THEN
+		loResSave.Close_Query()
+	ENDIF
+
+	This.conexion_c2.close()
+
+	RELEASE loResNum
+	RELEASE loResSave
+	RELEASE loCmdUpdateNum
+ENDTRY
+
+RETURN llOk
+ENDPROC
+PROCEDURE grabar
+***********************************************************
+* Permite grabar los remitos tanto de FC como PTO
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 23/12/2025
+***********************************************************
+LPARAMETERS tnIdVentasC, tnIdTransp, tdFecha
+
+IF ALLTRIM(This.cbte_origen) == "PTO" THEN
+	IF !this.grabar_c2(tnIdVentasC, tnIdTransp, tdFecha) THEN
+		RETURN .F.
+	ENDIF
+ELSE
+	IF !this.grabar_c1(tnIdVentasC, tnIdTransp, tdFecha) THEN
+		RETURN .F.
+	ENDIF
+ENDIF
+
+RETURN .T.
+ENDPROC
+PROCEDURE Destroy
+**********************************************************
+* Cuando se destruye el objeto (Release) elimino los
+* cursores de memoria.
+* Fecha: 05/12/2025
+**********************************************************
+
+IF USED("cur_facturas") THEN
+	USE IN cur_facturas
+ENDIF
+
+IF USED("cur_rtos") THEN
+	USE IN cur_rtos
+ENDIF
+ENDPROC
 
 

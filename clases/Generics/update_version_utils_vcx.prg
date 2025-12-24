@@ -264,6 +264,84 @@ ENDPROC
 
 
 ************************************************************
+OBJETO: cls_update_logistica
+************************************************************
+*** PROPIEDADES ***
+Name = "cls_update_logistica"
+
+*** METODOS ***
+PROCEDURE crear_tabla_remito
+**************************************************************
+* Permite crear la tabla de remitos.
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 01/12/2025
+**************************************************************
+
+LOCAL lcSql
+LOCAL loCmd
+
+loCmd = CREATEOBJECT("odbc_command")
+TEXT TO lcSql NOSHOW
+	CREATE TABLE IF NOT EXISTS vtasrtos (
+		idVtaRto int not null COMMENT 'Identificación única del remito',
+		idVentasC int not null COMMENT 'Id. de comprobante de venta asociado',
+		idTransp int not null COMMENT 'Id. de transporte asociado',
+		codTrans int not null COMMENT 'Código de transporte asociado',
+		razSocTrn varchar(60) not null COMMENT 'Razón Social del transporte asociado',
+		fecha datetime not null default current_timestamp COMMENT 'Fecha de emisión del remito',
+		cbte varchar(3) not null COMMENT 'Tipo de comprobante',
+		tipoDoc varchar(1) not null COMMENT 'Letra del comprobante',
+		ptovta int not null COMMENT 'Punto de venta de donde sale el remito',
+		numCbte int not null COMMENT 'Número de remito',
+		nrocomp varchar(20) not null COMMENT 'Número completo de remito',
+		cantItems int not null COMMENT 'Cantidad de ítem que tiene el remito',
+		usuAlta varchar(5) not null COMMENT 'Usuario de alta',
+		fecAlta datetime not null default current_timestamp COMMENT 'Usuario de baja',
+		idHostAlta varchar(50) not null COMMENT 'Host de alta',
+		usuModi varchar(5) null COMMENT 'Usuario de modificación',
+		fecModi datetime null COMMENT 'Fecha de modificación',
+		idHostModi varchar(50) null COMMENT 'Host de modificación',
+		usuBaja varchar(5) null COMMENT 'Usuario de baja',
+		fecBaja datetime null COMMENT 'Fecha de baja',
+		idHostBaja varchar(50) null COMMENT 'Host de baja',
+		PRIMARY KEY (idVtaRto, idVentasC),
+		FOREIGN KEY (idVentasC) REFERENCES ventascab (idVentasC),
+		FOREIGN KEY (idTransp) REFERENCES transp (idTransp)
+	)ENGINE=InnoDB
+ENDTEXT
+
+loCmd.ActiveConnection = goConn.ActiveConnection
+loCmd.CommandText = lcSql
+IF !loCmd.Execute() THEN
+	This.error_message = "Error al generar la tabla remitos"
+	RETURN .F.
+ENDIF
+
+RELEASE loCmd
+
+RETURN .T.
+ENDPROC
+PROCEDURE agregar_parametros
+*****************************************************************
+* Agrego los parámetros para impresión de remitos.
+*****************************************************************
+
+&& El siguente parámetro sirve para que pregunte por factura o no
+This.ejecutar_comando("CALL globalcfg_insert('RTOIMPXFC', 'L', 'false', 0)")
+ENDPROC
+PROCEDURE actualizar_base
+************************************************************************
+* Actualiza la base de datos del módulo de logística.
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 01/12/2025
+************************************************************************
+
+This.crear_tabla_remito()
+This.agregar_parametros()
+ENDPROC
+
+
+************************************************************
 OBJETO: cls_update_version_bd
 ************************************************************
 *** PROPIEDADES ***
@@ -291,10 +369,11 @@ This.agregar_parametros()
 * Creo o actualizo los SPs iniciales
 This.configurar_sistema()
 
-TEXT TO lcSQLScripts NOSHOW
+TEXT TO lcSQLScripts NOSHOW PRETEXT 15
 	sp_test.sql, sp_citicpa_generarAlic.sql, sp_citicpas_generarCabecera.sql,
 	sp_citicpas_obtenerAlicuotas.sql, sp_articulos_update.sql, sp_articulos_insert.sql,
 	sp_ventascab_getbyid.sql, sp_articulos_updateByPrecioFinal.sql, sp_vtasrtos_generar.sql,
+	sp_vtasrtos_generar_c2.sql,
 ENDTEXT
 
 This.actualizar_spfn(ALLTRIM(lcSQLScripts))
@@ -729,84 +808,6 @@ Else
 	* Busca ubicación en producción
 	This.upd_sql_path = This.current_path + "upgrades\scripts\"
 ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: cls_update_logistica
-************************************************************
-*** PROPIEDADES ***
-Name = "cls_update_logistica"
-
-*** METODOS ***
-PROCEDURE crear_tabla_remito
-**************************************************************
-* Permite crear la tabla de remitos.
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 01/12/2025
-**************************************************************
-
-LOCAL lcSql
-LOCAL loCmd
-
-loCmd = CREATEOBJECT("odbc_command")
-TEXT TO lcSql NOSHOW
-	CREATE TABLE IF NOT EXISTS vtasrtos (
-		idVtaRto int not null COMMENT 'Identificación única del remito',
-		idVentasC int not null COMMENT 'Id. de comprobante de venta asociado',
-		idTransp int not null COMMENT 'Id. de transporte asociado',
-		codTrans int not null COMMENT 'Código de transporte asociado',
-		razSocTrn varchar(60) not null COMMENT 'Razón Social del transporte asociado',
-		fecha datetime not null default current_timestamp COMMENT 'Fecha de emisión del remito',
-		cbte varchar(3) not null COMMENT 'Tipo de comprobante',
-		tipoDoc varchar(1) not null COMMENT 'Letra del comprobante',
-		ptovta int not null COMMENT 'Punto de venta de donde sale el remito',
-		numCbte int not null COMMENT 'Número de remito',
-		nrocomp varchar(20) not null COMMENT 'Número completo de remito',
-		cantItems int not null COMMENT 'Cantidad de ítem que tiene el remito',
-		usuAlta varchar(5) not null COMMENT 'Usuario de alta',
-		fecAlta datetime not null default current_timestamp COMMENT 'Usuario de baja',
-		idHostAlta varchar(50) not null COMMENT 'Host de alta',
-		usuModi varchar(5) null COMMENT 'Usuario de modificación',
-		fecModi datetime null COMMENT 'Fecha de modificación',
-		idHostModi varchar(50) null COMMENT 'Host de modificación',
-		usuBaja varchar(5) null COMMENT 'Usuario de baja',
-		fecBaja datetime null COMMENT 'Fecha de baja',
-		idHostBaja varchar(50) null COMMENT 'Host de baja',
-		PRIMARY KEY (idVtaRto, idVentasC),
-		FOREIGN KEY (idVentasC) REFERENCES ventascab (idVentasC),
-		FOREIGN KEY (idTransp) REFERENCES transp (idTransp)
-	)ENGINE=InnoDB
-ENDTEXT
-
-loCmd.ActiveConnection = goConn.ActiveConnection
-loCmd.CommandText = lcSql
-IF !loCmd.Execute() THEN
-	This.error_message = "Error al generar la tabla remitos"
-	RETURN .F.
-ENDIF
-
-RELEASE loCmd
-
-RETURN .T.
-ENDPROC
-PROCEDURE agregar_parametros
-*****************************************************************
-* Agrego los parámetros para impresión de remitos.
-*****************************************************************
-
-&& El siguente parámetro sirve para que pregunte por factura o no
-This.ejecutar_comando("CALL globalcfg_insert('RTOIMPXFC', 'L', 'false', 0)")
-ENDPROC
-PROCEDURE actualizar_base
-************************************************************************
-* Actualiza la base de datos del módulo de logística.
-* Desarrollado por: Zulli, Leonardo Diego
-* Fecha: 01/12/2025
-************************************************************************
-
-This.crear_tabla_remito()
-This.agregar_parametros()
 ENDPROC
 
 

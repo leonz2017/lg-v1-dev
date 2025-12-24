@@ -1,6 +1,6 @@
 DELIMITER $$
 DROP PROCEDURE IF EXISTS citicpa_generarAlic $$
-CREATE PROCEDURE `citicpa_generarAlic`(pAnio int, pMes int)
+CREATE PROCEDURE IF NOT EXISTS `citicpa_generarAlic`(pAnio int, pMes int)
 begin
 	truncate table citicpa_alic;
     
