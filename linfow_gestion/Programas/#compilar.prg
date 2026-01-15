@@ -68,14 +68,14 @@ COPY FILE "Release\DESA\LINFOW_GESTION\version.txt" TO "D:\sistemas\lg-v1-dev\de
 COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "D:\sistemas\lg-v1-dev\deploys\cr\siscom_crc2.exe"
 
 * Actualización para Neumáticos Palá
-*!*	WAIT WINDOW "Actualizando Neumáticos PALA..." NOWAIT
-*!*	COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "Release\PALA\LINFOW_GESTION\linfow_gestion.exe"
-*!*	COPY FILE "Release\DESA\LINFOW_GESTION\version.txt" TO "Release\PALA\LINFOW_GESTION\version.txt"
-*!*	COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "Release\PALA\LINFOW_GESTION_DEMO\linfow_gestion_demo.exe"
+WAIT WINDOW "Actualizando Neumáticos PALA..." NOWAIT
+COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "Release\PALA\LINFOW_GESTION\linfow_gestion.exe"
+COPY FILE "Release\DESA\LINFOW_GESTION\version.txt" TO "Release\PALA\LINFOW_GESTION\version.txt"
+COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "Release\PALA\LINFOW_GESTION_DEMO\linfow_gestion_demo.exe"
 
-*!*	COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "D:\sistemas\lg-v1-dev\deploys\pala\linfow_gestion.exe"
-*!*	COPY FILE "Release\DESA\LINFOW_GESTION\version.txt" TO "D:\sistemas\lg-v1-dev\deploys\pala\version.txt"
-*!*	COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "D:\sistemas\lg-v1-dev\deploys\pala\linfow_gestion_demo.exe"
+COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "D:\sistemas\lg-v1-dev\deploys\pala\linfow_gestion.exe"
+COPY FILE "Release\DESA\LINFOW_GESTION\version.txt" TO "D:\sistemas\lg-v1-dev\deploys\pala\version.txt"
+COPY FILE "Release\DESA\LINFOW_GESTION\linfow_gestion.exe" TO "D:\sistemas\lg-v1-dev\deploys\pala\linfow_gestion_demo.exe"
 
 * Actualización FH Neumáticos
 WAIT WINDOW "Actualizando FH Reconstructora de neumáticos" NOWAIT
