@@ -779,3 +779,36 @@ PROCEDURE exportar_a_excel
 
 	RETURN .T.
 ENDPROC
+
+***************************************************************************************
+* Función: getErrorForCatch
+* Descripción:
+*	Esta función permite generar el mensaje de texto a devolver si surge un en un
+*	manejo de TRY-CATCH-FINALLY
+* Parametros:
+*	toException => Objeto con la excepción
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 23/12/2025
+***************************************************************************************
+FUNCTION getErrorForCatch
+	LPARAMETERS toException
+	
+	LOCAL lcMensaje
+	LOCAL lcSalto
+	
+	lcSalto = CHR(13) + CHR(10)
+	
+	TEXT TO lcMensaje NOSHOW TEXTMERGE PRETEXT 15
+		Error Nº: <<toException.ErrorNo>><<lcSalto>>
+		Mensaje: <<toException.Message>><<lcSalto>>
+		Línea Nº: <<toException.LineNo>><<lcSalto>>
+		Contenido Línea: <<toException.LineContents>><<lcSalto>>
+		Procedimiento: <<toException.Procedure>><<lcSalto>>
+		Clase: <<toException.ParentClass>><<lcSalto>>
+		Librería: <<toException.ClassLibrary>><<lcSalto>>
+		Detalles: <<toException.Details>><<lcSalto>>
+		Stack: <<toException.StackLevel>>
+	ENDTEXT
+	
+	RETURN lcMensaje
+ENDFUNC

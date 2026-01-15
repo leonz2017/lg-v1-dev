@@ -16,10 +16,10 @@ Name = "Dataenvironment"
 OBJETO: FRM_PTO_C2
 ************************************************************
 *** PROPIEDADES ***
+BorderStyle = 2
 Height = 595
 Width = 989
 DoCreate = .T.
-BorderStyle = 2
 Caption = "Confección de Presupuestos"
 cbte = PTO
 Name = "FRM_PTO_C2"
@@ -298,747 +298,171 @@ mov_stock.Name = "mov_stock"
 faltantes.Name = "faltantes"
 
 *** METODOS ***
-PROCEDURE calc_item_desc
-LOCAL lnDesc1, lnDesc2, lnDesc3, lnDesc4, lnNeto
-LOCAL lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4
-LOCAL lnImpIVA, lnAlicIVA
-LOCAL lnPorRec, lnImpRec, lnPorRecItem, lnImpRecItem
+PROCEDURE agregar_item
+LOCAL loResult, lcSql, lnSTNeto, lnAlicIva
 
-lnImpDesc1 = 0.00
-lnImpDesc2 = 0.00
-lnImpDesc3 = 0.00
-lnImpDesc4 = 0.00
-lnPorRec = 0.00
-lnImpRec = 0.00
-lnPorRecItem = 0.00
-lnImpRecItem = 0.00
-
-lnDesc1 = Thisform.contenido.txtPorDesc1.Value
-lnDesc2 = Thisform.contenido.txtPorDesc2.Value
-lnDesc3 = Thisform.contenido.txtPorDesc3.Value
-lnDesc4 = Thisform.contenido.txtPorDesc4.Value
-
-lnAlicIVA = Thisform.contenido.txtAlicIva.Value
-lnPorRec = Thisform.contenido.txtPorRec.Value 
-lnPorRecItem  = Thisform.contenido.txtPorRecItem.Value
-
-IF RIGHT(ALLTRIM(Thisform.contenido.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
-	&& Si es artículo X tomo siempre el precio minorista ya que es el que habilito para modificar.
-	lnNeto = Thisform.contenido.txtPrMinorista.Value
-ELSE
-	IF clientes.mayorista THEN
-		lnNeto = Thisform.contenido.txtPrMay.Value
-	ELSE
-		lnNeto = Thisform.contenido.txtPrMinorista.Value
-	ENDIF
-ENDIF
-
-lnImpDesc1 = ROUND(lnNeto * (lnDesc1 / 100),2)
-lnImpDesc2 = ROUND((lnNeto - lnImpDesc1) * (lnDesc2 / 100),2)
-lnImpDesc3 = ROUND((lnNeto - lnImpDesc1 - lnImpDesc2) * (lnDesc3 / 100),2)
-lnImpDesc4 = ROUND((lnNeto - lnImpDesc1 - lnImpDesc2 - lnImpDesc3) * (lnDesc4 /100),2)
-	
-lnNeto = lnNeto - lnImpDesc1 - lnImpDesc2 - lnImpDesc3 - lnImpDesc4
-
-****************************************************
-&& Hago el recargo
-lnImpRec = ROUND(lnNeto * (lnPorRec / 100), 2)
-
-lnNeto = lnNeto + lnImpRec
-****************************************************
-&& Calculo el recargo por item
-lnImpRecItem = ROUND(lnNeto * (lnPorRecItem/ 100), 2)
-
-lnNeto = lnNeto + lnImpRecItem
-
-Thisform.contenido.txtImpDescItem1.Value = lnImpDesc1
-Thisform.contenido.txtImpDescItem2.Value = lnImpDesc2
-Thisform.contenido.txtImpDescItem3.Value = lnImpDesc3
-Thisform.contenido.txtImpDescItem4.Value = lnImpDesc4
-Thisform.contenido.txtRecItem.Value = lnImpRecItem 
-
-Thisform.contenido.txtPrNeto.Value = lnNeto
-Thisform.contenido.txtSTNeto.Value = ROUND(lnNeto * thisform.contenido.txtcantidad.value, 2)
-
-* Calculo el IVA
-lnImpIVA = ROUND(Thisform.contenido.txtSTNeto.Value * (lnAlicIVA / 100), 2)
-Thisform.contenido.txtImpIva.Value = lnImpIVA
-Thisform.contenido.txtSubTotal.Value = Thisform.contenido.txtSTNeto.Value + Thisform.contenido.txtImpIVA.Value
-
-*!*	IF (ALLTRIM(Thisform.cbte) == "PTO") THEN 
-*!*		Thisform.contenido.txtSubTotal.Value = Thisform.contenido.txtSTNeto.Value + Thisform.contenido.txtImpIVA.Value
-*!*	ELSE 
-*!*		lnImpIVA = ROUND(Thisform.contenido.txtSTNeto.Value * (lnAlicIVA / 100), 2)
-*!*		Thisform.contenido.txtImpIva.Value = lnImpIVA
-*!*		Thisform.contenido.txtSubTotal.Value = Thisform.contenido.txtSTNeto.Value + Thisform.contenido.txtImpIVA.Value
-*!*	ENDIF 
-
-ENDPROC
-PROCEDURE particionar_cbte
-************************************************************************************
-** Esta función permite grabar una factura cada 25 items.
-** Pablo Díaz
-************************************************************************************
-
-LOCAL ln_cantitems
-LOCAL lnResp
-LOCAL lnImprimirPTO
-
-ln_cantitems = 0
-
-lnResp = 0
-IF getGlobalCFG("PRINT_RTO") THEN
-	lnResp = MESSAGEBOX("Desea imprimir remitos para este cliente", 4+32, Thisform.Caption)
-ENDIF
-
-SELECT cur_aux
-ZAP 
-
-*!*	IF !(ALLTRIM(thisform.cbte) == "COT") .AND. getGlobalCFG("STK_MODULE") THEN
-*!*		IF !thisform.validar_stk_en_grabado() THEN
-*!*			goConn.Rollback()
-*!*			RETURN .F.
-*!*		ENDIF
-*!*	ENDIF
-
-SELECT cur_detalle
-IF RECCOUNT() > 0 THEN 
-	GO TOP
-ELSE 
-	RETURN .F.
-ENDIF 
-
-************************************************************************************
-** Paso de a 25 items del cursor de detalle al cursor auxiliar
-************************************************************************************
-SELECT cur_detalle
-DO WHILE !EOF()
-	ln_cantitems = ln_cantitems + 1
-	
-	SELECT cur_aux
-	APPEND BLANK	
-	
-	REPLACE cur_aux.idDetalle WITH cur_detalle.idDetalle
-	REPLACE cur_aux.idArticulo WITH cur_detalle.idArticulo ADDITIVE
-	REPLACE cur_aux.codArt WITH cur_detalle.codArt ADDITIVE
-	REPLACE cur_aux.descripcio WITH cur_detalle.descripcio ADDITIVE
-	REPLACE cur_aux.nroPart WITH cur_detalle.nroPart ADDITIVE
-	REPLACE cur_aux.cantidad WITH cur_detalle.cantidad ADDITIVE
-	REPLACE cur_aux.prVta WITH cur_detalle.prVta ADDITIVE
-	REPLACE cur_aux.pDtoVta1 WITH cur_detalle.pDtoVta1 ADDITIVE
-	REPLACE cur_aux.pDtoVta2 WITH cur_detalle.pDtoVta2 ADDITIVE
-	REPLACE cur_aux.pDtoVta3 WITH cur_detalle.pDtoVta3 ADDITIVE
-	REPLACE cur_aux.pDtoVta4 WITH cur_detalle.pDtoVta4 ADDITIVE
-	REPLACE cur_aux.iDtoVta1 WITH cur_detalle.iDtoVta1 ADDITIVE
-	REPLACE cur_aux.iDtoVta2 WITH cur_detalle.iDtoVta2 ADDITIVE
-	REPLACE cur_aux.iDtoVta3 WITH cur_detalle.iDtoVta3 ADDITIVE
-	REPLACE cur_aux.iDtoVta4 WITH cur_detalle.iDtoVta4 ADDITIVE
-	REPLACE cur_aux.pDtoCli1 WITH cur_detalle.pDtoCli1 ADDITIVE
-	REPLACE cur_aux.pDtoCli2 WITH cur_detalle.pDtoCli2 ADDITIVE
-	REPLACE cur_aux.pDtoCli3 WITH cur_detalle.pDtoCli3 ADDITIVE
-	REPLACE cur_aux.pDtoCli4 WITH cur_detalle.pDtoCli4 ADDITIVE
-	REPLACE cur_aux.iDtoCli1 WITH cur_detalle.iDtoCli1 ADDITIVE
-	REPLACE cur_aux.iDtoCli2 WITH cur_detalle.iDtoCli2 ADDITIVE
-	REPLACE cur_aux.iDtoCli3 WITH cur_detalle.iDtoCli3 ADDITIVE
-	REPLACE cur_aux.iDtoCli4 WITH cur_detalle.iDtoCli4 ADDITIVE
-	
-	&& Incorporo el recargo por ítem
-	REPLACE cur_aux.pRecItem WITH cur_detalle.pRecItem ADDITIVE
-	REPLACE cur_aux.iRecItem WITH cur_detalle.iRecItem ADDITIVE
-	
-	REPLACE cur_aux.alicIVA WITH cur_detalle.alicIVA ADDITIVE
-	REPLACE cur_aux.impIVA WITH cur_detalle.impIVA ADDITIVE
-	REPLACE cur_aux.impNeto WITH cur_detalle.impNeto ADDITIVE
-	REPLACE cur_aux.totNeto WITH cur_detalle.totNeto ADDITIVE
-	REPLACE cur_aux.subTotal WITH cur_detalle.subTotal ADDITIVE
-	REPLACE cur_aux.prArtic WITH cur_detalle.prArtic ADDITIVE
-	REPLACE cur_aux.esOferta WITH cur_detalle.esOferta ADDITIVE
-	REPLACE cur_aux.pRecVta WITH cur_detalle.pRecVta ADDITIVE 
-	REPLACE cur_aux.iRecVta WITH cur_detalle.iRecVta ADDITIVE
-	REPLACE cur_aux.uniDesp WITH cur_detalle.uniDesp ADDITIVE
-	REPLACE cur_aux.cantPack WITH cur_detalle.cantPack ADDITIVE 
-	REPLACE cur_aux.uniMed WITH cur_detalle.uniMed ADDITIVE
-	
-	&& Si lleva stock agrege los movimientos que hay que generar.
-	IF ALLTRIM(cur_detalle.nropart) == "" THEN
-		IF getGlobalCFG("STK_MODULE") THEN
-			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
-				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
-						cur_detalle.Cantidad, "")
-			ENDIF
-		ENDIF
-	ELSE
-		IF getGlobalCFG("STK_MODULE") THEN
-			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
-				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
-						cur_detalle.Cantidad, cur_detalle.nropart)
-			ENDIF
-		ENDIF	
-	ENDIF
-	
-	&& Cuando el contador llegue a 25 items grabo una factura nueva.
-	IF ln_cantitems = 25
-		&& tengo que hacer el calculo de los totales y el grabado		
-		Thisform.calc_subtot_cur_aux()
-		IF !thisform.grabar_cbte_part()
-			RETURN .F.
-		ENDIF	
-
-		&& Verifica si usa impresora fiscal
-		IF !thisform.usar_fiscal
-			Thisform.imprimir()
-		ENDIF
-		IF lnResp = 6 .AND. getGlobalCFG("PRINT_RTO") THEN
-			thisform.imprimir_rtos()
-		ENDIF		
-		this.add_faccob(thisform.id_ventasc)
-		ln_cantitems = 0
-		SELECT cur_aux
-		ZAP
-		Thisform.mov_stock.limpiar()
-	ENDIF 
-	
-	SELECT cur_detalle
-	SKIP  
-ENDDO 
-
-&& En el caso que la ultima factura no haya llegado a los 25 items
-&& tengo que hacer una nueva factura con los items restantes.
-IF ln_cantitems <> 0 
-	&& tengo que hacer el calculo de los totales y el grabado
-	Thisform.calc_subtot_cur_aux()
-	IF !thisform.grabar_cbte_part()
-		RETURN .F.
-	ENDIF	
-	
-	&& Verifico que no use fiscal para enviar a imprimir
-	IF !thisform.usar_fiscal
-		Thisform.imprimir()
-	ENDIF
-	IF lnResp = 6 .AND. getGlobalCFG("PRINT_RTO") THEN
-		thisform.imprimir_rtos()
-	ENDIF		
-	this.add_faccob(thisform.id_ventasc)
-	Thisform.mov_stock.limpiar()
-ENDIF
-
-IF getGlobalCFG("PAGCTDO") .AND. This.cp_cntdias = 0 THEN
-	this.realizar_cobranza_mostrador()
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE recalcular_todo
-local lo_artic, lcSql
-local lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
-local lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4
-local lnPrVtaMax, lnPrVtaMin, lnPrecio, lnNeto, lnSubTotNeto
-local lnPorRec, lnImpRec, lnPrOferta, llEsOferta, lnImpRecItem
-
-lcSql = ""
-lo_artic = createobject("odbc_result")
-lnPrOferta = 0.00
-llEsOferta = .f.
-
-select cur_Deta_View
-if reccount("cur_Deta_View") > 0 then
-	go top
-endif
-
-&& Recalculo los datos de la grilla
-do while !eof("cur_Deta_View")
-	lcSql = "SELECT * FROM articulos WHERE articulos.idArticulo = " + alltrim(str(cur_Deta_View.idArticulo))
-
-	lo_artic.ActiveConnection = goConn.ActiveConnection
-	lo_artic.cursor_name = "tmp_artic"
-
-	if !lo_artic.OpenQuery(lcSql) then
-		messagebox(lo_artic.error_Message, 0+16, thisform.caption)
-		return .f.
-	endif
-	lnPrOferta = thisform.getoferta_byart(cur_Deta_View.idArticulo)
-	select tmp_artic
-	if reccount() > 0 then
-		select cur_Deta_View
-		lock()
-
-		*******************************************************************************
-		* Recalculo los precios mayorista y minorista segun los descuentos del cliente
-		*******************************************************************************
-
-		lnPorDesc1 = thisform.contenido.txtDesc1.value
-		lnPorDesc2 = thisform.contenido.txtDesc2.value
-		lnPorDesc3 = thisform.contenido.txtDesc3.value
-		lnPorDesc4 = thisform.contenido.txtDesc4.value
-		lnImpDesc1 = 0.00
-		lnImpDesc2 = 0.00
-		lnImpDesc3 = 0.00
-		lnImpDesc4 = 0.00
-
-		select tmp_artic
-		lnPrVtaMax = tmp_artic.prVentaMax
-		lnPrVtaMin = tmp_artic.prVentaMin
-
-		if right(alltrim(cur_Deta_View.codArt), 3) == "ARX" then
-			lnPrecio = cur_Deta_View.prArtic
-		else
-			if clientes.mayorista then
-				select cur_Deta_View
-
-
-				if lnPrOferta = 0 then
-					lnPrecio = lnPrVtaMax
-					llEsOferta = .f.
-				else
-					lnPrecio = lnPrOferta
-					llEsOferta = .t.
-				endif
-			else
-				lnPrecio = lnPrVtaMin
-				llEsOferta = .f.
-			endif
-		endif
-
-		replace cur_Deta_View.prArtic with lnPrecio additive
-
-		***********************************************************
-		* Calculo el descuento del cliente en el ítem para grabar
-		***********************************************************
-		lnImpDesc1 = round(lnPrecio * (lnPorDesc1 / 100), 2)
-		if !llEsOferta then
-			lnImpDesc2 = round((lnPrecio - lnImpDesc1 ) * (lnPorDesc2 / 100),2)
-			lnImpDesc3 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 ) * (lnPorDesc3 / 100),2)
-			lnImpDesc4 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3) * (lnPorDesc4 / 100),2)
-		endif
-
-		lnPrecio = lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3 - lnImpDesc4
-
-		replace cur_Deta_View.prVta with lnPrecio additive
-
-		replace cur_Deta_View.pDtoCli1 with lnPorDesc1 additive
-		replace cur_Deta_View.pDtoCli2 with lnPorDesc2 additive
-		replace cur_Deta_View.pDtoCli3 with lnPorDesc3 additive
-		replace cur_Deta_View.pDtoCli4 with lnPorDesc4 additive
-		replace cur_Deta_View.iDtoCli1 with lnImpDesc1 additive
-		replace cur_Deta_View.iDtoCli2 with lnImpDesc2 additive
-		replace cur_Deta_View.iDtoCli3 with lnImpDesc3 additive
-		replace cur_Deta_View.iDtoCli4 with lnImpDesc4 additive
-		replace cur_Deta_View.esOferta with llEsOferta additive
-
-		*************************************
-		&& Calculo los descuentos por item
-		*************************************
-
-		lnPorDesc1 = cur_Deta_View.pDtoVta1
-		lnPorDesc2 = cur_Deta_View.pDtoVta2
-		lnPorDesc3 = cur_Deta_View.pDtoVta3
-		lnPorDesc4 = cur_Deta_View.pDtoVta4
-		lnImpDesc1 = 0.00
-		lnImpDesc2 = 0.00
-		lnImpDesc3 = 0.00
-		lnImpDesc4 = 0.00
-		lnNeto = 0.00
-
-		lnImpDesc1 = round(lnPrecio * (lnPorDesc1 / 100),2)
-		lnImpDesc2 = round((lnPrecio - lnImpDesc1 ) * (lnPorDesc2 / 100),2)
-		lnImpDesc3 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 ) * (lnPorDesc3 / 100),2)
-		lnImpDesc4 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3) * (lnPorDesc4 / 100),2)
-
-		lnNeto = lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3 - lnImpDesc4
-
-		replace cur_Deta_View.iDtoVta1 with lnImpDesc1 additive
-		replace cur_Deta_View.iDtoVta2 with lnImpDesc2 additive
-		replace cur_Deta_View.iDtoVta3 with lnImpDesc3 additive
-		replace cur_Deta_View.iDtoVta4 with lnImpDesc4 additive
-
-		************************************************
-		* Agrego el recargo del cliente en el item
-		************************************************
-		lnPorRec = thisform.contenido.txtporrec.value
-
-		lnImpRec = round(lnNeto * (lnPorRec / 100), 2)
-
-		lnNeto = lnNeto + lnImpRec
-
-		replace cur_Deta_View.pRecVta with lnPorRec additive
-		replace cur_Deta_View.iRecVta with lnImpRec additive
-
-		******************************************************************
-		&& Incluyo el recargo por ítem.
-		******************************************************************
-		lnImpRecItem = round(lnNeto * (cur_Deta_View.pRecItem / 100),2)
-
-		lnNeto = lnNeto + lnImpRecItem
-
-		replace cur_Deta_View.pRecItem with cur_Deta_View.pRecItem additive
-		replace cur_Deta_View.iRecItem with lnImpRecItem additive
-
-		****************************************************
-		* Recalculo el IVA y los Subtotales
-		****************************************************
-		replace cur_Deta_View.impNeto with lnNeto additive
-
-		lnSubTotNeto = round(lnNeto * cur_Deta_View.cantidad, 2)
-		
-		if alltrim(thisform.cbte) == "PTO" then
-			if getGlobalCFG("PTOINCIVA") then
-				* Tengo que contemplar el IVA
-				select cur_Deta_View
-				replace cur_deta_view.totNeto WITH lnSubTotNeto additive
-				replace cur_Deta_View.impIVA with ROUND(lnSubTotNeto * (tmp_artic.alicIVA / 100), 2) additive
-				replace cur_Deta_View.alicIVA with tmp_artic.alicIVA additive
-				replace cur_deta_view.subTotal WITH ROUND(lnSubTotNeto + cur_deta_view.impIVA, 2) additive
-*!*					replace cur_Deta_View.subTotal with cur_Deta_View.totNeto + cur_Deta_View.impIVA additive	
-				
-			else
-				* No tengo que contemplar le IVA
-				select cur_Deta_View
-				replace cur_Deta_View.impIVA with 0 additive
-				replace cur_Deta_View.alicIVA with 0 additive
-				replace cur_Deta_View.subTotal with cur_Deta_View.totNeto additive	
-			endif
-		endif
-		unlock
-	endif
-
-	lo_artic.close_query()
-
-	select cur_Deta_View
-	skip
-enddo
-
-if !(alltrim(thisform.contenido.sel_Articulo.txtCodigo.value) == "") then
-	thisform.contenido.sel_Articulo.recuperar_datos()
-	thisform.contenido.sel_Articulo.txtCodigo.valid()
-endif
-
-select cur_Deta_View
-if reccount("cur_Deta_View") > 0 then
-	go top
-endif
-
-thisform.contenido.grdDetalles.refresh()
-thisform.sumar_items()
-thisform.calcular_ret_iibb()
-
-return .t.
-
-ENDPROC
-PROCEDURE get_precio_oferta
-LOCAL lnPrecio, loResult, lcSql, loDT
-LOCAL lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
-LOCAL lnPorOferta
-
-loDT = CREATEOBJECT("datetime")
 loResult = CREATEOBJECT("odbc_result")
 lcSql = ""
-lnPrecio = 0.00
-
-lnPorDesc1 = Thisform.contenido.txtDesc1.Value
-lnPorDesc2 = Thisform.contenido.txtDesc2.Value
-lnPorDesc3 = Thisform.contenido.txtDesc3.Value
-lnPorDesc4 = Thisform.contenido.txtDesc4.Value
-
-lcSql = "SELECT * FROM ofertas "
-lcSql = lcSql + "WHERE idArticulo = " + ALLTRIM(STR(thisform.contenido.sel_articulo.valcpoid)) + " "
-lcSql = lcSql + "AND fecVigDD <= " + loDT.toMySql(DATE()) + " "
-lcSql = lcSql + "AND fecVigHH >= " + loDT.toMySql(DATE())
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_tmpofta"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
-	RETURN -1
-ENDIF
-
-SELECT cur_tmpofta
-IF RECCOUNT("cur_tmpofta") > 0 THEN
-	lnPorOferta = cur_tmpofta.porOfert
-	IF lnPorOferta >= lnPorDesc2 THEN
-		lnPrecio = cur_tmpofta.impOfert
-	ELSE
-		lnPrecio = 0
-	ENDIF
-ENDIF
-
-loResult.Close_Query()
-
-RETURN lnPrecio
-ENDPROC
-PROCEDURE agregar_item_viewer
-LOCAL lnPDtoCli1, lnPDtoCli2, lnPDtoCli3, lnPDtoCli4
-LOCAL lnIDtoCli1, lnIDtoCli2, lnIDtoCli3, lnIDtoCli4, lnCantAnt
-LOCAL loResult, lcSql, lnPrecio, llEsOferta, lnproferta, lnAlicIva
-LOCAL lnPrVta
-
-lnPDtoCli1 = Thisform.contenido.txtDesc1.Value
-lnPDtoCli2 = Thisform.contenido.txtDesc2.Value
-lnPDtoCli3 = Thisform.contenido.txtDesc3.Value
-lnPDtoCli4 = Thisform.contenido.txtDesc4.Value
-lnIDtoCli1 = 0.00
-lnIDtoCli2 = 0.00
-lnIDtoCli3 = 0.00
-lnIDtoCli4 = 0.00
-lnPrecio = 0.00
-loResult = CREATEOBJECT("odbc_result")
-lcSql = ""
-llEsOferta = .F.
-lnproferta = 0.00
+lnSTNeto = 0.00
 lnAlicIva = 0.00
-lnCantAnt = 0.00
-llTomaOferta = .F.
 
-IF !Thisform.ValidarDetalle()
-	RETURN .F.
-ENDIF
-
-lcSql = "SELECT * FROM articulos WHERE idArticulo = " + ALLTRIM(STR(Thisform.contenido.sel_Articulo.valcpoid))
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_Art"
-loResult.OpenQuery(lcSql)
-
-IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
-	lnPrecio = Thisform.prarti_x
-ELSE	
-	IF clientes.mayorista THEN 
-		lnPrecio = thisform.get_precio_oferta()
-		lnproferta = lnPrecio
-		
-		IF lnPrecio = 0 THEN
-			lnPrecio = cur_Art.prVentaMax
-			llEsOferta = .F.
-		ELSE
-			llEsOferta = .T.
-		ENDIF
-	ELSE
-		lnPrecio = cur_Art.prVentaMin
-		llEsOferta = .F.
-	ENDIF		
-ENDIF
-
-loResult.Close_Query()
+SELECT cur_detalle
+ZAP 
 
 IF glVersionBeta THEN
 	SELECT cur_Deta_View
-	IF RECCOUNT() = 5 THEN
+	IF RECCOUNT() >= 5 THEN
 		MESSAGEBOX("Usted está utilizando una versión límitada del sistema, si desea comprarlo envíe un mail a ldz.software@gmail.com", 0+64, Thisform.Caption)
 		RETURN .F.
 	ENDIF
 ENDIF
 
 * Valido si el artículo ya se encuentra cargado en el presupuesto
+
 SELECT cur_Deta_View
-IF RECCOUNT() > 0
+IF RECCOUNT("cur_Deta_View") > 0 THEN
 	GO TOP
 ENDIF
 
-SELECT cur_Deta_View
-DO WHILE !EOF()
-	IF ALLTRIM(cur_Deta_View.codArt) == ALLTRIM(Thisform.contenido.sel_Articulo.txtCodigo.Value) THEN
-		IF MESSAGEBOX("El artículo ya se encuentra cargado, ¿Desea acumular la cantidad?",4+32, Thisform.Caption) == 6 THEN
-			lnCantAnt = Thisform.contenido.txtcantidad.Value
-			Thisform.contenido.txtcantidad.Value = Thisform.contenido.txtcantidad.Value + cur_Deta_View.cantidad
-			
-			&& Vuelvo a verificar el stock nuevamente al acumular la cantidad 
-			IF (ALLTRIM(Thisform.cbte) != "COT") .AND. (ALLTRIM(Thisform.cbte) != "NC") THEN
-				&& Valido el stock solo en caso que no sea artículo X
-				IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) != "ARX" THEN
-					IF getGlobalCFG("STK_MODULE") THEN
-						IF Thisform.mov_stock.get_exist_byart(Thisform.Contenido.sel_Articulo.valcpoid) <= 0 THEN
-							Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
-							
-							MESSAGEBOX("No hay stock disponible", 0+48, Thisform.Caption)				
-							thisform.contenido.txtCantidad.Value = lnCantAnt
-							thisform.contenido.txtCantidad.SetFocus()
-							RETURN .F.
-						ENDIF
-						
-						&& Valido si está o no cubierto al 100%
-						IF Thisform.Contenido.txtCantidad.Value > Thisform.Contenido.txtExistencia.Value THEN
-							MESSAGEBOX("No hay stock suficiente para cubrir la cantidad ingresada", 0+48, Thisform.Caption)
-							thisform.contenido.txtCantidad.Value = lnCantAnt
-							thisform.contenido.txtCantidad.SetFocus()
-							RETURN .F.
-						ENDIF
-					ENDIF
-				ENDIF
-			ENDIF			
-			
-			Thisform.calc_item_desc()
-			
-			SELECT cur_Deta_View
-			DELETE
-		ELSE 
-			Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+DO WHILE !EOF("cur_Deta_View")
+	IF (ALLTRIM(Thisform.cbte) != "PED") THEN 
+		IF !thisform.asignar_partida(cur_Deta_View.idArticulo, cur_Deta_View.Cantidad) THEN
+			MESSAGEBOX("Ha ocurrido un error al intentar asignar partidas", 0+48, thisform.Caption)
 			RETURN .F.
-		ENDIF 
-	ENDIF
+		ENDIF
+	ENDIF  
+	
+	&& Si cur_DetPart es 0 (Cero)
+	SELECT cur_DetPart
+	IF RECCOUNT("cur_DetPart") = 0 THEN
+		SELECT cur_Detalle
+		APPEND BLANK
+		REPLACE cur_Detalle.idDetalle WITH RECCOUNT("cur_Detalle") + 1
+		REPLACE cur_Detalle.idArticulo WITH cur_Deta_View.idArticulo 			ADDITIVE
+		REPLACE cur_Detalle.codArt WITH ALLTRIM(cur_Deta_View.codArt)			ADDITIVE
+		REPLACE cur_Detalle.descripcio WITH ALLTRIM(cur_Deta_View.descripcio) 	ADDITIVE
+		REPLACE cur_Detalle.nroPart WITH "" 									ADDITIVE
+		REPLACE cur_Detalle.cantidad WITH cur_Deta_View.cantidad 				ADDITIVE
+		REPLACE cur_Detalle.prVta WITH cur_Deta_View.prVta						ADDITIVE
+		REPLACE cur_Detalle.prArtic WITH cur_Deta_View.prArtic					ADDITIVE
+		REPLACE cur_Detalle.pDtoVta1 WITH cur_Deta_View.pDtoVta1				ADDITIVE
+		REPLACE cur_Detalle.pDtoVta2 WITH cur_Deta_View.pDtoVta2				ADDITIVE
+		REPLACE cur_Detalle.pDtoVta3 WITH cur_Deta_View.pDtoVta3				ADDITIVE
+		REPLACE cur_Detalle.pDtoVta4 WITH cur_Deta_View.pDtoVta4				ADDITIVE
+		REPLACE cur_Detalle.iDtoVta1 WITH cur_Deta_View.iDtoVta1				ADDITIVE
+		REPLACE cur_Detalle.iDtoVta2 WITH cur_Deta_View.iDtoVta2				ADDITIVE
+		REPLACE cur_Detalle.iDtoVta3 WITH cur_Deta_View.iDtoVta3				ADDITIVE
+		REPLACE cur_Detalle.iDtoVta4 WITH cur_Deta_View.iDtoVta4				ADDITIVE
+		REPLACE cur_Detalle.impNeto WITH cur_Deta_View.impNeto					ADDITIVE
+		
+		&& Hago el cálculo del IVA y establezco 4 decimales. Hago el calculo aca porque en el cur_deta_view lo tengo en 2 decimales.
+		lnAlicIva = cur_Deta_View.alicIVA
+		REPLACE cur_Detalle.impIVA WITH ROUND(cur_Deta_View.totNeto * (lnAlicIva / 100), 4) ADDITIVE
+		REPLACE cur_Detalle.alicIVA WITH lnAlicIva ADDITIVE
+		
+*!*			IF (ALLTRIM(Thisform.cbte) == "PTO") THEN
+*!*				REPLACE cur_Detalle.impIVA WITH 0 ADDITIVE
+*!*				REPLACE cur_Detalle.alicIVA WITH 0 ADDITIVE
+*!*			ELSE
+*!*				lnAlicIva = cur_Deta_View.alicIVA
+*!*				REPLACE cur_Detalle.impIVA WITH ROUND(cur_Deta_View.totNeto * (lnAlicIva / 100), 4) ADDITIVE
+*!*				REPLACE cur_Detalle.alicIVA WITH lnAlicIva ADDITIVE
+*!*			ENDIF
+			
+		REPLACE cur_Detalle.totNeto WITH cur_Deta_View.totNeto					ADDITIVE
+		REPLACE cur_Detalle.subTotal WITH cur_Deta_View.subTotal				ADDITIVE
+		REPLACE cur_Detalle.pDtoCli1 WITH cur_Deta_View.pDtoCli1 				ADDITIVE
+		REPLACE cur_Detalle.pDtoCli2 WITH cur_Deta_View.pDtoCli2 				ADDITIVE
+		REPLACE cur_Detalle.pDtoCli3 WITH cur_Deta_View.pDtoCli3 				ADDITIVE
+		REPLACE cur_Detalle.pDtoCli4 WITH cur_Deta_View.pDtoCli4 				ADDITIVE
+		REPLACE cur_Detalle.iDtoCli1 WITH cur_Deta_View.iDtoCli1 				ADDITIVE
+		REPLACE cur_Detalle.iDtoCli2 WITH cur_Deta_View.iDtoCli2 				ADDITIVE
+		REPLACE cur_Detalle.iDtoCli3 WITH cur_Deta_View.iDtoCli3 				ADDITIVE
+		REPLACE cur_Detalle.iDtoCli4 WITH cur_Deta_View.iDtoCli4 				ADDITIVE
+		REPLACE cur_Detalle.esOferta WITH cur_Deta_View.esOferta 				ADDITIVE
+		REPLACE cur_Detalle.pRecVta WITH cur_Deta_View.pRecVta					ADDITIVE 
+		REPLACE cur_Detalle.iRecVta WITH cur_Deta_View.iRecVta					ADDITIVE 
+		
+		&& Incorporo el recargo por ítem
+		REPLACE cur_Detalle.pRecItem WITH cur_Deta_View.pRecItem				ADDITIVE
+		REPLACE cur_Detalle.iRecItem WITH cur_Deta_View.iRecItem				ADDITIVE		
+		
+		REPLACE cur_Detalle.uniDesp WITH cur_Deta_View.uniDesp					ADDITIVE
+		REPLACE cur_Detalle.cantPack WITH cur_Deta_View.cantPack				ADDITIVE
+		REPLACE cur_Detalle.uniMed WITH cur_Deta_View.uniMed					ADDITIVE		
+	ELSE
+		*************************************************************************************************
+		* Paso por aca en el caso de que el artículo lleve número de partida
+		*************************************************************************************************
+		SELECT cur_DetPart
+		GO TOP
 
+		DO WHILE !EOF("cur_DetPart")
+			SELECT cur_Detalle
+			APPEND BLANK
+			REPLACE cur_Detalle.idDetalle WITH RECCOUNT("cur_Detalle") + 1
+			REPLACE cur_Detalle.idArticulo WITH cur_Deta_View.idArticulo 	ADDITIVE
+			REPLACE cur_Detalle.codArt WITH cur_Deta_View.codArt	ADDITIVE
+			REPLACE cur_Detalle.descripcio WITH IIF(ALLTRIM(cur_DetPart.nroPart) == "", ALLTRIM(cur_Deta_View.Descripcio), ALLTRIM(SUBSTR(cur_Deta_View.Descripcio, 1, 20)) + " (" + ALLTRIM(cur_DetPart.nroPart) + ")") ADDITIVE
+			REPLACE cur_Detalle.nroPart WITH cur_DetPart.nroPart ADDITIVE
+			REPLACE cur_Detalle.cantidad WITH cur_DetPart.cantidad ADDITIVE
+			REPLACE cur_Detalle.prVta WITH cur_Deta_View.prVta ADDITIVE
+			REPLACE cur_Detalle.prArtic WITH cur_Deta_View.prArtic ADDITIVE			
+			REPLACE cur_Detalle.pDtoVta1 WITH cur_Deta_View.pDtoVta1				ADDITIVE
+			REPLACE cur_Detalle.pDtoVta2 WITH cur_Deta_View.pDtoVta2				ADDITIVE
+			REPLACE cur_Detalle.pDtoVta3 WITH cur_Deta_View.pDtoVta3				ADDITIVE
+			REPLACE cur_Detalle.pDtoVta4 WITH cur_Deta_View.pDtoVta4				ADDITIVE
+			REPLACE cur_Detalle.iDtoVta1 WITH cur_Deta_View.iDtoVta1				ADDITIVE
+			REPLACE cur_Detalle.iDtoVta2 WITH cur_Deta_View.iDtoVta2				ADDITIVE
+			REPLACE cur_Detalle.iDtoVta3 WITH cur_Deta_View.iDtoVta3				ADDITIVE
+			REPLACE cur_Detalle.iDtoVta4 WITH cur_Deta_View.iDtoVta4				ADDITIVE
+			REPLACE cur_Detalle.impNeto  WITH cur_Deta_View.impNeto					ADDITIVE
+
+			lnSTNeto = ROUND(cur_Deta_View.impNeto * cur_DetPart.Cantidad, 2)
+			
+			&& Hago el cálculo del IVA y establezco 4 decimales. 
+			IF (ALLTRIM(Thisform.cbte) == "PTO") THEN
+				REPLACE cur_Detalle.impIVA WITH 0 ADDITIVE
+				REPLACE cur_Detalle.alicIVA WITH 0 ADDITIVE
+			ELSE
+				lnAlicIva = cur_Deta_View.alicIVA
+				REPLACE cur_Detalle.impIVA WITH ROUND(lnSTNeto  * (lnAlicIva / 100), 4) ADDITIVE
+				REPLACE cur_Detalle.alicIVA WITH lnAlicIva ADDITIVE
+			ENDIF
+			
+			REPLACE cur_Detalle.totNeto WITH lnSTNeto ADDITIVE
+			REPLACE cur_Detalle.subTotal WITH lnSTNeto + cur_Detalle.impIVA ADDITIVE
+
+			REPLACE cur_Detalle.pDtoCli1 WITH cur_Deta_View.pDtoCli1 ADDITIVE
+			REPLACE cur_Detalle.pDtoCli2 WITH cur_Deta_View.pDtoCli2 ADDITIVE
+			REPLACE cur_Detalle.pDtoCli3 WITH cur_Deta_View.pDtoCli3 ADDITIVE
+			REPLACE cur_Detalle.pDtoCli4 WITH cur_Deta_View.pDtoCli4 ADDITIVE
+			REPLACE cur_Detalle.iDtoCli1 WITH cur_Deta_View.iDtoCli1 ADDITIVE
+			REPLACE cur_Detalle.iDtoCli2 WITH cur_Deta_View.iDtoCli2 ADDITIVE
+			REPLACE cur_Detalle.iDtoCli3 WITH cur_Deta_View.iDtoCli3 ADDITIVE
+			REPLACE cur_Detalle.iDtoCli4 WITH cur_Deta_View.iDtoCli4 ADDITIVE
+			REPLACE cur_Detalle.esOferta WITH cur_Deta_View.esOferta ADDITIVE
+			REPLACE cur_Detalle.pRecVta WITH cur_Deta_View.pRecVta ADDITIVE 
+			REPLACE cur_Detalle.iRecVta WITH cur_Deta_View.iRecVta ADDITIVE 
+			
+			&& Incorporo el recargo por ítem
+			REPLACE cur_Detalle.pRecItem WITH cur_Deta_View.pRecItem ADDITIVE
+			REPLACE cur_Detalle.iRecItem WITH cur_Deta_View.iRecItem ADDITIVE
+			
+			REPLACE cur_Detalle.uniDesp WITH cur_Deta_View.uniDesp ADDITIVE
+			REPLACE cur_Detalle.cantPack WITH cur_Deta_View.cantPack ADDITIVE
+			REPLACE cur_Detalle.uniMed WITH cur_Deta_View.uniMed ADDITIVE	
+					
+			SELECT cur_DetPart
+			SKIP
+		ENDDO	
+	ENDIF
+	
 	SELECT cur_Deta_View
 	SKIP
 ENDDO
 
-SELECT cur_Deta_View
-APPEND BLANK
-REPLACE cur_Deta_View.idDetalle WITH RECCOUNT("cur_Deta_View")
-REPLACE cur_Deta_View.idArticulo WITH Thisform.contenido.sel_Articulo.valcpoid ADDITIVE	
-REPLACE cur_Deta_View.codArt WITH Thisform.contenido.sel_Articulo.txtCodigo.Value ADDITIVE
-REPLACE cur_Deta_View.descripcio WITH Thisform.contenido.sel_Articulo.txtDescripcion.Value ADDITIVE
-REPLACE cur_Deta_View.cantidad WITH Thisform.contenido.txtCantidad.Value ADDITIVE
-
-*******************************************************************************************************************************
-* Verifico el tipo de cliente que es para saber desde donde tomar el precio
-*******************************************************************************************************************************
-IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
-	&& Si es artículo X, siempre cargo el contenido de lo que el usuario haya ingresado
-	REPLACE cur_Deta_View.prVta WITH Thisform.contenido.txtPrMinorista.Value ADDITIVE
-	REPLACE cur_Deta_View.prArtic WITH Thisform.prarti_x ADDITIVE
-ELSE
-	IF clientes.mayorista THEN
-		REPLACE cur_Deta_View.prVta WITH Thisform.contenido.txtPrMay.Value ADDITIVE
-		
-		IF !llEsOferta THEN
-			REPLACE cur_Deta_View.prArtic WITH thisform.pr_mayorista ADDITIVE
-		ELSE
-			REPLACE cur_Deta_View.prArtic WITH thisform.pr_oferta ADDITIVE
-		ENDIF
-	ELSE
-		REPLACE cur_Deta_View.prVta WITH Thisform.contenido.txtPrMinorista.Value ADDITIVE
-		REPLACE cur_Deta_View.prArtic WITH Thisform.pr_minorista ADDITIVE
-	ENDIF
-	
-	* Levanto el stock actual solo en caso que no sea ARX
-	REPLACE cur_Deta_View.stkDisp  WITH Thisform.mov_stock.get_exist_byart(Thisform.contenido.sel_Articulo.valcpoid) ADDITIVE
-ENDIF
-
-*******************************************************************************************************************************
-* Calculo el descuento del cliente en el ítem para grabar
-*******************************************************************************************************************************
-lnIDtoCli1 = ROUND(lnPrecio * (lnPDtoCli1 / 100),2)
-IF !llEsOferta THEN
-	lnIDtoCli2 = ROUND((lnPrecio - lnIDtoCli1) * (lnPDtoCli2 / 100),2)
-	lnIDtoCli3 = ROUND((lnPrecio - lnIDtoCli1 - lnIDtoCli2) * (lnPDtoCli3 / 100),2)
-	lnIDtoCli4 = ROUND((lnPrecio - lnIDtoCli1 - lnIDtoCli2 - lnIDtoCli3) * (lnPDtoCli4 / 100),2)
-ENDIF
-
-REPLACE cur_Deta_View.pDtoCli1 WITH lnPDtoCli1 ADDITIVE
-REPLACE cur_Deta_View.pDtoCli2 WITH lnPDtoCli2 ADDITIVE
-REPLACE cur_Deta_View.pDtoCli3 WITH lnPDtoCli3 ADDITIVE
-REPLACE cur_Deta_View.pDtoCli4 WITH lnPDtoCli4 ADDITIVE
-REPLACE cur_Deta_View.iDtoCli1 WITH lnIDtoCli1 ADDITIVE
-REPLACE cur_Deta_View.iDtoCli2 WITH lnIDtoCli2 ADDITIVE
-REPLACE cur_Deta_View.iDtoCli3 WITH lnIDtoCli3 ADDITIVE
-REPLACE cur_Deta_View.iDtoCli4 WITH lnIDtoCli4 ADDITIVE
-REPLACE cur_Deta_View.esOferta WITH llEsOferta ADDITIVE
-
-*******************************************************************************************************************************
-&& Calculo los descuentos por item
-*******************************************************************************************************************************
-REPLACE cur_Deta_View.pDtoVta1 WITH Thisform.contenido.txtPorDesc1.Value
-REPLACE cur_Deta_View.pDtoVta2 WITH Thisform.contenido.txtPorDesc2.Value
-REPLACE cur_Deta_View.pDtoVta3 WITH Thisform.contenido.txtPorDesc3.Value
-REPLACE cur_Deta_View.pDtoVta4 WITH Thisform.contenido.txtPorDesc4.Value
-REPLACE cur_Deta_View.iDtoVta1 WITH Thisform.contenido.txtImpDescItem1.Value
-REPLACE cur_Deta_View.iDtoVta2 WITH Thisform.contenido.txtImpDescItem2.Value 
-REPLACE cur_Deta_View.iDtoVta3 WITH Thisform.contenido.txtImpDescItem3.Value
-REPLACE cur_Deta_View.iDtoVta4 WITH Thisform.contenido.txtImpDescItem4.Value
-
-*******************************************************************************************************************************
-* Agrego el recargo del cliente en el item
-*******************************************************************************************************************************
-REPLACE cur_Deta_View.pRecVta WITH Thisform.contenido.txtporrec.Value ADDITIVE
-REPLACE cur_Deta_View.iRecVta WITH ROUND((lnPrecio - lnIDtoCli1 - lnIDtoCli2 - lnIDtoCli3 - lnIDtoCli4) * (Thisform.contenido.txtporrec.Value/ 100), 2) ADDITIVE
-
-*******************************************************************************************************************************
-&& Incluyo el recargo por ítem.
-*******************************************************************************************************************************
-REPLACE cur_Deta_View.pRecItem WITH Thisform.contenido.txtPorRecItem.Value ADDITIVE
-REPLACE cur_Deta_View.iRecItem WITH Thisform.contenido.txtRecItem.Value ADDITIVE
-
-REPLACE cur_Deta_View.impNeto WITH Thisform.contenido.txtPrNeto.Value ADDITIVE
-
-*******************************************************************************************************************************
-* Hago el cálculo del IVA
-*******************************************************************************************************************************
-REPLACE cur_Deta_View.alicIVA WITH Thisform.contenido.txtAlicIVA.Value ADDITIVE
-REPLACE cur_Deta_View.impIVA WITH Thisform.contenido.txtImpIVA.Value ADDITIVE
-*!*	IF (ALLTRIM(Thisform.cbte) == "PTO") THEN
-*!*		REPLACE cur_Deta_View.impIVA WITH 0 ADDITIVE
-*!*		REPLACE cur_Deta_View.alicIVA WITH 0 ADDITIVE
-*!*	ELSE
-*!*		REPLACE cur_Deta_View.alicIVA WITH Thisform.contenido.txtAlicIVA.Value ADDITIVE
-*!*		REPLACE cur_Deta_View.impIVA WITH Thisform.contenido.txtImpIVA.Value ADDITIVE 
-*!*	ENDIF
-
-REPLACE cur_Deta_View.totNeto WITH Thisform.contenido.txtSTNeto.Value ADDITIVE
-REPLACE cur_Deta_View.subTotal WITH Thisform.contenido.txtSubTotal.Value ADDITIVE
-
-
-REPLACE cur_Deta_View.uniDesp WITH VAL(Thisform.contenido.cboUnidVta.Value) ADDITIVE
-REPLACE cur_Deta_View.cantPack WITH Thisform.contenido.txtCantPack.Value ADDITIVE
-REPLACE cur_Deta_View.uniMed WITH Thisform.unimed ADDITIVE
-
-SELECT cur_Deta_View
-
 RETURN .T.
-
-
-ENDPROC
-PROCEDURE getoferta_byart
-PARAMETERS tnIdArticulo
-
-LOCAL lnPrecio, loResult, lcSql, loDT
-
-loDT = CREATEOBJECT("datetime")
-loResult = CREATEOBJECT("odbc_result")
-lcSql = ""
-lnPrecio = 0.00
-lnPorDesc2 = Thisform.Contenido.txtDesc2.Value
-
-lcSql = "SELECT * FROM ofertas "
-lcSql = lcSql + "WHERE idArticulo = " + ALLTRIM(STR(tnIdArticulo)) + " "
-lcSql = lcSql + "AND fecVigDD <= " + loDT.toMySql(DATE()) + " "
-lcSql = lcSql + "AND fecVigHH >= " + loDT.toMySql(DATE())
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_tmpofta"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
-	RETURN -1
-ENDIF
-
-SELECT cur_tmpofta
-IF RECCOUNT("cur_tmpofta") > 0 THEN
-	IF cur_tmpofta.porOfert >= lnPorDesc2 THEN
-		lnPrecio = cur_tmpofta.impOfert
-	ELSE
-		lnPrecio = 0
-	ENDIF
-ENDIF
-
-loResult.Close_Query()
-
-RETURN lnPrecio
-ENDPROC
-PROCEDURE Init
-DODEFAULT()
-Thisform.contenido.sel_Cliente.txtCodigo.SetFocus()
-Thisform.contenido.sel_Cliente.txtCodigo.Value = getGlobalCFG("CLI_CF")
-Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
-Thisform.contenido.txtCuit.Value = "11111111"
-
-IF getGlobalCFG("MODOMOST") THEN
-	Thisform.contenido.txtCantidad.Enabled = .F.
-ENDIF
-ENDPROC
-PROCEDURE blanquear
-DODEFAULT()
-Thisform.contenido.sel_Cliente.txtCodigo.SetFocus()
-Thisform.contenido.sel_Cliente.txtCodigo.Value = getGlobalCFG("CLI_CF")
-Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
-Thisform.contenido.txtCuit.Value = "11111111"
 
 ENDPROC
 PROCEDURE imprimir
@@ -1334,171 +758,770 @@ IF estandarizar_checkbox_value(Thisform.Contenido.chkEnviarMail.Value) = 1 THEN
 	ENDIF
 ENDIF
 ENDPROC
-PROCEDURE agregar_item
-LOCAL loResult, lcSql, lnSTNeto, lnAlicIva
+PROCEDURE blanquear
+DODEFAULT()
+Thisform.contenido.sel_Cliente.txtCodigo.SetFocus()
+Thisform.contenido.sel_Cliente.txtCodigo.Value = getGlobalCFG("CLI_CF")
+Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+Thisform.contenido.txtCuit.Value = "11111111"
 
+ENDPROC
+PROCEDURE Init
+DODEFAULT()
+Thisform.contenido.sel_Cliente.txtCodigo.SetFocus()
+Thisform.contenido.sel_Cliente.txtCodigo.Value = getGlobalCFG("CLI_CF")
+Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+Thisform.contenido.txtCuit.Value = "11111111"
+
+IF getGlobalCFG("MODOMOST") THEN
+	Thisform.contenido.txtCantidad.Enabled = .F.
+ENDIF
+ENDPROC
+PROCEDURE getoferta_byart
+PARAMETERS tnIdArticulo
+
+LOCAL lnPrecio, loResult, lcSql, loDT
+
+loDT = CREATEOBJECT("datetime")
 loResult = CREATEOBJECT("odbc_result")
 lcSql = ""
-lnSTNeto = 0.00
-lnAlicIva = 0.00
+lnPrecio = 0.00
+lnPorDesc2 = Thisform.Contenido.txtDesc2.Value
 
-SELECT cur_detalle
-ZAP 
+lcSql = "SELECT * FROM ofertas "
+lcSql = lcSql + "WHERE idArticulo = " + ALLTRIM(STR(tnIdArticulo)) + " "
+lcSql = lcSql + "AND fecVigDD <= " + loDT.toMySql(DATE()) + " "
+lcSql = lcSql + "AND fecVigHH >= " + loDT.toMySql(DATE())
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_tmpofta"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
+	RETURN -1
+ENDIF
+
+SELECT cur_tmpofta
+IF RECCOUNT("cur_tmpofta") > 0 THEN
+	IF cur_tmpofta.porOfert >= lnPorDesc2 THEN
+		lnPrecio = cur_tmpofta.impOfert
+	ELSE
+		lnPrecio = 0
+	ENDIF
+ENDIF
+
+loResult.Close_Query()
+
+RETURN lnPrecio
+ENDPROC
+PROCEDURE agregar_item_viewer
+LOCAL lnPDtoCli1, lnPDtoCli2, lnPDtoCli3, lnPDtoCli4
+LOCAL lnIDtoCli1, lnIDtoCli2, lnIDtoCli3, lnIDtoCli4, lnCantAnt
+LOCAL loResult, lcSql, lnPrecio, llEsOferta, lnproferta, lnAlicIva
+LOCAL lnPrVta
+
+lnPDtoCli1 = Thisform.contenido.txtDesc1.Value
+lnPDtoCli2 = Thisform.contenido.txtDesc2.Value
+lnPDtoCli3 = Thisform.contenido.txtDesc3.Value
+lnPDtoCli4 = Thisform.contenido.txtDesc4.Value
+lnIDtoCli1 = 0.00
+lnIDtoCli2 = 0.00
+lnIDtoCli3 = 0.00
+lnIDtoCli4 = 0.00
+lnPrecio = 0.00
+loResult = CREATEOBJECT("odbc_result")
+lcSql = ""
+llEsOferta = .F.
+lnproferta = 0.00
+lnAlicIva = 0.00
+lnCantAnt = 0.00
+llTomaOferta = .F.
+
+IF !Thisform.ValidarDetalle()
+	RETURN .F.
+ENDIF
+
+lcSql = "SELECT * FROM articulos WHERE idArticulo = " + ALLTRIM(STR(Thisform.contenido.sel_Articulo.valcpoid))
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_Art"
+loResult.OpenQuery(lcSql)
+
+IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
+	lnPrecio = Thisform.prarti_x
+ELSE	
+	IF clientes.mayorista THEN 
+		lnPrecio = thisform.get_precio_oferta()
+		lnproferta = lnPrecio
+		
+		IF lnPrecio = 0 THEN
+			lnPrecio = cur_Art.prVentaMax
+			llEsOferta = .F.
+		ELSE
+			llEsOferta = .T.
+		ENDIF
+	ELSE
+		lnPrecio = cur_Art.prVentaMin
+		llEsOferta = .F.
+	ENDIF		
+ENDIF
+
+loResult.Close_Query()
 
 IF glVersionBeta THEN
 	SELECT cur_Deta_View
-	IF RECCOUNT() >= 5 THEN
+	IF RECCOUNT() = 5 THEN
 		MESSAGEBOX("Usted está utilizando una versión límitada del sistema, si desea comprarlo envíe un mail a ldz.software@gmail.com", 0+64, Thisform.Caption)
 		RETURN .F.
 	ENDIF
 ENDIF
 
 * Valido si el artículo ya se encuentra cargado en el presupuesto
-
 SELECT cur_Deta_View
-IF RECCOUNT("cur_Deta_View") > 0 THEN
+IF RECCOUNT() > 0
 	GO TOP
 ENDIF
 
-DO WHILE !EOF("cur_Deta_View")
-	IF (ALLTRIM(Thisform.cbte) != "PED") THEN 
-		IF !thisform.asignar_partida(cur_Deta_View.idArticulo, cur_Deta_View.Cantidad) THEN
-			MESSAGEBOX("Ha ocurrido un error al intentar asignar partidas", 0+48, thisform.Caption)
+SELECT cur_Deta_View
+DO WHILE !EOF()
+	IF ALLTRIM(cur_Deta_View.codArt) == ALLTRIM(Thisform.contenido.sel_Articulo.txtCodigo.Value) THEN
+		IF MESSAGEBOX("El artículo ya se encuentra cargado, ¿Desea acumular la cantidad?",4+32, Thisform.Caption) == 6 THEN
+			lnCantAnt = Thisform.contenido.txtcantidad.Value
+			Thisform.contenido.txtcantidad.Value = Thisform.contenido.txtcantidad.Value + cur_Deta_View.cantidad
+			
+			&& Vuelvo a verificar el stock nuevamente al acumular la cantidad 
+			IF (ALLTRIM(Thisform.cbte) != "COT") .AND. (ALLTRIM(Thisform.cbte) != "NC") THEN
+				&& Valido el stock solo en caso que no sea artículo X
+				IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) != "ARX" THEN
+					IF getGlobalCFG("STK_MODULE") THEN
+						IF Thisform.mov_stock.get_exist_byart(Thisform.Contenido.sel_Articulo.valcpoid) <= 0 THEN
+							Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
+							
+							MESSAGEBOX("No hay stock disponible", 0+48, Thisform.Caption)				
+							thisform.contenido.txtCantidad.Value = lnCantAnt
+							thisform.contenido.txtCantidad.SetFocus()
+							RETURN .F.
+						ENDIF
+						
+						&& Valido si está o no cubierto al 100%
+						IF Thisform.Contenido.txtCantidad.Value > Thisform.Contenido.txtExistencia.Value THEN
+							MESSAGEBOX("No hay stock suficiente para cubrir la cantidad ingresada", 0+48, Thisform.Caption)
+							thisform.contenido.txtCantidad.Value = lnCantAnt
+							thisform.contenido.txtCantidad.SetFocus()
+							RETURN .F.
+						ENDIF
+					ENDIF
+				ENDIF
+			ENDIF			
+			
+			Thisform.calc_item_desc()
+			
+			SELECT cur_Deta_View
+			DELETE
+		ELSE 
+			Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
 			RETURN .F.
-		ENDIF
-	ENDIF  
-	
-	&& Si cur_DetPart es 0 (Cero)
-	SELECT cur_DetPart
-	IF RECCOUNT("cur_DetPart") = 0 THEN
-		SELECT cur_Detalle
-		APPEND BLANK
-		REPLACE cur_Detalle.idDetalle WITH RECCOUNT("cur_Detalle") + 1
-		REPLACE cur_Detalle.idArticulo WITH cur_Deta_View.idArticulo 			ADDITIVE
-		REPLACE cur_Detalle.codArt WITH ALLTRIM(cur_Deta_View.codArt)			ADDITIVE
-		REPLACE cur_Detalle.descripcio WITH ALLTRIM(cur_Deta_View.descripcio) 	ADDITIVE
-		REPLACE cur_Detalle.nroPart WITH "" 									ADDITIVE
-		REPLACE cur_Detalle.cantidad WITH cur_Deta_View.cantidad 				ADDITIVE
-		REPLACE cur_Detalle.prVta WITH cur_Deta_View.prVta						ADDITIVE
-		REPLACE cur_Detalle.prArtic WITH cur_Deta_View.prArtic					ADDITIVE
-		REPLACE cur_Detalle.pDtoVta1 WITH cur_Deta_View.pDtoVta1				ADDITIVE
-		REPLACE cur_Detalle.pDtoVta2 WITH cur_Deta_View.pDtoVta2				ADDITIVE
-		REPLACE cur_Detalle.pDtoVta3 WITH cur_Deta_View.pDtoVta3				ADDITIVE
-		REPLACE cur_Detalle.pDtoVta4 WITH cur_Deta_View.pDtoVta4				ADDITIVE
-		REPLACE cur_Detalle.iDtoVta1 WITH cur_Deta_View.iDtoVta1				ADDITIVE
-		REPLACE cur_Detalle.iDtoVta2 WITH cur_Deta_View.iDtoVta2				ADDITIVE
-		REPLACE cur_Detalle.iDtoVta3 WITH cur_Deta_View.iDtoVta3				ADDITIVE
-		REPLACE cur_Detalle.iDtoVta4 WITH cur_Deta_View.iDtoVta4				ADDITIVE
-		REPLACE cur_Detalle.impNeto WITH cur_Deta_View.impNeto					ADDITIVE
-		
-		&& Hago el cálculo del IVA y establezco 4 decimales. Hago el calculo aca porque en el cur_deta_view lo tengo en 2 decimales.
-		lnAlicIva = cur_Deta_View.alicIVA
-		REPLACE cur_Detalle.impIVA WITH ROUND(cur_Deta_View.totNeto * (lnAlicIva / 100), 4) ADDITIVE
-		REPLACE cur_Detalle.alicIVA WITH lnAlicIva ADDITIVE
-		
-*!*			IF (ALLTRIM(Thisform.cbte) == "PTO") THEN
-*!*				REPLACE cur_Detalle.impIVA WITH 0 ADDITIVE
-*!*				REPLACE cur_Detalle.alicIVA WITH 0 ADDITIVE
-*!*			ELSE
-*!*				lnAlicIva = cur_Deta_View.alicIVA
-*!*				REPLACE cur_Detalle.impIVA WITH ROUND(cur_Deta_View.totNeto * (lnAlicIva / 100), 4) ADDITIVE
-*!*				REPLACE cur_Detalle.alicIVA WITH lnAlicIva ADDITIVE
-*!*			ENDIF
-			
-		REPLACE cur_Detalle.totNeto WITH cur_Deta_View.totNeto					ADDITIVE
-		REPLACE cur_Detalle.subTotal WITH cur_Deta_View.subTotal				ADDITIVE
-		REPLACE cur_Detalle.pDtoCli1 WITH cur_Deta_View.pDtoCli1 				ADDITIVE
-		REPLACE cur_Detalle.pDtoCli2 WITH cur_Deta_View.pDtoCli2 				ADDITIVE
-		REPLACE cur_Detalle.pDtoCli3 WITH cur_Deta_View.pDtoCli3 				ADDITIVE
-		REPLACE cur_Detalle.pDtoCli4 WITH cur_Deta_View.pDtoCli4 				ADDITIVE
-		REPLACE cur_Detalle.iDtoCli1 WITH cur_Deta_View.iDtoCli1 				ADDITIVE
-		REPLACE cur_Detalle.iDtoCli2 WITH cur_Deta_View.iDtoCli2 				ADDITIVE
-		REPLACE cur_Detalle.iDtoCli3 WITH cur_Deta_View.iDtoCli3 				ADDITIVE
-		REPLACE cur_Detalle.iDtoCli4 WITH cur_Deta_View.iDtoCli4 				ADDITIVE
-		REPLACE cur_Detalle.esOferta WITH cur_Deta_View.esOferta 				ADDITIVE
-		REPLACE cur_Detalle.pRecVta WITH cur_Deta_View.pRecVta					ADDITIVE 
-		REPLACE cur_Detalle.iRecVta WITH cur_Deta_View.iRecVta					ADDITIVE 
-		
-		&& Incorporo el recargo por ítem
-		REPLACE cur_Detalle.pRecItem WITH cur_Deta_View.pRecItem				ADDITIVE
-		REPLACE cur_Detalle.iRecItem WITH cur_Deta_View.iRecItem				ADDITIVE		
-		
-		REPLACE cur_Detalle.uniDesp WITH cur_Deta_View.uniDesp					ADDITIVE
-		REPLACE cur_Detalle.cantPack WITH cur_Deta_View.cantPack				ADDITIVE
-		REPLACE cur_Detalle.uniMed WITH cur_Deta_View.uniMed					ADDITIVE		
-	ELSE
-		*************************************************************************************************
-		* Paso por aca en el caso de que el artículo lleve número de partida
-		*************************************************************************************************
-		SELECT cur_DetPart
-		GO TOP
-
-		DO WHILE !EOF("cur_DetPart")
-			SELECT cur_Detalle
-			APPEND BLANK
-			REPLACE cur_Detalle.idDetalle WITH RECCOUNT("cur_Detalle") + 1
-			REPLACE cur_Detalle.idArticulo WITH cur_Deta_View.idArticulo 	ADDITIVE
-			REPLACE cur_Detalle.codArt WITH cur_Deta_View.codArt	ADDITIVE
-			REPLACE cur_Detalle.descripcio WITH IIF(ALLTRIM(cur_DetPart.nroPart) == "", ALLTRIM(cur_Deta_View.Descripcio), ALLTRIM(SUBSTR(cur_Deta_View.Descripcio, 1, 20)) + " (" + ALLTRIM(cur_DetPart.nroPart) + ")") ADDITIVE
-			REPLACE cur_Detalle.nroPart WITH cur_DetPart.nroPart ADDITIVE
-			REPLACE cur_Detalle.cantidad WITH cur_DetPart.cantidad ADDITIVE
-			REPLACE cur_Detalle.prVta WITH cur_Deta_View.prVta ADDITIVE
-			REPLACE cur_Detalle.prArtic WITH cur_Deta_View.prArtic ADDITIVE			
-			REPLACE cur_Detalle.pDtoVta1 WITH cur_Deta_View.pDtoVta1				ADDITIVE
-			REPLACE cur_Detalle.pDtoVta2 WITH cur_Deta_View.pDtoVta2				ADDITIVE
-			REPLACE cur_Detalle.pDtoVta3 WITH cur_Deta_View.pDtoVta3				ADDITIVE
-			REPLACE cur_Detalle.pDtoVta4 WITH cur_Deta_View.pDtoVta4				ADDITIVE
-			REPLACE cur_Detalle.iDtoVta1 WITH cur_Deta_View.iDtoVta1				ADDITIVE
-			REPLACE cur_Detalle.iDtoVta2 WITH cur_Deta_View.iDtoVta2				ADDITIVE
-			REPLACE cur_Detalle.iDtoVta3 WITH cur_Deta_View.iDtoVta3				ADDITIVE
-			REPLACE cur_Detalle.iDtoVta4 WITH cur_Deta_View.iDtoVta4				ADDITIVE
-			REPLACE cur_Detalle.impNeto  WITH cur_Deta_View.impNeto					ADDITIVE
-
-			lnSTNeto = ROUND(cur_Deta_View.impNeto * cur_DetPart.Cantidad, 2)
-			
-			&& Hago el cálculo del IVA y establezco 4 decimales. 
-			IF (ALLTRIM(Thisform.cbte) == "PTO") THEN
-				REPLACE cur_Detalle.impIVA WITH 0 ADDITIVE
-				REPLACE cur_Detalle.alicIVA WITH 0 ADDITIVE
-			ELSE
-				lnAlicIva = cur_Deta_View.alicIVA
-				REPLACE cur_Detalle.impIVA WITH ROUND(lnSTNeto  * (lnAlicIva / 100), 4) ADDITIVE
-				REPLACE cur_Detalle.alicIVA WITH lnAlicIva ADDITIVE
-			ENDIF
-			
-			REPLACE cur_Detalle.totNeto WITH lnSTNeto ADDITIVE
-			REPLACE cur_Detalle.subTotal WITH lnSTNeto + cur_Detalle.impIVA ADDITIVE
-
-			REPLACE cur_Detalle.pDtoCli1 WITH cur_Deta_View.pDtoCli1 ADDITIVE
-			REPLACE cur_Detalle.pDtoCli2 WITH cur_Deta_View.pDtoCli2 ADDITIVE
-			REPLACE cur_Detalle.pDtoCli3 WITH cur_Deta_View.pDtoCli3 ADDITIVE
-			REPLACE cur_Detalle.pDtoCli4 WITH cur_Deta_View.pDtoCli4 ADDITIVE
-			REPLACE cur_Detalle.iDtoCli1 WITH cur_Deta_View.iDtoCli1 ADDITIVE
-			REPLACE cur_Detalle.iDtoCli2 WITH cur_Deta_View.iDtoCli2 ADDITIVE
-			REPLACE cur_Detalle.iDtoCli3 WITH cur_Deta_View.iDtoCli3 ADDITIVE
-			REPLACE cur_Detalle.iDtoCli4 WITH cur_Deta_View.iDtoCli4 ADDITIVE
-			REPLACE cur_Detalle.esOferta WITH cur_Deta_View.esOferta ADDITIVE
-			REPLACE cur_Detalle.pRecVta WITH cur_Deta_View.pRecVta ADDITIVE 
-			REPLACE cur_Detalle.iRecVta WITH cur_Deta_View.iRecVta ADDITIVE 
-			
-			&& Incorporo el recargo por ítem
-			REPLACE cur_Detalle.pRecItem WITH cur_Deta_View.pRecItem ADDITIVE
-			REPLACE cur_Detalle.iRecItem WITH cur_Deta_View.iRecItem ADDITIVE
-			
-			REPLACE cur_Detalle.uniDesp WITH cur_Deta_View.uniDesp ADDITIVE
-			REPLACE cur_Detalle.cantPack WITH cur_Deta_View.cantPack ADDITIVE
-			REPLACE cur_Detalle.uniMed WITH cur_Deta_View.uniMed ADDITIVE	
-					
-			SELECT cur_DetPart
-			SKIP
-		ENDDO	
+		ENDIF 
 	ENDIF
-	
+
 	SELECT cur_Deta_View
 	SKIP
 ENDDO
 
+SELECT cur_Deta_View
+APPEND BLANK
+REPLACE cur_Deta_View.idDetalle WITH RECCOUNT("cur_Deta_View")
+REPLACE cur_Deta_View.idArticulo WITH Thisform.contenido.sel_Articulo.valcpoid ADDITIVE	
+REPLACE cur_Deta_View.codArt WITH Thisform.contenido.sel_Articulo.txtCodigo.Value ADDITIVE
+REPLACE cur_Deta_View.descripcio WITH Thisform.contenido.sel_Articulo.txtDescripcion.Value ADDITIVE
+REPLACE cur_Deta_View.cantidad WITH Thisform.contenido.txtCantidad.Value ADDITIVE
+
+*******************************************************************************************************************************
+* Verifico el tipo de cliente que es para saber desde donde tomar el precio
+*******************************************************************************************************************************
+IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
+	&& Si es artículo X, siempre cargo el contenido de lo que el usuario haya ingresado
+	REPLACE cur_Deta_View.prVta WITH Thisform.contenido.txtPrMinorista.Value ADDITIVE
+	REPLACE cur_Deta_View.prArtic WITH Thisform.prarti_x ADDITIVE
+ELSE
+	IF clientes.mayorista THEN
+		REPLACE cur_Deta_View.prVta WITH Thisform.contenido.txtPrMay.Value ADDITIVE
+		
+		IF !llEsOferta THEN
+			REPLACE cur_Deta_View.prArtic WITH thisform.pr_mayorista ADDITIVE
+		ELSE
+			REPLACE cur_Deta_View.prArtic WITH thisform.pr_oferta ADDITIVE
+		ENDIF
+	ELSE
+		REPLACE cur_Deta_View.prVta WITH Thisform.contenido.txtPrMinorista.Value ADDITIVE
+		REPLACE cur_Deta_View.prArtic WITH Thisform.pr_minorista ADDITIVE
+	ENDIF
+	
+	* Levanto el stock actual solo en caso que no sea ARX
+	REPLACE cur_Deta_View.stkDisp  WITH Thisform.mov_stock.get_exist_byart(Thisform.contenido.sel_Articulo.valcpoid) ADDITIVE
+ENDIF
+
+*******************************************************************************************************************************
+* Calculo el descuento del cliente en el ítem para grabar
+*******************************************************************************************************************************
+lnIDtoCli1 = ROUND(lnPrecio * (lnPDtoCli1 / 100),2)
+IF !llEsOferta THEN
+	lnIDtoCli2 = ROUND((lnPrecio - lnIDtoCli1) * (lnPDtoCli2 / 100),2)
+	lnIDtoCli3 = ROUND((lnPrecio - lnIDtoCli1 - lnIDtoCli2) * (lnPDtoCli3 / 100),2)
+	lnIDtoCli4 = ROUND((lnPrecio - lnIDtoCli1 - lnIDtoCli2 - lnIDtoCli3) * (lnPDtoCli4 / 100),2)
+ENDIF
+
+REPLACE cur_Deta_View.pDtoCli1 WITH lnPDtoCli1 ADDITIVE
+REPLACE cur_Deta_View.pDtoCli2 WITH lnPDtoCli2 ADDITIVE
+REPLACE cur_Deta_View.pDtoCli3 WITH lnPDtoCli3 ADDITIVE
+REPLACE cur_Deta_View.pDtoCli4 WITH lnPDtoCli4 ADDITIVE
+REPLACE cur_Deta_View.iDtoCli1 WITH lnIDtoCli1 ADDITIVE
+REPLACE cur_Deta_View.iDtoCli2 WITH lnIDtoCli2 ADDITIVE
+REPLACE cur_Deta_View.iDtoCli3 WITH lnIDtoCli3 ADDITIVE
+REPLACE cur_Deta_View.iDtoCli4 WITH lnIDtoCli4 ADDITIVE
+REPLACE cur_Deta_View.esOferta WITH llEsOferta ADDITIVE
+
+*******************************************************************************************************************************
+&& Calculo los descuentos por item
+*******************************************************************************************************************************
+REPLACE cur_Deta_View.pDtoVta1 WITH Thisform.contenido.txtPorDesc1.Value
+REPLACE cur_Deta_View.pDtoVta2 WITH Thisform.contenido.txtPorDesc2.Value
+REPLACE cur_Deta_View.pDtoVta3 WITH Thisform.contenido.txtPorDesc3.Value
+REPLACE cur_Deta_View.pDtoVta4 WITH Thisform.contenido.txtPorDesc4.Value
+REPLACE cur_Deta_View.iDtoVta1 WITH Thisform.contenido.txtImpDescItem1.Value
+REPLACE cur_Deta_View.iDtoVta2 WITH Thisform.contenido.txtImpDescItem2.Value 
+REPLACE cur_Deta_View.iDtoVta3 WITH Thisform.contenido.txtImpDescItem3.Value
+REPLACE cur_Deta_View.iDtoVta4 WITH Thisform.contenido.txtImpDescItem4.Value
+
+*******************************************************************************************************************************
+* Agrego el recargo del cliente en el item
+*******************************************************************************************************************************
+REPLACE cur_Deta_View.pRecVta WITH Thisform.contenido.txtporrec.Value ADDITIVE
+REPLACE cur_Deta_View.iRecVta WITH ROUND((lnPrecio - lnIDtoCli1 - lnIDtoCli2 - lnIDtoCli3 - lnIDtoCli4) * (Thisform.contenido.txtporrec.Value/ 100), 2) ADDITIVE
+
+*******************************************************************************************************************************
+&& Incluyo el recargo por ítem.
+*******************************************************************************************************************************
+REPLACE cur_Deta_View.pRecItem WITH Thisform.contenido.txtPorRecItem.Value ADDITIVE
+REPLACE cur_Deta_View.iRecItem WITH Thisform.contenido.txtRecItem.Value ADDITIVE
+
+REPLACE cur_Deta_View.impNeto WITH Thisform.contenido.txtPrNeto.Value ADDITIVE
+
+*******************************************************************************************************************************
+* Hago el cálculo del IVA
+*******************************************************************************************************************************
+REPLACE cur_Deta_View.alicIVA WITH Thisform.contenido.txtAlicIVA.Value ADDITIVE
+REPLACE cur_Deta_View.impIVA WITH Thisform.contenido.txtImpIVA.Value ADDITIVE
+*!*	IF (ALLTRIM(Thisform.cbte) == "PTO") THEN
+*!*		REPLACE cur_Deta_View.impIVA WITH 0 ADDITIVE
+*!*		REPLACE cur_Deta_View.alicIVA WITH 0 ADDITIVE
+*!*	ELSE
+*!*		REPLACE cur_Deta_View.alicIVA WITH Thisform.contenido.txtAlicIVA.Value ADDITIVE
+*!*		REPLACE cur_Deta_View.impIVA WITH Thisform.contenido.txtImpIVA.Value ADDITIVE 
+*!*	ENDIF
+
+REPLACE cur_Deta_View.totNeto WITH Thisform.contenido.txtSTNeto.Value ADDITIVE
+REPLACE cur_Deta_View.subTotal WITH Thisform.contenido.txtSubTotal.Value ADDITIVE
+
+
+REPLACE cur_Deta_View.uniDesp WITH VAL(Thisform.contenido.cboUnidVta.Value) ADDITIVE
+REPLACE cur_Deta_View.cantPack WITH Thisform.contenido.txtCantPack.Value ADDITIVE
+REPLACE cur_Deta_View.uniMed WITH Thisform.unimed ADDITIVE
+
+SELECT cur_Deta_View
+
 RETURN .T.
+
+
+ENDPROC
+PROCEDURE get_precio_oferta
+LOCAL lnPrecio, loResult, lcSql, loDT
+LOCAL lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
+LOCAL lnPorOferta
+
+loDT = CREATEOBJECT("datetime")
+loResult = CREATEOBJECT("odbc_result")
+lcSql = ""
+lnPrecio = 0.00
+
+lnPorDesc1 = Thisform.contenido.txtDesc1.Value
+lnPorDesc2 = Thisform.contenido.txtDesc2.Value
+lnPorDesc3 = Thisform.contenido.txtDesc3.Value
+lnPorDesc4 = Thisform.contenido.txtDesc4.Value
+
+lcSql = "SELECT * FROM ofertas "
+lcSql = lcSql + "WHERE idArticulo = " + ALLTRIM(STR(thisform.contenido.sel_articulo.valcpoid)) + " "
+lcSql = lcSql + "AND fecVigDD <= " + loDT.toMySql(DATE()) + " "
+lcSql = lcSql + "AND fecVigHH >= " + loDT.toMySql(DATE())
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_tmpofta"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
+	RETURN -1
+ENDIF
+
+SELECT cur_tmpofta
+IF RECCOUNT("cur_tmpofta") > 0 THEN
+	lnPorOferta = cur_tmpofta.porOfert
+	IF lnPorOferta >= lnPorDesc2 THEN
+		lnPrecio = cur_tmpofta.impOfert
+	ELSE
+		lnPrecio = 0
+	ENDIF
+ENDIF
+
+loResult.Close_Query()
+
+RETURN lnPrecio
+ENDPROC
+PROCEDURE recalcular_todo
+local lo_artic, lcSql
+local lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
+local lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4
+local lnPrVtaMax, lnPrVtaMin, lnPrecio, lnNeto, lnSubTotNeto
+local lnPorRec, lnImpRec, lnPrOferta, llEsOferta, lnImpRecItem
+
+lcSql = ""
+lo_artic = createobject("odbc_result")
+lnPrOferta = 0.00
+llEsOferta = .f.
+
+select cur_Deta_View
+if reccount("cur_Deta_View") > 0 then
+	go top
+endif
+
+&& Recalculo los datos de la grilla
+do while !eof("cur_Deta_View")
+	lcSql = "SELECT * FROM articulos WHERE articulos.idArticulo = " + alltrim(str(cur_Deta_View.idArticulo))
+
+	lo_artic.ActiveConnection = goConn.ActiveConnection
+	lo_artic.cursor_name = "tmp_artic"
+
+	if !lo_artic.OpenQuery(lcSql) then
+		messagebox(lo_artic.error_Message, 0+16, thisform.caption)
+		return .f.
+	endif
+	lnPrOferta = thisform.getoferta_byart(cur_Deta_View.idArticulo)
+	select tmp_artic
+	if reccount() > 0 then
+		select cur_Deta_View
+		lock()
+
+		*******************************************************************************
+		* Recalculo los precios mayorista y minorista segun los descuentos del cliente
+		*******************************************************************************
+
+		lnPorDesc1 = thisform.contenido.txtDesc1.value
+		lnPorDesc2 = thisform.contenido.txtDesc2.value
+		lnPorDesc3 = thisform.contenido.txtDesc3.value
+		lnPorDesc4 = thisform.contenido.txtDesc4.value
+		lnImpDesc1 = 0.00
+		lnImpDesc2 = 0.00
+		lnImpDesc3 = 0.00
+		lnImpDesc4 = 0.00
+
+		select tmp_artic
+		lnPrVtaMax = tmp_artic.prVentaMax
+		lnPrVtaMin = tmp_artic.prVentaMin
+
+		if right(alltrim(cur_Deta_View.codArt), 3) == "ARX" then
+			lnPrecio = cur_Deta_View.prArtic
+		else
+			if clientes.mayorista then
+				select cur_Deta_View
+
+
+				if lnPrOferta = 0 then
+					lnPrecio = lnPrVtaMax
+					llEsOferta = .f.
+				else
+					lnPrecio = lnPrOferta
+					llEsOferta = .t.
+				endif
+			else
+				lnPrecio = lnPrVtaMin
+				llEsOferta = .f.
+			endif
+		endif
+
+		replace cur_Deta_View.prArtic with lnPrecio additive
+
+		***********************************************************
+		* Calculo el descuento del cliente en el ítem para grabar
+		***********************************************************
+		lnImpDesc1 = round(lnPrecio * (lnPorDesc1 / 100), 2)
+		if !llEsOferta then
+			lnImpDesc2 = round((lnPrecio - lnImpDesc1 ) * (lnPorDesc2 / 100),2)
+			lnImpDesc3 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 ) * (lnPorDesc3 / 100),2)
+			lnImpDesc4 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3) * (lnPorDesc4 / 100),2)
+		endif
+
+		lnPrecio = lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3 - lnImpDesc4
+
+		replace cur_Deta_View.prVta with lnPrecio additive
+
+		replace cur_Deta_View.pDtoCli1 with lnPorDesc1 additive
+		replace cur_Deta_View.pDtoCli2 with lnPorDesc2 additive
+		replace cur_Deta_View.pDtoCli3 with lnPorDesc3 additive
+		replace cur_Deta_View.pDtoCli4 with lnPorDesc4 additive
+		replace cur_Deta_View.iDtoCli1 with lnImpDesc1 additive
+		replace cur_Deta_View.iDtoCli2 with lnImpDesc2 additive
+		replace cur_Deta_View.iDtoCli3 with lnImpDesc3 additive
+		replace cur_Deta_View.iDtoCli4 with lnImpDesc4 additive
+		replace cur_Deta_View.esOferta with llEsOferta additive
+
+		*************************************
+		&& Calculo los descuentos por item
+		*************************************
+
+		lnPorDesc1 = cur_Deta_View.pDtoVta1
+		lnPorDesc2 = cur_Deta_View.pDtoVta2
+		lnPorDesc3 = cur_Deta_View.pDtoVta3
+		lnPorDesc4 = cur_Deta_View.pDtoVta4
+		lnImpDesc1 = 0.00
+		lnImpDesc2 = 0.00
+		lnImpDesc3 = 0.00
+		lnImpDesc4 = 0.00
+		lnNeto = 0.00
+
+		lnImpDesc1 = round(lnPrecio * (lnPorDesc1 / 100),2)
+		lnImpDesc2 = round((lnPrecio - lnImpDesc1 ) * (lnPorDesc2 / 100),2)
+		lnImpDesc3 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 ) * (lnPorDesc3 / 100),2)
+		lnImpDesc4 = round((lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3) * (lnPorDesc4 / 100),2)
+
+		lnNeto = lnPrecio - lnImpDesc1 - lnImpDesc2 - lnImpDesc3 - lnImpDesc4
+
+		replace cur_Deta_View.iDtoVta1 with lnImpDesc1 additive
+		replace cur_Deta_View.iDtoVta2 with lnImpDesc2 additive
+		replace cur_Deta_View.iDtoVta3 with lnImpDesc3 additive
+		replace cur_Deta_View.iDtoVta4 with lnImpDesc4 additive
+
+		************************************************
+		* Agrego el recargo del cliente en el item
+		************************************************
+		lnPorRec = thisform.contenido.txtporrec.value
+
+		lnImpRec = round(lnNeto * (lnPorRec / 100), 2)
+
+		lnNeto = lnNeto + lnImpRec
+
+		replace cur_Deta_View.pRecVta with lnPorRec additive
+		replace cur_Deta_View.iRecVta with lnImpRec additive
+
+		******************************************************************
+		&& Incluyo el recargo por ítem.
+		******************************************************************
+		lnImpRecItem = round(lnNeto * (cur_Deta_View.pRecItem / 100),2)
+
+		lnNeto = lnNeto + lnImpRecItem
+
+		replace cur_Deta_View.pRecItem with cur_Deta_View.pRecItem additive
+		replace cur_Deta_View.iRecItem with lnImpRecItem additive
+
+		****************************************************
+		* Recalculo el IVA y los Subtotales
+		****************************************************
+		replace cur_Deta_View.impNeto with lnNeto additive
+
+		lnSubTotNeto = round(lnNeto * cur_Deta_View.cantidad, 2)
+		
+		if alltrim(thisform.cbte) == "PTO" then
+			if getGlobalCFG("PTOINCIVA") then
+				* Tengo que contemplar el IVA
+				select cur_Deta_View
+				replace cur_deta_view.totNeto WITH lnSubTotNeto additive
+				replace cur_Deta_View.impIVA with ROUND(lnSubTotNeto * (tmp_artic.alicIVA / 100), 2) additive
+				replace cur_Deta_View.alicIVA with tmp_artic.alicIVA additive
+				replace cur_deta_view.subTotal WITH ROUND(lnSubTotNeto + cur_deta_view.impIVA, 2) additive
+*!*					replace cur_Deta_View.subTotal with cur_Deta_View.totNeto + cur_Deta_View.impIVA additive	
+				
+			else
+				* No tengo que contemplar le IVA
+				select cur_Deta_View
+				replace cur_Deta_View.impIVA with 0 additive
+				replace cur_Deta_View.alicIVA with 0 additive
+				replace cur_Deta_View.subTotal with cur_Deta_View.totNeto additive	
+			endif
+		endif
+		unlock
+	endif
+
+	lo_artic.close_query()
+
+	select cur_Deta_View
+	skip
+enddo
+
+if !(alltrim(thisform.contenido.sel_Articulo.txtCodigo.value) == "") then
+	thisform.contenido.sel_Articulo.recuperar_datos()
+	thisform.contenido.sel_Articulo.txtCodigo.valid()
+endif
+
+select cur_Deta_View
+if reccount("cur_Deta_View") > 0 then
+	go top
+endif
+
+thisform.contenido.grdDetalles.refresh()
+thisform.sumar_items()
+thisform.calcular_ret_iibb()
+
+return .t.
+
+ENDPROC
+PROCEDURE particionar_cbte
+************************************************************************************
+** Esta función permite grabar una factura cada 25 items.
+** Pablo Díaz
+************************************************************************************
+
+LOCAL ln_cantitems
+LOCAL lnResp
+LOCAL lnImprimirPTO
+LOCAL lnResp, llPreguntarPorComprobante
+
+STORE 0 TO lnResp, ln_cantitems
+STORE getGlobalCFG("RTOIMPXFC") TO llPreguntarPorComprobante
+
+* Si es presupuesto pregunto si hay que imprimir remitos.
+IF ALLTRIM(Thisform.cbte) == "PTO" .AND. getGlobalCFG("PRINT_RTO") .AND. !llPreguntarPorComprobante THEN
+	lnResp = MESSAGEBOX("Desea imprimir remitos para este cliente", 4+32, Thisform.Caption)
+ENDIF
+
+
+SELECT cur_aux
+ZAP 
+
+*!*	IF !(ALLTRIM(thisform.cbte) == "COT") .AND. getGlobalCFG("STK_MODULE") THEN
+*!*		IF !thisform.validar_stk_en_grabado() THEN
+*!*			goConn.Rollback()
+*!*			RETURN .F.
+*!*		ENDIF
+*!*	ENDIF
+
+SELECT cur_detalle
+IF RECCOUNT() > 0 THEN 
+	GO TOP
+ELSE 
+	RETURN .F.
+ENDIF 
+
+************************************************************************************
+** Paso de a 25 items del cursor de detalle al cursor auxiliar
+************************************************************************************
+SELECT cur_detalle
+DO WHILE !EOF()
+	ln_cantitems = ln_cantitems + 1
+	
+	SELECT cur_aux
+	APPEND BLANK	
+	
+	REPLACE cur_aux.idDetalle WITH cur_detalle.idDetalle
+	REPLACE cur_aux.idArticulo WITH cur_detalle.idArticulo ADDITIVE
+	REPLACE cur_aux.codArt WITH cur_detalle.codArt ADDITIVE
+	REPLACE cur_aux.descripcio WITH cur_detalle.descripcio ADDITIVE
+	REPLACE cur_aux.nroPart WITH cur_detalle.nroPart ADDITIVE
+	REPLACE cur_aux.cantidad WITH cur_detalle.cantidad ADDITIVE
+	REPLACE cur_aux.prVta WITH cur_detalle.prVta ADDITIVE
+	REPLACE cur_aux.pDtoVta1 WITH cur_detalle.pDtoVta1 ADDITIVE
+	REPLACE cur_aux.pDtoVta2 WITH cur_detalle.pDtoVta2 ADDITIVE
+	REPLACE cur_aux.pDtoVta3 WITH cur_detalle.pDtoVta3 ADDITIVE
+	REPLACE cur_aux.pDtoVta4 WITH cur_detalle.pDtoVta4 ADDITIVE
+	REPLACE cur_aux.iDtoVta1 WITH cur_detalle.iDtoVta1 ADDITIVE
+	REPLACE cur_aux.iDtoVta2 WITH cur_detalle.iDtoVta2 ADDITIVE
+	REPLACE cur_aux.iDtoVta3 WITH cur_detalle.iDtoVta3 ADDITIVE
+	REPLACE cur_aux.iDtoVta4 WITH cur_detalle.iDtoVta4 ADDITIVE
+	REPLACE cur_aux.pDtoCli1 WITH cur_detalle.pDtoCli1 ADDITIVE
+	REPLACE cur_aux.pDtoCli2 WITH cur_detalle.pDtoCli2 ADDITIVE
+	REPLACE cur_aux.pDtoCli3 WITH cur_detalle.pDtoCli3 ADDITIVE
+	REPLACE cur_aux.pDtoCli4 WITH cur_detalle.pDtoCli4 ADDITIVE
+	REPLACE cur_aux.iDtoCli1 WITH cur_detalle.iDtoCli1 ADDITIVE
+	REPLACE cur_aux.iDtoCli2 WITH cur_detalle.iDtoCli2 ADDITIVE
+	REPLACE cur_aux.iDtoCli3 WITH cur_detalle.iDtoCli3 ADDITIVE
+	REPLACE cur_aux.iDtoCli4 WITH cur_detalle.iDtoCli4 ADDITIVE
+	
+	&& Incorporo el recargo por ítem
+	REPLACE cur_aux.pRecItem WITH cur_detalle.pRecItem ADDITIVE
+	REPLACE cur_aux.iRecItem WITH cur_detalle.iRecItem ADDITIVE
+	
+	REPLACE cur_aux.alicIVA WITH cur_detalle.alicIVA ADDITIVE
+	REPLACE cur_aux.impIVA WITH cur_detalle.impIVA ADDITIVE
+	REPLACE cur_aux.impNeto WITH cur_detalle.impNeto ADDITIVE
+	REPLACE cur_aux.totNeto WITH cur_detalle.totNeto ADDITIVE
+	REPLACE cur_aux.subTotal WITH cur_detalle.subTotal ADDITIVE
+	REPLACE cur_aux.prArtic WITH cur_detalle.prArtic ADDITIVE
+	REPLACE cur_aux.esOferta WITH cur_detalle.esOferta ADDITIVE
+	REPLACE cur_aux.pRecVta WITH cur_detalle.pRecVta ADDITIVE 
+	REPLACE cur_aux.iRecVta WITH cur_detalle.iRecVta ADDITIVE
+	REPLACE cur_aux.uniDesp WITH cur_detalle.uniDesp ADDITIVE
+	REPLACE cur_aux.cantPack WITH cur_detalle.cantPack ADDITIVE 
+	REPLACE cur_aux.uniMed WITH cur_detalle.uniMed ADDITIVE
+	
+	&& Si lleva stock agrege los movimientos que hay que generar.
+	IF ALLTRIM(cur_detalle.nropart) == "" THEN
+		IF getGlobalCFG("STK_MODULE") THEN
+			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
+				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
+						cur_detalle.Cantidad, "")
+			ENDIF
+		ENDIF
+	ELSE
+		IF getGlobalCFG("STK_MODULE") THEN
+			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
+				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
+						cur_detalle.Cantidad, cur_detalle.nropart)
+			ENDIF
+		ENDIF	
+	ENDIF
+	
+	&& Cuando el contador llegue a 25 items grabo una factura nueva.
+	IF ln_cantitems = 25
+		&& tengo que hacer el calculo de los totales y el grabado		
+		Thisform.calc_subtot_cur_aux()
+		IF !thisform.grabar_cbte_part()
+			RETURN .F.
+		ENDIF	
+
+		&& Verifica si usa impresora fiscal
+		IF !thisform.usar_fiscal
+			Thisform.imprimir()
+		ENDIF
+		
+		&& Habilito la pregunta por comprobante solo si está habilitada la impresión
+		IF getGlobalCFG("PRINT_RTO") THEN
+			IF llPreguntarPorComprobante THEN
+				lnResp = MESSAGEBOX("Desea imprimir remitos para este presupuesto", 4+32, Thisform.Caption)
+			ENDIF
+		
+			IF lnResp = 6 THEN
+				*thisform.imprimir_rtos()
+				Thisform.generar_remitos()
+			ENDIF
+		ENDIF
+		
+		this.add_faccob(thisform.id_ventasc)
+		ln_cantitems = 0
+		SELECT cur_aux
+		ZAP
+		Thisform.mov_stock.limpiar()
+	ENDIF 
+	
+	SELECT cur_detalle
+	SKIP  
+ENDDO 
+
+&& En el caso que la ultima factura no haya llegado a los 25 items
+&& tengo que hacer una nueva factura con los items restantes.
+IF ln_cantitems <> 0 
+	&& tengo que hacer el calculo de los totales y el grabado
+	Thisform.calc_subtot_cur_aux()
+	IF !thisform.grabar_cbte_part()
+		RETURN .F.
+	ENDIF	
+	
+	&& Verifico que no use fiscal para enviar a imprimir
+	IF !thisform.usar_fiscal
+		Thisform.imprimir()
+	ENDIF
+
+	&& Habilito la pregunta solo si está habilitada la emisión de remitos
+	IF getGlobalCFG("PRINT_RTO") THEN
+		IF llPreguntarPorComprobante THEN
+			lnResp = MESSAGEBOX("Desea imprimir remitos para este presupuesto", 4+32, Thisform.Caption)
+		ENDIF
+		
+		IF lnResp = 6 THEN
+			* thisform.imprimir_rtos()
+			Thisform.generar_remitos()
+		ENDIF
+	ENDIF
+
+	this.add_faccob(thisform.id_ventasc)
+	Thisform.mov_stock.limpiar()
+ENDIF
+
+IF getGlobalCFG("PAGCTDO") .AND. This.cp_cntdias = 0 THEN
+	this.realizar_cobranza_mostrador()
+ENDIF
+
+RETURN .T.
+ENDPROC
+PROCEDURE calc_item_desc
+LOCAL lnDesc1, lnDesc2, lnDesc3, lnDesc4, lnNeto
+LOCAL lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4
+LOCAL lnImpIVA, lnAlicIVA
+LOCAL lnPorRec, lnImpRec, lnPorRecItem, lnImpRecItem
+
+lnImpDesc1 = 0.00
+lnImpDesc2 = 0.00
+lnImpDesc3 = 0.00
+lnImpDesc4 = 0.00
+lnPorRec = 0.00
+lnImpRec = 0.00
+lnPorRecItem = 0.00
+lnImpRecItem = 0.00
+
+lnDesc1 = Thisform.contenido.txtPorDesc1.Value
+lnDesc2 = Thisform.contenido.txtPorDesc2.Value
+lnDesc3 = Thisform.contenido.txtPorDesc3.Value
+lnDesc4 = Thisform.contenido.txtPorDesc4.Value
+
+lnAlicIVA = Thisform.contenido.txtAlicIva.Value
+lnPorRec = Thisform.contenido.txtPorRec.Value 
+lnPorRecItem  = Thisform.contenido.txtPorRecItem.Value
+
+IF RIGHT(ALLTRIM(Thisform.contenido.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
+	&& Si es artículo X tomo siempre el precio minorista ya que es el que habilito para modificar.
+	lnNeto = Thisform.contenido.txtPrMinorista.Value
+ELSE
+	IF clientes.mayorista THEN
+		lnNeto = Thisform.contenido.txtPrMay.Value
+	ELSE
+		lnNeto = Thisform.contenido.txtPrMinorista.Value
+	ENDIF
+ENDIF
+
+lnImpDesc1 = ROUND(lnNeto * (lnDesc1 / 100),2)
+lnImpDesc2 = ROUND((lnNeto - lnImpDesc1) * (lnDesc2 / 100),2)
+lnImpDesc3 = ROUND((lnNeto - lnImpDesc1 - lnImpDesc2) * (lnDesc3 / 100),2)
+lnImpDesc4 = ROUND((lnNeto - lnImpDesc1 - lnImpDesc2 - lnImpDesc3) * (lnDesc4 /100),2)
+	
+lnNeto = lnNeto - lnImpDesc1 - lnImpDesc2 - lnImpDesc3 - lnImpDesc4
+
+****************************************************
+&& Hago el recargo
+lnImpRec = ROUND(lnNeto * (lnPorRec / 100), 2)
+
+lnNeto = lnNeto + lnImpRec
+****************************************************
+&& Calculo el recargo por item
+lnImpRecItem = ROUND(lnNeto * (lnPorRecItem/ 100), 2)
+
+lnNeto = lnNeto + lnImpRecItem
+
+Thisform.contenido.txtImpDescItem1.Value = lnImpDesc1
+Thisform.contenido.txtImpDescItem2.Value = lnImpDesc2
+Thisform.contenido.txtImpDescItem3.Value = lnImpDesc3
+Thisform.contenido.txtImpDescItem4.Value = lnImpDesc4
+Thisform.contenido.txtRecItem.Value = lnImpRecItem 
+
+Thisform.contenido.txtPrNeto.Value = lnNeto
+Thisform.contenido.txtSTNeto.Value = ROUND(lnNeto * thisform.contenido.txtcantidad.value, 2)
+
+* Calculo el IVA
+lnImpIVA = ROUND(Thisform.contenido.txtSTNeto.Value * (lnAlicIVA / 100), 2)
+Thisform.contenido.txtImpIva.Value = lnImpIVA
+Thisform.contenido.txtSubTotal.Value = Thisform.contenido.txtSTNeto.Value + Thisform.contenido.txtImpIVA.Value
+
+*!*	IF (ALLTRIM(Thisform.cbte) == "PTO") THEN 
+*!*		Thisform.contenido.txtSubTotal.Value = Thisform.contenido.txtSTNeto.Value + Thisform.contenido.txtImpIVA.Value
+*!*	ELSE 
+*!*		lnImpIVA = ROUND(Thisform.contenido.txtSTNeto.Value * (lnAlicIVA / 100), 2)
+*!*		Thisform.contenido.txtImpIva.Value = lnImpIVA
+*!*		Thisform.contenido.txtSubTotal.Value = Thisform.contenido.txtSTNeto.Value + Thisform.contenido.txtImpIVA.Value
+*!*	ENDIF 
 
 ENDPROC
 PROCEDURE contenido.sel_Cliente.recuperar_datos

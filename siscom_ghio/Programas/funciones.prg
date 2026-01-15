@@ -152,10 +152,11 @@ PROCEDURE actualizar_funciones
 	LOCAL lnFileCount
 	LOCAL lcFileName
 	PRIVATE laFiles	&& Lo pongo como private porque es un array
-
+	
 	lcFileName = ""
 	lnFileCount = 0
 	lcUbicacion = get_ubicacion()
+
 	lnFileCount = ADIR(laFiles, lcUbicacion + "\fn.*.sql")
 	FOR i = 1 TO lnFileCount
 		lcFileName = laFiles(i, 1)
@@ -176,15 +177,96 @@ PROCEDURE ejecutar_fn
 
 	lcSPName = GETWORDNUM(tcFileName, 2, ".")
 	WAIT WINDOW "Actualizando función " + lcSPName + "..." NOWAIT
-	lcScript = "DROP FUNCTION IF EXISTS " + ALLTRIM(lcSPName)
-	loCommand.CommandText = lcScript
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.execute()
+	IF existe_fn(lcSPName) THEN
+		lcScript = "DROP FUNCTION IF EXISTS " + ALLTRIM(lcSPName)
+		loCommand.CommandText = lcScript
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		loCommand.execute()
+	ENDIF
 
 	lcScript = FILETOSTR(tcUbicacion + "\" + tcFileName)
 	loCommand.CommandText = lcScript
 	loCommand.ActiveConnection = goConn.ActiveConnection
 	loCommand.execute()
+ENDPROC
+
+***
+* Verifica si una función existe en la base de datos.
+***
+FUNCTION existe_fn
+	PARAMETERS tcFnName
+	
+	LOCAL lcSql
+	LOCAL loRes
+	LOCAL lcBDNombre
+	LOCAL llResult
+	
+	lcBDNombre = ALLTRIM(goConn.current_db)
+	
+	TEXT TO lcSql NOSHOW
+		select	
+			count(*) as cantReg
+		from	
+			information_schema.routines
+		where	
+			specific_name = ?xcFnName and    
+			routine_schema = ?xBD
+	ENDTEXT
+	loRes = CREATEOBJECT("odbc_result")
+	lcSql = loRes.AddParameter(lcSql, "xcFnName", tcFnName, .T., .F.)
+	lcSql = loRes.AddParameter(lcSql, "xBD", lcBDNombre, .T., .F.)
+
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	loRes.OpenQuery(lcSql)
+	
+	SELECT cur_x
+	IF INT(VAL(cur_x.cantReg)) = 0 THEN
+		llResult = .F.
+	ELSE
+		llResult = .T.
+	ENDIF
+	
+	loRes.Close_Query()
+	
+	RETURN llResult
+ENDFUNC
+
+***
+* Permite configurar el sistema ya sea para modo desarrollo
+* o producción según el parámetro MODODESA
+***
+PROCEDURE configurar_sistema
+	LOCAL llModoDesa
+	LOCAL lcScript
+	LOCAL lcSql
+	LOCAL lcUrl
+	
+	TRY 
+	
+		lcUrl = getGlobalCFG("UPD_URL")
+		
+		WAIT WINDOW "Chequeando parametros..." NOWAIT
+		llModoDesa = getGlobalCFG("MODODESA")
+		
+		IF llModoDesa THEN
+			lcScript = FILETOSTR(ALLTRIM(SYS(5) + SYS(2003) + "\upgrades\utils_configurar_desa.sql"))
+		ELSE
+			lcScript = FILETOSTR(ALLTRIM(SYS(5) + SYS(2003) + "\upgrades\utils_configurar_prod.sql"))
+		ENDIF
+		
+		FOR i = 1 TO GETWORDCOUNT(lcScript, ";")
+			lcSql = GETWORDNUM(lcScript, i, ";")
+			* Verifico que el sql no venga vacío.
+			IF !EMPTY(lcSql) THEN
+				ejecutar_comando(lcSql)
+			ENDIF
+		NEXT i
+		WAIT WINDOW "Parámetros chequeados" NOWAIT
+	CATCH TO oException
+		STRTOFILE("Error: " + STR(oException.ErrorNo) + " " + oException.Message + " " + oException.Procedure ;
+			+ STR(oException.LineNo), "error.log")
+	ENDTRY
 ENDPROC
 
 && Inserta un registro en la tabla log_transacciones.
@@ -238,10 +320,17 @@ PROCEDURE ejecutar_comando
 	
 	LOCAL loCmd
 	LOCAL lcSql
+	
+	goConn.BeginTransaction()
 	loCmd = CREATEOBJECT("odbc_command")
 	loCmd.ActiveConnection = goConn.ActiveConnection
 	loCmd.CommandText = tcSql
-	loCmd.execute()	
+	IF !loCmd.execute()	THEN
+		goConn.Rollback()
+		MESSAGEBOX(loCmd.ErrorMessage, 0+48, "Actualización de sistema")
+		RETURN
+	ENDIF
+	goConn.Commit()
 ENDPROC
 
 **
@@ -262,7 +351,7 @@ FUNCTION existe_campo
 	SELECT cur_x
 	GO TOP
 	DO WHILE !EOF("cur_x")
-		IF ALLTRIM(cur_x.Field) == ALLTRIM(tcCampo) THEN
+		IF LOWER(ALLTRIM(cur_x.Field)) == LOWER(ALLTRIM(tcCampo)) THEN
 			loRes.Close_Query()
 			RETURN .T.
 		ENDIF
@@ -439,6 +528,39 @@ PROCEDURE enviar_ticket_acceso
 	&lcCmd
 ENDPROC
 
+FUNCTION getCursorResultValue
+	**********************************************************
+	* Verifica el tipo de datos que devuelve del valor result
+	* cuando se ejecuta un procedimiento almacenado.
+	* Fecha: 06/02/2023
+	**********************************************************
+	LPARAMETERS tValue
+	
+	IF TYPE("tValue") == "N" THEN
+		RETURN tValue
+	ELSE
+		RETURN INT(VAL(tValue))
+	ENDIF
+ENDFUNC
+
+FUNCTION proximoMultiplo
+LPARAMETERS cantidad, multiplo
+	**********************************************************
+	* Esta función devuelve el próximo múltiplo de un número.
+	**********************************************************
+
+	LOCAL resto, proximo
+
+	IF cantidad % multiplo = 0
+	    proximo = cantidad
+	ELSE
+	    resto = cantidad % multiplo
+	    proximo = cantidad + (multiplo - resto)
+	ENDIF
+
+	RETURN proximo
+ENDFUNC
+
 **************************************************
 * Permite validar el CUIT con el dígito
 * verificador
@@ -511,6 +633,7 @@ FUNCTION WinHttp(lcUrl, lcVerb, lcPostData, lcContentType)
 	loHttp = NULL 
 
 RETURN lcResult
+
 
 *************************************************************
 * Archivo: excel_export.prg
@@ -656,3 +779,36 @@ PROCEDURE exportar_a_excel
 
 	RETURN .T.
 ENDPROC
+
+***************************************************************************************
+* Función: getErrorForCatch
+* Descripción:
+*	Esta función permite generar el mensaje de texto a devolver si surge un en un
+*	manejo de TRY-CATCH-FINALLY
+* Parametros:
+*	toException => Objeto con la excepción
+* Desarrollado por: Zulli, Leonardo Diego
+* Fecha: 23/12/2025
+***************************************************************************************
+FUNCTION getErrorForCatch
+	LPARAMETERS toException
+	
+	LOCAL lcMensaje
+	LOCAL lcSalto
+	
+	lcSalto = CHR(13) + CHR(10)
+	
+	TEXT TO lcMensaje NOSHOW TEXTMERGE PRETEXT 15
+		Error Nº: <<toException.ErrorNo>><<lcSalto>>
+		Mensaje: <<toException.Message>><<lcSalto>>
+		Línea Nº: <<toException.LineNo>><<lcSalto>>
+		Contenido Línea: <<toException.LineContents>><<lcSalto>>
+		Procedimiento: <<toException.Procedure>><<lcSalto>>
+		Clase: <<toException.ParentClass>><<lcSalto>>
+		Librería: <<toException.ClassLibrary>><<lcSalto>>
+		Detalles: <<toException.Details>><<lcSalto>>
+		Stack: <<toException.StackLevel>>
+	ENDTEXT
+	
+	RETURN lcMensaje
+ENDFUNC

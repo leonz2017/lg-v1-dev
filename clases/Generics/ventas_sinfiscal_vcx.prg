@@ -16809,810 +16809,6 @@ Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 
 ************************************************************
-OBJETO: clsform_consbjacbte_sf
-************************************************************
-*** PROPIEDADES ***
-Height = 500
-Width = 1020
-DoCreate = .T.
-BorderStyle = 2
-Caption = "Consulta y Baja de Comprobantes"
-list_cbtes = 
-consulta = .T.
-tipo_consulta = 
-Name = "clsform_consbjacbte_sf"
-CONTENIDO.Top = 0
-CONTENIDO.Left = 0
-CONTENIDO.Width = 1021
-CONTENIDO.Height = 505
-CONTENIDO.Name = "CONTENIDO"
-
-*** METODOS ***
-PROCEDURE cargar_combos
-&& Cargo los combobox de cbte y tipo de acuerdo a los comprobante seteados en la propiedad list_cbtes
-
-LOCAL lc_cbtes, ln, lc_cantcbtes, ln_cargoAB
-DIMENSION la_vector[10]
-
-lc_cbtes = thisform.list_cbtes
-lc_cantcbtes = ALINES(la_vector,lc_cbtes,5,",")
-ln_cargoAB = 0
-
-Thisform.contenido.cmbTipo.AddItem("Todos")
-
-FOR ln=1 TO lc_cantcbtes 
-	IF ln == 1 THEN 
-		IF lc_cantcbtes > 1
-			Thisform.contenido.cmbCbte.AddItem("Todos")
-		ENDIF 
-	ENDIF 
-	
-	Thisform.contenido.cmbCbte.AddItem(STRTRAN(la_vector(ln),"'",""))
-	
-	IF STRTRAN(la_vector(ln),"'","") == "FC" OR STRTRAN(la_vector(ln),"'","") == "NC" OR STRTRAN(la_vector(ln),"'","") == "ND"
-		IF ln_cargoAB = 0 THEN 
-			Thisform.contenido.cmbTipo.AddItem("A")
-			Thisform.contenido.cmbTipo.AddItem("B")
-			ln_cargoAB = 1
-		ENDIF 
-	ELSE 
-		IF STRTRAN(la_vector(ln),"'","") == "PED"
-			Thisform.contenido.cmbTipo.AddItem("P")
-		ENDIF 
-	ENDIF 
-ENDFOR 
-
-IF INT(VAL(getConfig("SQLSRV"))) = 2 THEN
-	THisform.contenido.cmbTipo.AddItem("X")
-ENDIF
-
-Thisform.contenido.cmbCbte.ListIndex = 1
-Thisform.contenido.cmbTipo.ListIndex = 1
-
-ENDPROC
-PROCEDURE anular_cantnc_factura
-**********************************************************************
-* Método para actualizar cantNC de una factura con nota de crédito por devolución anulada.
-**********************************************************************
-local lcSql, loRes
-local loCommand
-LOCAL idArticulo, idNotaCredito, idFacturaOrigen, cantidadArticulo
-
-&& Variables que utilizo para la busqueda de articulos en la factura origen,
-idArticulo = 0
-cantidadArticulo = 0
-idNotaCredito = 0
-idFacturaOrigen = 0
-
-lcSql = ""
-loRes = createobject("odbc_result")
-loCommand = createobject("odbc_command")
-
-&& Busco la factura de origen de la NC.
-select cur_cbtes
-idNotaCredito = cur_cbtes.idVentasC
-lcSql = "select * from ventasrel where idvtacd = " + alltrim(str(idNotaCredito))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_name = "cur_vr"
-
-if !loRes.OpenQuery(lcSql) then
-	messagebox(loRes.Error_message, 0+48, thisform.caption)
-	goConn.rollback()
-	return .f.
-endif
-idFacturaOrigen = cur_vr.idvtaco
-
-lcSql = "select idArticulo, cantidad from ventasdet where idVentasC = " + ALLTRIM(STR(idNotaCredito))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_name = "cur_x"
-loRes.close_query()
-
-IF !loRes.OpenQuery(lcSql) then
-	MESSAGEBOX(loRes.error_message, 0+48, thisform.Caption)
-	goConn.rollback()
-	RETURN .f.
-ENDIF
-
-&& Actualizo cantNC a 0
-goConn.beginTransaction()
-select cur_x
-DO WHILE !EOF("cur_x") 
-	idArticulo = cur_x.idArticulo
-	cantidadArticulo = cur_x.cantidad
-		
-	lcSql = "UPDATE ventasdet "
-	lcSql = lcSql + "SET cantNC = cantNC - " + ALLTRIM(STR(cantidadArticulo))
-	lcSql = lcSql + " WHERE idventasc = " + alltrim(str(idFacturaOrigen))
-	lcSql = lcSql + " AND ventasdet.idArticulo = " + ALLTRIM(STR(idArticulo))
-	
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-
-	if !loCommand.execute()
-		MessageBox("No se ha podido actualizar la cantidad de la factura", 0+48, thisform.caption)
-		goConn.rollback()
-		return .f.
-	endif
-
-
-	SELECT cur_x
-	SKIP 	
-ENDDO
-
-
-ENDPROC
-PROCEDURE Init
-&& Configuro según la funcionalidad del formulario
-
-Thisform.cargar_combos()
-
-IF thisform.consulta
-	thisform.contenido.btnEliminar.Visible = .F.
-ELSE
-	thisform.contenido.btnEliminar.Visible = .T.
-ENDIF
-
-thisform.contenido.txtFecDesde.Value = DATE() - 30
-thisform.contenido.txtFecHasta.Value = DATE()
-thisform.contenido.txtptovta.Value = "0000"
-thisform.contenido.txtnumero.Value = "00000000"
-thisform.ShowTips = .T.
-
-ENDPROC
-PROCEDURE Load
-DODEFAULT()
-
-CREATE CURSOR cur_Cbtes( 	;
-	idVentasC	int,;
-	idCliente	int,;
-	razSoc		C(60),;
-	fecEmis		date,;
-	nroDoc		C(20),;
-	impFinal	F(10,2),;
-	usualta		C(5),;
-	fecAlta		datetime,;
-	idhostalta	C(50),;
-	Observ		M)
-	
-	
-SELECT cur_Cbtes
-INDEX on idVentasC TAG idVentasC ASCENDING
-INDEX on idCliente TAG idCliente ASCENDING ADDITIVE 
-INDEX on razSoc TAG razSoc ASCENDING ADDITIVE 
-INDEX on fecEmis TAG fecEmis ASCENDING ADDITIVE 
-INDEX on nroDoc TAG nroDoc ASCENDING ADDITIVE 
-INDEX on impFinal TAG impFinal ASCENDING ADDITIVE
-INDEX on usualta TAG usualta ASCENDING ADDITIVE
-INDEX on idhostalta TAG idhostalta ASCENDING ADDITIVE 
-	
-SELECT cur_Cbtes
-SET ORDER TO TAG fecEmis ASCENDING
-ENDPROC
-
-
-************************************************************
-OBJETO: stock
-************************************************************
-*** PROPIEDADES ***
-Top = 468
-Left = 384
-Height = 17
-Width = 36
-Name = "stock"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: CLSETIQUETA1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Cliente Desde:"
-Height = 15
-Left = 5
-Top = 13
-TabIndex = 12
-Name = "CLSETIQUETA1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta2
-************************************************************
-*** PROPIEDADES ***
-Caption = "Cliente Hasta:"
-Height = 15
-Left = 5
-Top = 37
-TabIndex = 13
-Name = "Clsetiqueta2"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta3
-************************************************************
-*** PROPIEDADES ***
-Caption = "Fecha Desde:"
-Height = 15
-Left = 5
-Top = 89
-Width = 84
-TabIndex = 15
-Name = "Clsetiqueta3"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta4
-************************************************************
-*** PROPIEDADES ***
-Caption = "Fecha Hasta:"
-Height = 15
-Left = 202
-Top = 89
-Width = 84
-TabIndex = 16
-Name = "Clsetiqueta4"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_cliDesde
-************************************************************
-*** PROPIEDADES ***
-Top = 8
-Left = 96
-TabIndex = 1
-cfieldname = idCliente
-esnumerico = .T.
-nombre_campo_codigo = idCliente
-nombre_campo_desc = razSoc
-nombre_tabla = clientes
-pkfield = idCliente
-requerido = .F.
-criterio_filtro = clientes.fecBaja IS NULL
-Name = "sel_cliDesde"
-TXTCODIGO.Name = "TXTCODIGO"
-TXTDESCRIPCION.Name = "TXTDESCRIPCION"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_cliHasta
-************************************************************
-*** PROPIEDADES ***
-Top = 32
-Left = 96
-TabIndex = 2
-cfieldname = idCliente
-esnumerico = .T.
-nombre_campo_codigo = idCliente
-nombre_campo_desc = razSoc
-nombre_tabla = clientes
-pkfield = idCliente
-requerido = .F.
-criterio_filtro = clientes.fecBaja IS NULL
-Name = "sel_cliHasta"
-TXTCODIGO.Name = "TXTCODIGO"
-TXTDESCRIPCION.Name = "TXTDESCRIPCION"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecDesde
-************************************************************
-*** PROPIEDADES ***
-Left = 98
-TabIndex = 7
-Top = 85
-isdatetime = .T.
-Name = "txtFecDesde"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecHasta
-************************************************************
-*** PROPIEDADES ***
-Left = 292
-TabIndex = 8
-Top = 85
-isdatetime = .T.
-Name = "txtFecHasta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: grdCbtes
-************************************************************
-*** PROPIEDADES ***
-Height = 309
-Left = 2
-TabIndex = 17
-Top = 112
-Width = 1013
-alias_name = cur_Cbtes
-permitir_busqueda = .F.
-permitir_ordenamiento = .F.
-list_controlsource = fecEmis,idCliente,razSoc,nroDoc,impFinal,usualta,fecAlta,idhostalta
-lista_ancho_cols = 100,70,210,150,70,70,130,150
-titulos_cabeceras = Fecha,Cliente,Razón Social,Nro. Comprobante,Importe,Usuario,Fecha Alta,Host
-Name = "grdCbtes"
-COLUMN1.HEADER1.Name = "HEADER1"
-COLUMN1.TEXT1.Name = "TEXT1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.HEADER1.Name = "HEADER1"
-COLUMN2.TEXT1.Name = "TEXT1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.HEADER1.Name = "HEADER1"
-COLUMN3.TEXT1.Name = "TEXT1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.HEADER1.Name = "HEADER1"
-COLUMN4.TEXT1.Name = "TEXT1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.HEADER1.Name = "HEADER1"
-COLUMN5.TEXT1.Name = "TEXT1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.HEADER1.Name = "HEADER1"
-COLUMN6.TEXT1.Name = "TEXT1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.HEADER1.Name = "HEADER1"
-COLUMN7.TEXT1.Name = "TEXT1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.HEADER1.Name = "HEADER1"
-COLUMN8.TEXT1.Name = "TEXT1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.HEADER1.Name = "HEADER1"
-COLUMN9.TEXT1.Name = "TEXT1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.HEADER1.Name = "HEADER1"
-COLUMN10.TEXT1.Name = "TEXT1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.HEADER1.Name = "HEADER1"
-COLUMN11.TEXT1.Name = "TEXT1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.HEADER1.Name = "HEADER1"
-COLUMN12.TEXT1.Name = "TEXT1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.HEADER1.Name = "HEADER1"
-COLUMN13.TEXT1.Name = "TEXT1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.HEADER1.Name = "HEADER1"
-COLUMN14.TEXT1.Name = "TEXT1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.HEADER1.Name = "HEADER1"
-COLUMN15.TEXT1.Name = "TEXT1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.HEADER1.Name = "HEADER1"
-COLUMN16.TEXT1.Name = "TEXT1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.HEADER1.Name = "HEADER1"
-COLUMN17.TEXT1.Name = "TEXT1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.HEADER1.Name = "HEADER1"
-COLUMN18.TEXT1.Name = "TEXT1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.HEADER1.Name = "HEADER1"
-COLUMN19.TEXT1.Name = "TEXT1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.HEADER1.Name = "HEADER1"
-COLUMN20.TEXT1.Name = "TEXT1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnAceptar
-************************************************************
-*** PROPIEDADES ***
-Top = 66
-Left = 973
-Height = 44
-Width = 45
-TabIndex = 9
-Name = "btnAceptar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lcFecDesde, lcFecHasta, loDateTime, lcNroDoc 
-LOCAL lnIdCliDesde, lnIdCliHasta, lcSql, loResult
-LOCAL lnTotal
-
-loDateTime = CREATEOBJECT("datetime")
-loResult = CREATEOBJECT("odbc_result")
-lcFecDesde = loDateTime.toMySql(thisform.contenido.txtFecDesde.Value)
-lcFecHasta = loDateTime.toMySql(thisform.contenido.txtFecHasta.Value)
-lcNroDoc = "" 
-lnTotal = 0.00
-
-IF thisform.contenido.sel_cliDesde.valcpoid <> 0 .AND. thisform.contenido.sel_CliHasta.valcpoid <> 0
-	lnIdCliDesde = thisform.contenido.sel_cliDesde.valcpoid
-	lnIdCliHasta = thisform.contenido.sel_CliHasta.valcpoid
-ELSE
-	lnIdCliDesde = 0
-	lnIdCliHasta = 999999
-ENDIF
-
-SELECT cur_Cbtes
-ZAP
-
-lcSql = "CALL ventascab_consultar ( " ;
-	+ "?tipoConsulta, " ;
-	+ "?fechaDesde, " ;
-	+ "?fechaHasta, " ;
-	+ "?idClienteDesde, " ;
-	+ "?idClienteHasta, " ;
-	+ "?cbte, " ;
-	+ "?tipoDoc, " ;
-	+ "?ptoVta, " ;
-	+ "?numCbte)"
-	
-lcSql = loResult.AddParameter(lcSql, "tipoConsulta", thisform.tipo_consulta, .t., .f.)
-lcSql = loResult.AddParameter(lcSql, "fechaDesde", thisform.contenido.txtFecDesde.Value, .f., .t.)
-lcSql = loResult.AddParameter(lcSql, "fechaHasta", thisform.contenido.txtFecHasta.Value, .f., .t.)
-lcSql = loResult.AddParameter(lcSql, "idClienteDesde", ALLTRIM(STR(thisform.contenido.sel_cliDesde.valcpoid)), .f., .f.)
-lcSql = loResult.AddParameter(lcSql, "idClienteHasta", ALLTRIM(STR(thisform.contenido.sel_cliHasta.valcpoid)), .f., .f.)
-lcSql = loResult.AddParameter(lcSql, "cbte", ALLTRIM(UPPER(thisform.contenido.cmbCbte.Value)), .t., .f.)
-lcSql = loResult.AddParameter(lcSql, "tipoDoc", ALLTRIM(UPPER(thisform.contenido.cmbTipo.Value)), .t., .f.)
-lcSql = loResult.AddParameter(lcSql, "ptoVta", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtPtoVta.Value))))), .f., .f.)
-lcSql = loResult.AddParameter(lcSql, "numCbte", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtNumero.Value))))), .f., .f.)
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.cursor_name = "cur_tempo"
-loResult.OpenQuery(lcSql)
-SELECT cur_tempo
-IF RECCOUNT() > 0
-	GO TOP
-ENDIF
-
-SELECT cur_tempo
-DO WHILE !EOF()
-	lcNroDoc = ALLTRIM(cur_tempo.Cbte) + " " + ALLTRIM(cur_tempo.tipoDoc) + " "
-	lcNroDoc = lcNroDoc + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_tempo.ptoVta)))) + ALLTRIM(STR(cur_tempo.ptoVta)) + "-"
-	lcNroDoc = lcNroDoc + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_tempo.numCbte)))) + ALLTRIM(STR(cur_tempo.numCbte))
-
-	SELECT cur_Cbtes
-	APPEND BLANK
-	REPLACE idVentasC WITH cur_tempo.idVentasC
-	REPLACE idCliente WITH cur_tempo.idCliente ADDITIVE
-	REPLACE razSoc WITH cur_tempo.razSoc ADDITIVE
-	REPLACE fecEmis WITH cur_tempo.fecEmision ADDITIVE
-	REPLACE nroDoc WITH lcNroDoc ADDITIVE
-	REPLACE impFinal WITH cur_tempo.totFact ADDITIVE
-	REPLACE usualta WITH cur_tempo.usualta ADDITIVE
-	REPLACE fecAlta WITH cur_tempo.fecAlta ADDITIVE
-	REPLACE idhostalta WITH cur_tempo.idhostalta ADDITIVE
-	REPLACE observ WITH IIF(ISNULL(cur_tempo.Observ), "", cur_tempo.Observ) ADDITIVE
-	IF ALLTRIM(cur_tempo.Cbte) == "NC" THEN
-		lnTotal = lnTotal - cur_tempo.totFact
-	ELSE
-		lnTotal = lnTotal + cur_tempo.totFact
-	ENDIF
-	SELECT cur_tempo
-	SKIP
-ENDDO
-
-loResult.close_query()
-
-SELECT cur_Cbtes
-IF RECCOUNT() > 0
-	GO TOP
-ENDIF
-
-Thisform.Contenido.grdCbtes.Refresh()
-Thisform.Contenido.txtTotal.Value = lnTotal
-ENDPROC
-
-
-************************************************************
-OBJETO: btnEliminar
-************************************************************
-*** PROPIEDADES ***
-Top = 454
-Left = 922
-TabIndex = 12
-Name = "btnEliminar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp, lcSql, loRes
-LOCAL loCommand
-
-lnResp = 0
-lcSql = ""
-loRes = CREATEOBJECT("odbc_result")
-loCommand = CREATEOBJECT("odbc_command")
-
-lnResp = MESSAGEBOX("¿Está seguro que desea anular el comprobante?", 4+32, Thisform.Caption)
-
-IF lnResp = 6
-	goConn.BeginTransaction()
-
-	lcSql = "UPDATE ventascab "
-	lcSql = lcSql + "SET anulado = 1, "
-	lcSql = lcSql + "usuBaja = '" + ALLTRIM(gcCodUsu) + "', " 
-	IF ALLTRIM(getconfig("SQLSRV")) == "0" THEN
-		lcSql = lcSql + "fecBaja = current_timestamp, "
-	ELSE
-		lcSql = lcSql + "fecBaja = GETDATE(), "
-	ENDIF
-	lcSql = lcSql + "idHostBaja = '" + SYS(0) + "' "
-	lcSql = lcSql + "WHERE idventasc = " + ALLTRIM(STR(cur_Cbtes.idventasc))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.execute()
-		MESSAGEBOX("No se ha podido anular el comprobante", 0+64, thisform.Caption)
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-	
-	&& Verifico que sea una Nota de crédito a eliminar y seteo cantNC en 0 al eliminar la nota de crédito, antes de limpiar el cursor_cbtes.
-	IF SUBSTR(cur_cbtes.nroDoc, 1, 2) == "NC" then
-		thisform.anular_cantnc_factura()
-		
-	endif
-	
-	SELECT cur_Cbtes
-	DELETE
-	thisform.contenido.grdCbtes.Refresh()
-		
-	&& Si estoy eliminando una factura, entonces, tengo que dar de alta nuevamente
-	&& el stock
-	IF getGlobalCFG("STK_MODULE") THEN
-		IF SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "FC" .OR. SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "PED" THEN
-			lcSql = "select * from ventasdet where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
-			loRes.ActiveConnection = goConn.ActiveConnection
-			loRes.Cursor_Name = "cur_x"
-			
-			IF !loRes.OpenQuery(lcSql) THEN
-				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-				goConn.Rollback()
-				RETURN .F.
-			ENDIF
-			
-			SELECT cur_x
-			IF RECCOUNT() > 0 THEN
-				GO TOP
-			ENDIF
-			
-			DO WHILE !EOF("cur_x")
-				thisform.stock.crear_cursor()
-				thisform.stock.circuito = "V"
-				thisform.stock.tipomov = "ENT"
-				thisform.stock.cbte = ""
-				thisform.stock.numcbte = "ANULACION " + SUBSTR(cur_Cbtes.nroDoc, 1, 2)
-				thisform.stock.agregar_articulo(cur_x.idArticulo, cur_x.cantidad, IIF(ISNULL(cur_x.nroPart), "", cur_x.nroPart))
-				
-				IF !thisform.stock.grabar2() THEN
-					MESSAGEBOX(thisform.stock.ErrorMessage, 0+48, thisform.Caption)
-					goConn.Rollback()
-					RETURN .F.
-				ENDIF
-			
-				SELECT cur_x
-				SKIP
-			ENDDO
-			
-			loRes.Close_Query()
-		ENDIF
-	ENDIF
-	
-	&& Doy de baja la factura en la cuenta corriente del cliente
-	lcSql = "update cc_cli "
-	lcSql = lcSql + "set cc_cli.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "	fecBaja = " + IIF(INT(VAL(getConfig("SQLSRV"))) = 1, "getdate(), ", "current_timestamp, ")
-	lcSql = lcSql + "	idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-	
-	goConn.Commit()
-		
-ENDIF
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: btnCerrar
-************************************************************
-*** PROPIEDADES ***
-Top = 454
-Left = 969
-TabIndex = 13
-Name = "btnCerrar"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta5
-************************************************************
-*** PROPIEDADES ***
-Caption = "Comprobante:"
-Height = 15
-Left = 5
-Top = 62
-Width = 84
-TabIndex = 14
-Name = "Clsetiqueta5"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtptovta
-************************************************************
-*** PROPIEDADES ***
-Alignment = 3
-Value = 
-Height = 21
-Left = 208
-MaxLength = 4
-TabIndex = 5
-Top = 59
-Width = 45
-autocompleta = .T.
-ischaracter = .T.
-Name = "txtptovta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbCbte
-************************************************************
-*** PROPIEDADES ***
-Height = 24
-Left = 98
-TabIndex = 3
-Top = 58
-Width = 59
-cfieldname = 
-Name = "cmbCbte"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbTipo
-************************************************************
-*** PROPIEDADES ***
-Height = 24
-Left = 160
-TabIndex = 4
-Top = 58
-Width = 44
-Name = "cmbTipo"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtnumero
-************************************************************
-*** PROPIEDADES ***
-Alignment = 3
-Value = 
-Height = 21
-Left = 256
-MaxLength = 8
-TabIndex = 6
-Top = 59
-Width = 90
-ischaracter = .T.
-autocompleta = .T.
-Name = "txtnumero"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnVerDetalles
-************************************************************
-*** PROPIEDADES ***
-Top = 453
-Left = 5
-TabIndex = 10
-Name = "btnVerDetalles"
-
-*** METODOS ***
-PROCEDURE Click
-DO FORM "frmImagenCbte"
-ENDPROC
-
-
-************************************************************
-OBJETO: btnSeguimiento
-************************************************************
-*** PROPIEDADES ***
-Top = 454
-Left = 52
-Height = 44
-Width = 45
-Picture = ..\imagen\my-documents.ico
-TabIndex = 11
-ToolTipText = "Seguimiento de Comprobantes"
-Name = "btnSeguimiento"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL loForm
-
-loForm = CREATEOBJECT("cls_frm_linkedcbtes")
-
-SELECT cur_Cbtes
-loForm.idVentasC = cur_Cbtes.idVentasC
-loForm.nrocbte = cur_Cbtes.nrodoc
-
-loForm.leer_datos()
-
-loForm.show()
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta6
-************************************************************
-*** PROPIEDADES ***
-Caption = "Importe total de comprobantes:"
-Height = 15
-Left = 673
-Top = 432
-Width = 180
-Name = "Clsetiqueta6"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtTotal
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 865
-ReadOnly = .T.
-Top = 428
-Width = 149
-isnumeric = .T.
-Name = "txtTotal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: clsform_consbjacbte_sf
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
 OBJETO: cls_form_wsafip_autoriza
 ************************************************************
 *** PROPIEDADES ***
@@ -36443,6 +35639,810 @@ OBJETO: clsformcbtes_sf
 Arial, 0, 9, 5, 15, 12, 32, 3, 0
 Arial, 1, 8, 5, 14, 11, 29, 3, 0
 Arial, 1, 9, 6, 15, 12, 32, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: clsform_consbjacbte_sf
+************************************************************
+*** PROPIEDADES ***
+BorderStyle = 2
+Height = 500
+Width = 1020
+DoCreate = .T.
+Caption = "Consulta y Baja de Comprobantes"
+list_cbtes = 
+consulta = .T.
+tipo_consulta = 
+Name = "clsform_consbjacbte_sf"
+CONTENIDO.Top = 0
+CONTENIDO.Left = 0
+CONTENIDO.Width = 1021
+CONTENIDO.Height = 505
+CONTENIDO.Name = "CONTENIDO"
+
+*** METODOS ***
+PROCEDURE cargar_combos
+&& Cargo los combobox de cbte y tipo de acuerdo a los comprobante seteados en la propiedad list_cbtes
+
+LOCAL lc_cbtes, ln, lc_cantcbtes, ln_cargoAB
+DIMENSION la_vector[10]
+
+lc_cbtes = thisform.list_cbtes
+lc_cantcbtes = ALINES(la_vector,lc_cbtes,5,",")
+ln_cargoAB = 0
+
+Thisform.contenido.cmbTipo.AddItem("Todos")
+
+FOR ln=1 TO lc_cantcbtes 
+	IF ln == 1 THEN 
+		IF lc_cantcbtes > 1
+			Thisform.contenido.cmbCbte.AddItem("Todos")
+		ENDIF 
+	ENDIF 
+	
+	Thisform.contenido.cmbCbte.AddItem(STRTRAN(la_vector(ln),"'",""))
+	
+	IF STRTRAN(la_vector(ln),"'","") == "FC" OR STRTRAN(la_vector(ln),"'","") == "NC" OR STRTRAN(la_vector(ln),"'","") == "ND"
+		IF ln_cargoAB = 0 THEN 
+			Thisform.contenido.cmbTipo.AddItem("A")
+			Thisform.contenido.cmbTipo.AddItem("B")
+			ln_cargoAB = 1
+		ENDIF 
+	ELSE 
+		IF STRTRAN(la_vector(ln),"'","") == "PED"
+			Thisform.contenido.cmbTipo.AddItem("P")
+		ENDIF 
+	ENDIF 
+ENDFOR 
+
+IF INT(VAL(getConfig("SQLSRV"))) = 2 THEN
+	THisform.contenido.cmbTipo.AddItem("X")
+ENDIF
+
+Thisform.contenido.cmbCbte.ListIndex = 1
+Thisform.contenido.cmbTipo.ListIndex = 1
+
+ENDPROC
+PROCEDURE anular_cantnc_factura
+**********************************************************************
+* Método para actualizar cantNC de una factura con nota de crédito por devolución anulada.
+**********************************************************************
+local lcSql, loRes
+local loCommand
+LOCAL idArticulo, idNotaCredito, idFacturaOrigen, cantidadArticulo
+
+&& Variables que utilizo para la busqueda de articulos en la factura origen,
+idArticulo = 0
+cantidadArticulo = 0
+idNotaCredito = 0
+idFacturaOrigen = 0
+
+lcSql = ""
+loRes = createobject("odbc_result")
+loCommand = createobject("odbc_command")
+
+&& Busco la factura de origen de la NC.
+select cur_cbtes
+idNotaCredito = cur_cbtes.idVentasC
+lcSql = "select * from ventasrel where idvtacd = " + alltrim(str(idNotaCredito))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_name = "cur_vr"
+
+if !loRes.OpenQuery(lcSql) then
+	messagebox(loRes.Error_message, 0+48, thisform.caption)
+	goConn.rollback()
+	return .f.
+endif
+idFacturaOrigen = cur_vr.idvtaco
+
+lcSql = "select idArticulo, cantidad from ventasdet where idVentasC = " + ALLTRIM(STR(idNotaCredito))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_name = "cur_x"
+loRes.close_query()
+
+IF !loRes.OpenQuery(lcSql) then
+	MESSAGEBOX(loRes.error_message, 0+48, thisform.Caption)
+	goConn.rollback()
+	RETURN .f.
+ENDIF
+
+&& Actualizo cantNC a 0
+goConn.beginTransaction()
+select cur_x
+DO WHILE !EOF("cur_x") 
+	idArticulo = cur_x.idArticulo
+	cantidadArticulo = cur_x.cantidad
+		
+	lcSql = "UPDATE ventasdet "
+	lcSql = lcSql + "SET cantNC = cantNC - " + ALLTRIM(STR(cantidadArticulo))
+	lcSql = lcSql + " WHERE idventasc = " + alltrim(str(idFacturaOrigen))
+	lcSql = lcSql + " AND ventasdet.idArticulo = " + ALLTRIM(STR(idArticulo))
+	
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+
+	if !loCommand.execute()
+		MessageBox("No se ha podido actualizar la cantidad de la factura", 0+48, thisform.caption)
+		goConn.rollback()
+		return .f.
+	endif
+
+
+	SELECT cur_x
+	SKIP 	
+ENDDO
+
+
+ENDPROC
+PROCEDURE Load
+DODEFAULT()
+
+CREATE CURSOR cur_Cbtes( 	;
+	idVentasC	int,;
+	idCliente	int,;
+	razSoc		C(60),;
+	fecEmis		date,;
+	nroDoc		C(20),;
+	impFinal	N(20,2),;
+	usualta		C(5),;
+	fecAlta		datetime,;
+	idhostalta	C(50),;
+	Observ		M)
+	
+	
+SELECT cur_Cbtes
+INDEX on idVentasC TAG idVentasC ASCENDING
+INDEX on idCliente TAG idCliente ASCENDING ADDITIVE 
+INDEX on razSoc TAG razSoc ASCENDING ADDITIVE 
+INDEX on fecEmis TAG fecEmis ASCENDING ADDITIVE 
+INDEX on nroDoc TAG nroDoc ASCENDING ADDITIVE 
+INDEX on impFinal TAG impFinal ASCENDING ADDITIVE
+INDEX on usualta TAG usualta ASCENDING ADDITIVE
+INDEX on idhostalta TAG idhostalta ASCENDING ADDITIVE 
+	
+SELECT cur_Cbtes
+SET ORDER TO TAG fecEmis ASCENDING
+ENDPROC
+PROCEDURE Init
+&& Configuro según la funcionalidad del formulario
+
+Thisform.cargar_combos()
+
+IF thisform.consulta
+	thisform.contenido.btnEliminar.Visible = .F.
+ELSE
+	thisform.contenido.btnEliminar.Visible = .T.
+ENDIF
+
+thisform.contenido.txtFecDesde.Value = DATE() - 30
+thisform.contenido.txtFecHasta.Value = DATE()
+thisform.contenido.txtptovta.Value = "0000"
+thisform.contenido.txtnumero.Value = "00000000"
+thisform.ShowTips = .T.
+
+ENDPROC
+
+
+************************************************************
+OBJETO: stock
+************************************************************
+*** PROPIEDADES ***
+Top = 468
+Left = 384
+Height = 17
+Width = 36
+Name = "stock"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: CLSETIQUETA1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Cliente Desde:"
+Height = 15
+Left = 5
+Top = 13
+TabIndex = 12
+Name = "CLSETIQUETA1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta2
+************************************************************
+*** PROPIEDADES ***
+Caption = "Cliente Hasta:"
+Height = 15
+Left = 5
+Top = 37
+TabIndex = 13
+Name = "Clsetiqueta2"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta3
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha Desde:"
+Height = 15
+Left = 5
+Top = 89
+Width = 84
+TabIndex = 15
+Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta4
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha Hasta:"
+Height = 15
+Left = 202
+Top = 89
+Width = 84
+TabIndex = 16
+Name = "Clsetiqueta4"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_cliDesde
+************************************************************
+*** PROPIEDADES ***
+Top = 8
+Left = 96
+TabIndex = 1
+cfieldname = idCliente
+esnumerico = .T.
+nombre_campo_codigo = idCliente
+nombre_campo_desc = razSoc
+nombre_tabla = clientes
+pkfield = idCliente
+requerido = .F.
+criterio_filtro = clientes.fecBaja IS NULL
+Name = "sel_cliDesde"
+TXTCODIGO.Name = "TXTCODIGO"
+TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_cliHasta
+************************************************************
+*** PROPIEDADES ***
+Top = 32
+Left = 96
+TabIndex = 2
+cfieldname = idCliente
+esnumerico = .T.
+nombre_campo_codigo = idCliente
+nombre_campo_desc = razSoc
+nombre_tabla = clientes
+pkfield = idCliente
+requerido = .F.
+criterio_filtro = clientes.fecBaja IS NULL
+Name = "sel_cliHasta"
+TXTCODIGO.Name = "TXTCODIGO"
+TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecDesde
+************************************************************
+*** PROPIEDADES ***
+Left = 98
+TabIndex = 7
+Top = 85
+isdatetime = .T.
+Name = "txtFecDesde"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecHasta
+************************************************************
+*** PROPIEDADES ***
+Left = 292
+TabIndex = 8
+Top = 85
+isdatetime = .T.
+Name = "txtFecHasta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: grdCbtes
+************************************************************
+*** PROPIEDADES ***
+Height = 309
+Left = 2
+TabIndex = 17
+Top = 112
+Width = 1013
+alias_name = cur_Cbtes
+permitir_busqueda = .F.
+permitir_ordenamiento = .F.
+list_controlsource = fecEmis,idCliente,razSoc,nroDoc,impFinal,usualta,fecAlta,idhostalta
+lista_ancho_cols = 100,70,210,150,70,70,130,150
+titulos_cabeceras = Fecha,Cliente,Razón Social,Nro. Comprobante,Importe,Usuario,Fecha Alta,Host
+Name = "grdCbtes"
+COLUMN1.HEADER1.Name = "HEADER1"
+COLUMN1.TEXT1.Name = "TEXT1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.HEADER1.Name = "HEADER1"
+COLUMN2.TEXT1.Name = "TEXT1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.HEADER1.Name = "HEADER1"
+COLUMN3.TEXT1.Name = "TEXT1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.HEADER1.Name = "HEADER1"
+COLUMN4.TEXT1.Name = "TEXT1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.HEADER1.Name = "HEADER1"
+COLUMN5.TEXT1.Name = "TEXT1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.HEADER1.Name = "HEADER1"
+COLUMN6.TEXT1.Name = "TEXT1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.HEADER1.Name = "HEADER1"
+COLUMN7.TEXT1.Name = "TEXT1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.HEADER1.Name = "HEADER1"
+COLUMN8.TEXT1.Name = "TEXT1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.HEADER1.Name = "HEADER1"
+COLUMN9.TEXT1.Name = "TEXT1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.HEADER1.Name = "HEADER1"
+COLUMN10.TEXT1.Name = "TEXT1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.HEADER1.Name = "HEADER1"
+COLUMN11.TEXT1.Name = "TEXT1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.HEADER1.Name = "HEADER1"
+COLUMN12.TEXT1.Name = "TEXT1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.HEADER1.Name = "HEADER1"
+COLUMN13.TEXT1.Name = "TEXT1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.HEADER1.Name = "HEADER1"
+COLUMN14.TEXT1.Name = "TEXT1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.HEADER1.Name = "HEADER1"
+COLUMN15.TEXT1.Name = "TEXT1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.HEADER1.Name = "HEADER1"
+COLUMN16.TEXT1.Name = "TEXT1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.HEADER1.Name = "HEADER1"
+COLUMN17.TEXT1.Name = "TEXT1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.HEADER1.Name = "HEADER1"
+COLUMN18.TEXT1.Name = "TEXT1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.HEADER1.Name = "HEADER1"
+COLUMN19.TEXT1.Name = "TEXT1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.HEADER1.Name = "HEADER1"
+COLUMN20.TEXT1.Name = "TEXT1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnAceptar
+************************************************************
+*** PROPIEDADES ***
+Top = 66
+Left = 973
+Height = 44
+Width = 45
+TabIndex = 9
+Name = "btnAceptar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lcFecDesde, lcFecHasta, loDateTime, lcNroDoc 
+LOCAL lnIdCliDesde, lnIdCliHasta, lcSql, loResult
+LOCAL lnTotal
+
+loDateTime = CREATEOBJECT("datetime")
+loResult = CREATEOBJECT("odbc_result")
+lcFecDesde = loDateTime.toMySql(thisform.contenido.txtFecDesde.Value)
+lcFecHasta = loDateTime.toMySql(thisform.contenido.txtFecHasta.Value)
+lcNroDoc = "" 
+lnTotal = 0.00
+
+IF thisform.contenido.sel_cliDesde.valcpoid <> 0 .AND. thisform.contenido.sel_CliHasta.valcpoid <> 0
+	lnIdCliDesde = thisform.contenido.sel_cliDesde.valcpoid
+	lnIdCliHasta = thisform.contenido.sel_CliHasta.valcpoid
+ELSE
+	lnIdCliDesde = 0
+	lnIdCliHasta = 999999
+ENDIF
+
+SELECT cur_Cbtes
+ZAP
+
+lcSql = "CALL ventascab_consultar ( " ;
+	+ "?tipoConsulta, " ;
+	+ "?fechaDesde, " ;
+	+ "?fechaHasta, " ;
+	+ "?idClienteDesde, " ;
+	+ "?idClienteHasta, " ;
+	+ "?cbte, " ;
+	+ "?tipoDoc, " ;
+	+ "?ptoVta, " ;
+	+ "?numCbte)"
+	
+lcSql = loResult.AddParameter(lcSql, "tipoConsulta", thisform.tipo_consulta, .t., .f.)
+lcSql = loResult.AddParameter(lcSql, "fechaDesde", thisform.contenido.txtFecDesde.Value, .f., .t.)
+lcSql = loResult.AddParameter(lcSql, "fechaHasta", thisform.contenido.txtFecHasta.Value, .f., .t.)
+lcSql = loResult.AddParameter(lcSql, "idClienteDesde", ALLTRIM(STR(thisform.contenido.sel_cliDesde.valcpoid)), .f., .f.)
+lcSql = loResult.AddParameter(lcSql, "idClienteHasta", ALLTRIM(STR(thisform.contenido.sel_cliHasta.valcpoid)), .f., .f.)
+lcSql = loResult.AddParameter(lcSql, "cbte", ALLTRIM(UPPER(thisform.contenido.cmbCbte.Value)), .t., .f.)
+lcSql = loResult.AddParameter(lcSql, "tipoDoc", ALLTRIM(UPPER(thisform.contenido.cmbTipo.Value)), .t., .f.)
+lcSql = loResult.AddParameter(lcSql, "ptoVta", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtPtoVta.Value))))), .f., .f.)
+lcSql = loResult.AddParameter(lcSql, "numCbte", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtNumero.Value))))), .f., .f.)
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.cursor_name = "cur_tempo"
+loResult.OpenQuery(lcSql)
+SELECT cur_tempo
+IF RECCOUNT() > 0
+	GO TOP
+ENDIF
+
+SELECT cur_tempo
+DO WHILE !EOF()
+	lcNroDoc = ALLTRIM(cur_tempo.Cbte) + " " + ALLTRIM(cur_tempo.tipoDoc) + " "
+	lcNroDoc = lcNroDoc + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_tempo.ptoVta)))) + ALLTRIM(STR(cur_tempo.ptoVta)) + "-"
+	lcNroDoc = lcNroDoc + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_tempo.numCbte)))) + ALLTRIM(STR(cur_tempo.numCbte))
+
+	SELECT cur_Cbtes
+	APPEND BLANK
+	REPLACE idVentasC WITH cur_tempo.idVentasC
+	REPLACE idCliente WITH cur_tempo.idCliente ADDITIVE
+	REPLACE razSoc WITH cur_tempo.razSoc ADDITIVE
+	REPLACE fecEmis WITH cur_tempo.fecEmision ADDITIVE
+	REPLACE nroDoc WITH lcNroDoc ADDITIVE
+	REPLACE impFinal WITH cur_tempo.totFact ADDITIVE
+	REPLACE usualta WITH cur_tempo.usualta ADDITIVE
+	REPLACE fecAlta WITH cur_tempo.fecAlta ADDITIVE
+	REPLACE idhostalta WITH cur_tempo.idhostalta ADDITIVE
+	REPLACE observ WITH IIF(ISNULL(cur_tempo.Observ), "", cur_tempo.Observ) ADDITIVE
+	IF ALLTRIM(cur_tempo.Cbte) == "NC" THEN
+		lnTotal = lnTotal - cur_tempo.totFact
+	ELSE
+		lnTotal = lnTotal + cur_tempo.totFact
+	ENDIF
+	SELECT cur_tempo
+	SKIP
+ENDDO
+
+loResult.close_query()
+
+SELECT cur_Cbtes
+IF RECCOUNT() > 0
+	GO TOP
+ENDIF
+
+Thisform.Contenido.grdCbtes.Refresh()
+Thisform.Contenido.txtTotal.Value = lnTotal
+ENDPROC
+
+
+************************************************************
+OBJETO: btnEliminar
+************************************************************
+*** PROPIEDADES ***
+Top = 454
+Left = 922
+TabIndex = 12
+Name = "btnEliminar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp, lcSql, loRes
+LOCAL loCommand
+
+lnResp = 0
+lcSql = ""
+loRes = CREATEOBJECT("odbc_result")
+loCommand = CREATEOBJECT("odbc_command")
+
+lnResp = MESSAGEBOX("¿Está seguro que desea anular el comprobante?", 4+32, Thisform.Caption)
+
+IF lnResp = 6
+	goConn.BeginTransaction()
+
+	lcSql = "UPDATE ventascab "
+	lcSql = lcSql + "SET anulado = 1, "
+	lcSql = lcSql + "usuBaja = '" + ALLTRIM(gcCodUsu) + "', " 
+	IF ALLTRIM(getconfig("SQLSRV")) == "0" THEN
+		lcSql = lcSql + "fecBaja = current_timestamp, "
+	ELSE
+		lcSql = lcSql + "fecBaja = GETDATE(), "
+	ENDIF
+	lcSql = lcSql + "idHostBaja = '" + SYS(0) + "' "
+	lcSql = lcSql + "WHERE idventasc = " + ALLTRIM(STR(cur_Cbtes.idventasc))
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.execute()
+		MESSAGEBOX("No se ha podido anular el comprobante", 0+64, thisform.Caption)
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+	
+	&& Verifico que sea una Nota de crédito a eliminar y seteo cantNC en 0 al eliminar la nota de crédito, antes de limpiar el cursor_cbtes.
+	IF SUBSTR(cur_cbtes.nroDoc, 1, 2) == "NC" then
+		thisform.anular_cantnc_factura()
+		
+	endif
+	
+	SELECT cur_Cbtes
+	DELETE
+	thisform.contenido.grdCbtes.Refresh()
+		
+	&& Si estoy eliminando una factura, entonces, tengo que dar de alta nuevamente
+	&& el stock
+	IF getGlobalCFG("STK_MODULE") THEN
+		IF SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "FC" .OR. SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "PED" THEN
+			lcSql = "select * from ventasdet where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
+			loRes.ActiveConnection = goConn.ActiveConnection
+			loRes.Cursor_Name = "cur_x"
+			
+			IF !loRes.OpenQuery(lcSql) THEN
+				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+				goConn.Rollback()
+				RETURN .F.
+			ENDIF
+			
+			SELECT cur_x
+			IF RECCOUNT() > 0 THEN
+				GO TOP
+			ENDIF
+			
+			DO WHILE !EOF("cur_x")
+				thisform.stock.crear_cursor()
+				thisform.stock.circuito = "V"
+				thisform.stock.tipomov = "ENT"
+				thisform.stock.cbte = ""
+				thisform.stock.numcbte = "ANULACION " + SUBSTR(cur_Cbtes.nroDoc, 1, 2)
+				thisform.stock.agregar_articulo(cur_x.idArticulo, cur_x.cantidad, IIF(ISNULL(cur_x.nroPart), "", cur_x.nroPart))
+				
+				IF !thisform.stock.grabar2() THEN
+					MESSAGEBOX(thisform.stock.ErrorMessage, 0+48, thisform.Caption)
+					goConn.Rollback()
+					RETURN .F.
+				ENDIF
+			
+				SELECT cur_x
+				SKIP
+			ENDDO
+			
+			loRes.Close_Query()
+		ENDIF
+	ENDIF
+	
+	&& Doy de baja la factura en la cuenta corriente del cliente
+	lcSql = "update cc_cli "
+	lcSql = lcSql + "set cc_cli.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "	fecBaja = " + IIF(INT(VAL(getConfig("SQLSRV"))) = 1, "getdate(), ", "current_timestamp, ")
+	lcSql = lcSql + "	idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+	
+	goConn.Commit()
+		
+ENDIF
+
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: btnCerrar
+************************************************************
+*** PROPIEDADES ***
+Top = 454
+Left = 969
+TabIndex = 13
+Name = "btnCerrar"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta5
+************************************************************
+*** PROPIEDADES ***
+Caption = "Comprobante:"
+Height = 15
+Left = 5
+Top = 62
+Width = 84
+TabIndex = 14
+Name = "Clsetiqueta5"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtptovta
+************************************************************
+*** PROPIEDADES ***
+Alignment = 3
+Value = 
+Height = 21
+Left = 208
+MaxLength = 4
+TabIndex = 5
+Top = 59
+Width = 45
+autocompleta = .T.
+ischaracter = .T.
+Name = "txtptovta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbCbte
+************************************************************
+*** PROPIEDADES ***
+Height = 24
+Left = 98
+TabIndex = 3
+Top = 58
+Width = 59
+cfieldname = 
+Name = "cmbCbte"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbTipo
+************************************************************
+*** PROPIEDADES ***
+Height = 24
+Left = 160
+TabIndex = 4
+Top = 58
+Width = 44
+Name = "cmbTipo"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtnumero
+************************************************************
+*** PROPIEDADES ***
+Alignment = 3
+Value = 
+Height = 21
+Left = 256
+MaxLength = 8
+TabIndex = 6
+Top = 59
+Width = 90
+ischaracter = .T.
+autocompleta = .T.
+Name = "txtnumero"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnVerDetalles
+************************************************************
+*** PROPIEDADES ***
+Top = 453
+Left = 5
+TabIndex = 10
+Name = "btnVerDetalles"
+
+*** METODOS ***
+PROCEDURE Click
+DO FORM "frmImagenCbte"
+ENDPROC
+
+
+************************************************************
+OBJETO: btnSeguimiento
+************************************************************
+*** PROPIEDADES ***
+Top = 454
+Left = 52
+Height = 44
+Width = 45
+Picture = ..\imagen\my-documents.ico
+TabIndex = 11
+ToolTipText = "Seguimiento de Comprobantes"
+Name = "btnSeguimiento"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL loForm
+
+loForm = CREATEOBJECT("cls_frm_linkedcbtes")
+
+SELECT cur_Cbtes
+loForm.idVentasC = cur_Cbtes.idVentasC
+loForm.nrocbte = cur_Cbtes.nrodoc
+
+loForm.leer_datos()
+
+loForm.show()
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta6
+************************************************************
+*** PROPIEDADES ***
+Caption = "Importe total de comprobantes:"
+Height = 15
+Left = 673
+Top = 432
+Width = 180
+Name = "Clsetiqueta6"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtTotal
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 865
+ReadOnly = .T.
+Top = 428
+Width = 149
+isnumeric = .T.
+Name = "txtTotal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: clsform_consbjacbte_sf
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 *** METODOS ***
 

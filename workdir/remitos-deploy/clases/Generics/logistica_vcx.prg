@@ -2416,7 +2416,7 @@ TRY
 				INNER JOIN sitiva ON sitiva.idSitIVA = ventascab.idSitIVA
 		WHERE
 			CASE WHEN ?xidCliente = 0 THEN 1 ELSE ventascab.idCliente = ?xidCliente END AND
-			CAST(ventascab.fecEmision AS DATE) BETWEEN ?xfechaDesde AND ?xfechaHasta AND
+			ventascab.fecEmision BETWEEN ?xfechaDesde AND ?xfechaHasta AND
 			ventascab.aut_Resultado = 'A' AND
 			ventascab.cbte = 'FC' AND
 			ventascab.idVentasC NOT IN (
@@ -2424,8 +2424,6 @@ TRY
 					idVentasC
 				FROM
 					vtasrtos
-				WHERE
-					vtasrtos.fecBaja IS NULL
 			)
 	ENDTEXT
 	
@@ -2943,15 +2941,13 @@ TRY
 				INNER JOIN sitiva ON sitiva.idSitIVA = ventascab.idSitIVA
 		WHERE
 			CASE WHEN ?xidCliente = 0 THEN 1 ELSE ventascab.idCliente = ?xidCliente END AND
-			CAST(ventascab.fecEmision AS DATE) BETWEEN ?xfechaDesde AND ?xfechaHasta AND
+			ventascab.fecEmision BETWEEN ?xfechaDesde AND ?xfechaHasta AND
 			ventascab.cbte = 'FC' AND
 			ventascab.idVentasC NOT IN (
 				SELECT
 					idVentasC
 				FROM
 					vtasrtos
-				WHERE
-					vtasrtos.fecBaja IS NULL
 			)
 	ENDTEXT
 	

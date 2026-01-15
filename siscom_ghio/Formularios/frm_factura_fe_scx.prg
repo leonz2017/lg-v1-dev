@@ -519,8 +519,14 @@ PROCEDURE particionar_cbte
 ************************************************************************************
 
 LOCAL ln_cantitems
+LOCAL lnResp, llPreguntarPorComprobante
 
-ln_cantitems = 0
+STORE 0 TO lnResp, ln_cantitems
+STORE getGlobalCFG("RTOIMPXFC") TO llPreguntarPorComprobante
+
+IF getGlobalCFG("PRINT_RTO") .AND. !llPreguntarPorComprobante THEN
+	lnResp = MESSAGEBOX("Desea imprimir remitos para este cliente", 4+32, Thisform.Caption)
+ENDIF
 
 SELECT cur_aux
 ZAP 
@@ -605,9 +611,18 @@ DO WHILE !EOF()
 			IF thisform.fe_set_cae() THEN
 				thisform.grabar_ctacte(thisform.id_ventasc)
 				thisform.imprimir()
-*!*					IF lnResp = 6 .AND. getglobalcfg("PRINT_RTO") THEN
-*!*						thisform.imprimir_rtos()
-*!*					ENDIF				
+				
+				&& Habilito la pregunta solo si está habilitada la impresión de remitos
+				IF getGlobalCFG("PRINT_RTO") THEN
+					&& Pregunto si quiere imprimir el remito por comprobante
+					IF llPreguntarPorComprobante THEN
+						lnResp = MESSAGEBOX("Desea imprimir remitos para esta factura", 4+32, Thisform.Caption)
+					ENDIF
+					
+					IF lnResp = 6 THEN
+						Thisform.generar_remitos()
+					ENDIF
+				ENDIF			
 			ENDIF
 		ENDIF
 		
@@ -642,9 +657,18 @@ IF ln_cantitems <> 0
 			&& de la cuenta corriente.
 			thisform.grabar_ctacte(thisform.id_ventasc)
 			thisform.imprimir()
-*!*				IF lnResp = 6 .AND. getglobalcfg("PRINT_RTO") THEN
-*!*					thisform.imprimir_rtos()
-*!*				ENDIF						
+			
+			&& Habilito la pregunta solo si está habilitada la emisión de remitos
+			IF getGlobalCFG("PRINT_RTO") THEN
+				&& Pregunto si quiere impimir el remito por comprobante
+				IF llPreguntarPorComprobante THEN
+					lnResp = MESSAGEBOX("Desea imprimir remitos para esta factura", 4+32, Thisform.Caption)
+				ENDIF
+				
+				IF lnResp = 6 .AND. getGlobalCFG("PRINT_RTO") THEN
+					Thisform.generar_remitos()
+				ENDIF
+			ENDIF						
 			thisform.id_ventasc = 0
 		ENDIF
 	ENDIF
