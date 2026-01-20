@@ -373,7 +373,7 @@ TEXT TO lcSQLScripts NOSHOW PRETEXT 15
 	sp_test.sql, sp_citicpa_generarAlic.sql, sp_citicpas_generarCabecera.sql,
 	sp_citicpas_obtenerAlicuotas.sql, sp_articulos_update.sql, sp_articulos_insert.sql,
 	sp_ventascab_getbyid.sql, sp_articulos_updateByPrecioFinal.sql, sp_vtasrtos_generar.sql,
-	sp_vtasrtos_generar_c2.sql,
+	sp_vtasrtos_generar_c2.sql, sp_ranking_ventas.sql,
 ENDTEXT
 
 This.actualizar_spfn(ALLTRIM(lcSQLScripts))

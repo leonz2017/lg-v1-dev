@@ -359,783 +359,6 @@ Arial, 0, 9, 5, 15, 12, 32, 3, 0
 
 
 ************************************************************
-OBJETO: cls_form_rankings
-************************************************************
-*** PROPIEDADES ***
-Height = 223
-Width = 600
-DoCreate = .T.
-BorderStyle = 2
-Caption = "Genrador de Rankings de Ventas"
-Name = "cls_form_rankings"
-contenido.Comment = ""
-contenido.Top = -12
-contenido.Left = 0
-contenido.Name = "contenido"
-
-*** METODOS ***
-PROCEDURE Load
-DODEFAULT()
-
-CREATE CURSOR cur_ranking (	;
-	codigo		int,;
-	anio		int,;
-	mes			varchar(20),;
-	descripcio	varchar(60),;
-	importe		float(10,2),;
-	porVta		float(10,2))
-
-CREATE CURSOR cur_rank_art ( ;
-	idarticulo	int,;
-	codart		varchar(10),;
-	descripcio	varchar(60),;
-	cantidad	int,;
-	importe int,;
-	anio		int,;
-	mes			varchar(20))
-ENDPROC
-PROCEDURE Init
-thisform.contenido.txtFecDesde.Value = DATE() -30
-thisform.contenido.txtFecHasta.Value = DATE()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Generar ranking de:"
-Height = 15
-Left = 24
-Top = 19
-Width = 120
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: opt_group
-************************************************************
-*** PROPIEDADES ***
-ButtonCount = 5
-Height = 35
-Left = 13
-Top = 11
-Width = 576
-Name = "opt_group"
-Option1.FontSize = 8
-Option1.Caption = "Clientes"
-Option1.Height = 16
-Option1.Left = 132
-Option1.Top = 8
-Option1.Width = 72
-Option1.ForeColor = 158,106,75
-Option1.Name = "Option1"
-Option2.FontSize = 8
-Option2.Caption = "Proveedores"
-Option2.Height = 16
-Option2.Left = 214
-Option2.Top = 8
-Option2.Width = 92
-Option2.ForeColor = 158,106,75
-Option2.Name = "Option2"
-Option3.FontBold = .T.
-Option3.FontSize = 8
-Option3.Caption = "Marcas"
-Option3.Height = 17
-Option3.Left = 317
-Option3.Top = 8
-Option3.Width = 65
-Option3.ForeColor = 158,106,75
-Option3.Name = "Option3"
-Option4.FontBold = .T.
-Option4.FontSize = 8
-Option4.Caption = "Sub-Familia"
-Option4.Height = 17
-Option4.Left = 390
-Option4.Top = 8
-Option4.Width = 89
-Option4.ForeColor = 158,106,75
-Option4.Name = "Option4"
-Option5.FontBold = .T.
-Option5.FontSize = 8
-Option5.Caption = "Artículo"
-Option5.Height = 17
-Option5.Left = 491
-Option5.Top = 8
-Option5.Width = 61
-Option5.ForeColor = 158,106,75
-Option5.Name = "Option5"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Fecha desde:"
-Height = 15
-Left = 13
-Top = 61
-Width = 81
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta2
-************************************************************
-*** PROPIEDADES ***
-Caption = "Fecha Hasta:"
-Height = 15
-Left = 202
-Top = 61
-Width = 74
-Name = "Clsetiqueta2"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecDesde
-************************************************************
-*** PROPIEDADES ***
-Left = 94
-Top = 57
-isdatetime = .T.
-Name = "txtFecDesde"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecHasta
-************************************************************
-*** PROPIEDADES ***
-Left = 277
-Top = 57
-isdatetime = .T.
-Name = "txtFecHasta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnCerrar
-************************************************************
-*** PROPIEDADES ***
-Top = 175
-Left = 495
-Name = "btnCerrar"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnImprimir
-************************************************************
-*** PROPIEDADES ***
-Comment = ""
-Top = 175
-Left = 400
-Name = "btnImprimir"
-
-*** METODOS ***
-PROCEDURE Click
-* option1 = clientes
-* option2 = proveedores
-* option3 = marcas
-* option4 = subfamilia
-
-LOCAL loRes
-LOCAL loDT
-LOCAL loTherm
-LOCAL lcSql
-LOCAL m.titulo, m.titulo_grupo
-LOCAL lImpTotal
-loRes = CREATEOBJECT("odbc_result")
-loTherm = CREATEOBJECT("_thermometer")
-loDT = CREATEOBJECT("datetime")
-lImpTotal = 0.00
-
-m.titulo = ""
-m.titulo_grupo = ""
-
-IF thisform.contenido.opt_group.option1.Value = 1 THEN
-	&& Rankign de clientes
-	
-	lcSql = "SELECT 	clientes.idCliente AS codigo, "
-	
-	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-		lcSql = lcSql + "   YEAR(ventascab.fecEmision) AS anio, "
-		lcSql = lcSql + "   MONTH(ventascab.fecEmision) AS mes, "
-	ENDIF
-	
-	lcSql = lcSql + "   MAX(clientes.razSoc) AS descripcio, "
-	lcSql = lcSql + "   ROUND(SUM(CASE WHEN ventascab.cbte = 'NC' THEN ventasdet.totNeto * -1 ELSE ventasdet.totNeto END), 2) AS importe "
-    lcSql = lcSql + "FROM ventascab "
-    lcSql = lcSql + "		INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-	lcSql = lcSql + "     	INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente "
-    lcSql = lcSql + "WHERE ventascab.cbte NOT IN ('PED', 'COT', 'ND') "
-   	lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-    
-    IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-    	lcSql = lcSql + "GROUP BY 	clientes.idCliente, "
-	    lcSql = lcSql + " 	YEAR(ventascab.fecEmision), "
-	    lcSql = lcSql + " 	MONTH(ventascab.fecEmision) "
-	ELSE
-		lcSql = lcSql + "GROUP BY 	clientes.idCliente "
-	ENDIF
-	    
-    IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-    	lcSql = lcSql + "ORDER BY	clientes.idCliente, "
-	    lcSql = lcSql + " 	YEAR(ventascab.fecEmision), "
-	    lcSql = lcSql + " 	MONTH(ventascab.fecEmision) "
-	ELSE
-		lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventascab.impNeto ELSE ventascab.impNeto * -1 END), 2) DESC "
-	ENDIF
-
-    m.titulo = "CLIENTES"
-    m.titulo_grupo = "CLIENTE:"
-ELSE
-	IF thisform.contenido.opt_group.option2.Value = 1 THEN
-		&& Ranking de proveedores
-		
-		lcSql = "SELECT	proveedor.idProv AS codigo, "
-		
-		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-			lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
-			lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
-		ENDIF
-		
-		lcSql = lcSql + "		MAX(proveedor.razSoc) AS descripcio, "
-		lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'NC' THEN ventasdet.totNeto * -1 ELSE ventasdet.totNeto END), 2) AS importe "
-		lcSql = lcSql + "FROM ventascab "
-		lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-		lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
-		lcSql = lcSql + "	INNER JOIN proveedor ON proveedor.idProv = articulos.idProv "
-		lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT', 'ND') "
-		lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-		
-		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-			lcSql = lcSql + "GROUP BY proveedor.idProv, "
-			lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-			lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
-		ELSE
-			lcSql = lcSql + "GROUP BY proveedor.idProv "
-		ENDIF
-		
-		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-			lcSql = lcSql + "ORDER BY proveedor.idProv, "
-			lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-			lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
-		ELSE
-			lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
-		ENDIF
-		
-	    m.titulo = "PROVEEDORES"
-	    m.titulo_grupo = "PROVEEDOR:"
-	ELSE
-		IF thisform.contenido.opt_group.option3.Value = 1 THEN
-			&& Ranking de marcas
-			
-			lcSql = "SELECT	marcas.idmarca AS codigo, "
-			
-			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-				lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
-				lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
-			ENDIF
-			
-			lcSql = lcSql + "		MAX(marcas.descripcio) AS descripcio, "
-			lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'NC' THEN ventasdet.totNeto * -1 ELSE ventasdet.totNeto END), 2) AS importe "
-			lcSql = lcSql + "FROM ventascab "
-			lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-			lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
-			lcSql = lcSql + "	INNER JOIN marcas ON marcas.idmarca = articulos.idmarca "
-			lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT', 'ND') "
-			lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-						
-			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-				lcSql = lcSql + "GROUP BY marcas.idmarca, "
-				lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-				lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
-			ELSE
-				lcSql = lcSql + "GROUP BY marcas.idmarca "
-			ENDIF
-			
-			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-				lcSql = lcSql + "ORDER BY marcas.idmarca, "
-				lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-				lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
-			ELSE
-				lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
-			ENDIF
-			
-		    m.titulo = "MARCAS"
-		    m.titulo_grupo = "MARCA:"			
-		ELSE
-			IF thisform.contenido.opt_group.option4.Value = 1 THEN
-				&& Ranking de subfamilias
-				
-				lcSql = "SELECT	subfam.idSubFam AS codigo, "
-				
-				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-					lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
-					lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
-				ENDIF
-				
-				lcSql = lcSql + "		MAX(subfam.descripcio) AS descripcio, "
-				lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'NC' THEN ventasdet.totNeto * -1 ELSE ventasdet.totNeto END), 2) AS importe "
-				lcSql = lcSql + "FROM ventascab "
-				lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-				lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
-				lcSql = lcSql + "	INNER JOIN subfam ON subfam.idSubFam = articulos.idSubFam "
-				lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT', 'ND') "
-				lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-				
-				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-					lcSql = lcSql + "GROUP BY subfam.idSubFam, "
-					lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-					lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
-				ELSE
-					lcSql = lcSql + "GROUP BY subfam.idSubFam "
-				ENDIF
-				
-				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-					lcSql = lcSql + "ORDER BY subfam.idSubFam, "
-					lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-					lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
-				ELSE
-					lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
-				ENDIF
-				
-			    m.titulo = "SUB-FAMILIAS"
-			    m.titulo_grupo = "SUB-FAMILIA:"	
-			    
-		ELSE
-			IF thisform.contenido.opt_group.option5.Value = 1 THEN
-			
-				&& Llamo al SP que me devuelve los resultados de la consulta.
-				lcSql = "CALL ranking_Articulos(?x_SeparoPorMes, ?x_fechaInicio, ?x_fechaFin)"
-				lcSql = loRes.AddParameter(lcSql, "x_SeparoPorMes", ALLTRIM(STR(thisform.contenido.chkDetalleMes.Value)), .f., .f.)
-				lcSql = loRes.AddParameter(lcSql, "x_fechaInicio",thisform.contenido.txtFecDesde.Value, .f., .t.)
-				lcSql = loRes.AddParameter(lcSql, "x_fechaFin", thisform.contenido.txtFecHasta.Value, .f., .t.)
-				loRes.ActiveConnection = goConn.ActiveConnection
-				loRes.Cursor_Name = "cur_x"
-				loRes.OpenQuery(lcSql)
-				
-				SELECT cur_rank_art
-				ZAP
-				APPEND FROM DBF("cur_x")
-				loRes.Close_Query()
-				
-				&& Imprimo
-				SELECT cur_rank_art
-				IF RECCOUNT("cur_rank_art") > 0 THEN
-					GO TOP
-					m.titulo = "ARTICULOS"
-	   				m.titulo_grupo = "ARTICULO:"
-	   				m.fechaDD = thisform.contenido.txtFecDesde.Value
-					m.fechaHH = thisform.contenido.txtFecHasta.Value
-					
-					IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-						REPORT FORM "rep_ranking_art" PREVIEW
-					ELSE
-						REPORT FORM "rep_ranking_art_2" PREVIEW
-					ENDIF
-					RETURN .T.
-				ELSE
-					MESSAGEBOX("No se encontraron artículos", 0+48, Thisform.Caption)
-				ENDIF
-				
-			ENDIF
-							
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tempo"
-
-IF !loRes.OpenQuery(lcSql) THEN	
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_tempo
-IF RECCOUNT("cur_tempo") > 0 THEN
-	GO TOP
-ELSE
-	MESSAGEBOX("No hay registros para mostrar", 0+48, Thisform.Caption)
-	loRes.Close_Query()
-	RETURN .F.
-ENDIF
-
-&& Calculo la venta total
-SELECT ROUND(SUM(cur_tempo.importe), 2) AS total FROM cur_tempo INTO CURSOR cur_x
-lnImpTotal = cur_x.total
-
-USE IN cur_x
-
-SELECT cur_ranking
-ZAP
-
-loTherm.show()
-DO WHILE !EOF("cur_tempo")
-	SELECT cur_ranking
-	APPEND BLANK
-	REPLACE cur_ranking.codigo WITH cur_tempo.codigo
-	
-	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-		REPLACE cur_ranking.anio WITH cur_tempo.anio ADDITIVE
-		REPLACE cur_ranking.mes WITH loDT.getNombreMes(cur_tempo.mes) ADDITIVE
-	ELSE
-		REPLACE cur_ranking.porVta WITH (cur_tempo.importe * 100) / lnImpTotal ADDITIVE
-	ENDIF
-	
-	REPLACE cur_ranking.descripcio WITH cur_tempo.descripcio ADDITIVE
-	REPLACE cur_ranking.importe WITH cur_tempo.importe ADDITIVE
-	
-	loTherm.update((RECNO("cur_tempo") * 100) / RECCOUNT("cur_tempo"), "Generando reporte, aguarde por favor...")
-	SELECT cur_tempo
-	SKIP
-ENDDO
-
-loTherm.complete()
-loRes.Close_Query()
-
-m.fechaDD = thisform.contenido.txtFecDesde.Value
-m.fechaHH = thisform.contenido.txtFecHasta.Value
-
-SELECT cur_ranking
-GO TOP
-
-IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-	REPORT FORM "rep_rankings" PREVIEW
-ELSE
-	REPORT FORM "rep_rankings_2" PREVIEW
-ENDIF
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: btnExcel
-************************************************************
-*** PROPIEDADES ***
-Top = 175
-Left = 352
-Name = "btnExcel"
-
-*** METODOS ***
-PROCEDURE Click
-* option1 = clientes
-* option2 = proveedores
-* option3 = marcas
-* option4 = subfamilia
-
-LOCAL loRes
-LOCAL loDT
-LOCAL loTherm
-LOCAL lcSql
-LOCAL m.titulo, m.titulo_grupo
-LOCAL lImpTotal
-LOCAL lcFileName
-
-loRes = CREATEOBJECT("odbc_result")
-loTherm = CREATEOBJECT("_thermometer")
-loDT = CREATEOBJECT("datetime")
-lImpTotal = 0.00
-lcFileName = ""
-
-m.titulo = ""
-m.titulo_grupo = ""
-
-IF thisform.contenido.opt_group.option1.Value = 1 THEN
-	&& Rankign de clientes
-	
-	lcSql = "SELECT 	clientes.idCliente AS codigo, "
-	
-	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-		lcSql = lcSql + "   YEAR(ventascab.fecEmision) AS anio, "
-		lcSql = lcSql + "   MONTH(ventascab.fecEmision) AS mes, "
-	ENDIF
-	
-	lcSql = lcSql + "   MAX(clientes.razSoc) AS descripcio, "
-	lcSql = lcSql + "   ROUND(SUM(CASE WHEN ventascab.cbte = 'NC' THEN ventasdet.totNeto * -1 ELSE ventasdet.totNeto END), 2) AS importe "
-    lcSql = lcSql + "FROM ventascab "
-    lcSql = lcSql + "		INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-	lcSql = lcSql + "     	INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente "
-    lcSql = lcSql + "WHERE ventascab.cbte NOT IN ('PED', 'COT', 'ND') "
-   	lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-    
-    IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-    	lcSql = lcSql + "GROUP BY 	clientes.idCliente, "
-	    lcSql = lcSql + " 	YEAR(ventascab.fecEmision), "
-	    lcSql = lcSql + " 	MONTH(ventascab.fecEmision) "
-	ELSE
-		lcSql = lcSql + "GROUP BY 	clientes.idCliente "
-	ENDIF
-	    
-    IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-    	lcSql = lcSql + "ORDER BY	clientes.idCliente, "
-	    lcSql = lcSql + " 	YEAR(ventascab.fecEmision), "
-	    lcSql = lcSql + " 	MONTH(ventascab.fecEmision) "
-	ELSE
-		lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventascab.impNeto ELSE ventascab.impNeto * -1 END), 2) DESC "
-	ENDIF
-
-    m.titulo = "CLIENTES"
-    m.titulo_brupo = "CLIENTE:"
-ELSE
-	IF thisform.contenido.opt_group.option2.Value = 1 THEN
-		&& Ranking de proveedores
-		
-		lcSql = "SELECT	proveedor.idProv AS codigo, "
-		
-		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-			lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
-			lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
-		ENDIF
-		
-		lcSql = lcSql + "		MAX(proveedor.razSoc) AS descripcio, "
-		lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) AS importe "
-		lcSql = lcSql + "FROM ventascab "
-		lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-		lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
-		lcSql = lcSql + "	INNER JOIN proveedor ON proveedor.idProv = articulos.idProv "
-		lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT') "
-		lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-		
-		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-			lcSql = lcSql + "GROUP BY proveedor.idProv, "
-			lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-			lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
-		ELSE
-			lcSql = lcSql + "GROUP BY proveedor.idProv "
-		ENDIF
-		
-		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-			lcSql = lcSql + "ORDER BY proveedor.idProv, "
-			lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-			lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
-		ELSE
-			lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
-		ENDIF
-		
-	    m.titulo = "PROVEEDORES"
-	    m.titulo_brupo = "PROVEEDOR:"
-	ELSE
-		IF thisform.contenido.opt_group.option3.Value = 1 THEN
-			&& Ranking de marcas
-			
-			lcSql = "SELECT	marcas.idmarca AS codigo, "
-			
-			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-				lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
-				lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
-			ENDIF
-			
-			lcSql = lcSql + "		MAX(marcas.descripcio) AS descripcio, "
-			lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) AS importe "
-			lcSql = lcSql + "FROM ventascab "
-			lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-			lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
-			lcSql = lcSql + "	INNER JOIN marcas ON marcas.idmarca = articulos.idmarca "
-			lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT') "
-			lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-						
-			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-				lcSql = lcSql + "GROUP BY marcas.idmarca, "
-				lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-				lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
-			ELSE
-				lcSql = lcSql + "GROUP BY marcas.idmarca "
-			ENDIF
-			
-			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-				lcSql = lcSql + "ORDER BY marcas.idmarca, "
-				lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-				lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
-			ELSE
-				lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
-			ENDIF
-			
-		    m.titulo = "MARCAS"
-		    m.titulo_brupo = "MARCA:"			
-		ELSE
-			IF thisform.contenido.opt_group.option4.Value = 1 THEN
-				&& Ranking de subfamilias
-				
-				lcSql = "SELECT	subfam.idSubFam AS codigo, "
-				
-				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-					lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
-					lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
-				ENDIF
-				
-				lcSql = lcSql + "		MAX(subfam.descripcio) AS descripcio, "
-				lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) AS importe "
-				lcSql = lcSql + "FROM ventascab "
-				lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
-				lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
-				lcSql = lcSql + "	INNER JOIN subfam ON subfam.idSubFam = articulos.idSubFam "
-				lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT') "
-				lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
-				
-				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-					lcSql = lcSql + "GROUP BY subfam.idSubFam, "
-					lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-					lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
-				ELSE
-					lcSql = lcSql + "GROUP BY subfam.idSubFam "
-				ENDIF
-				
-				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-					lcSql = lcSql + "ORDER BY subfam.idSubFam, "
-					lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
-					lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
-				ELSE
-					lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
-				ENDIF
-				
-			    m.titulo = "SUB-FAMILIAS"
-			    m.titulo_brupo = "SUB-FAMILIA:"	
-			    
-		ELSE
-			IF thisform.contenido.opt_group.option5.Value = 1 THEN
-			
-				&& Llamo al SP que me devuelve los resultados de la consulta.
-				lcSql = "CALL ranking_Articulos(?x_SeparoPorMes, ?x_fechaInicio, ?x_fechaFin)"
-				lcSql = loRes.AddParameter(lcSql, "x_SeparoPorMes", ALLTRIM(STR(thisform.contenido.chkDetalleMes.Value)), .f., .f.)
-				lcSql = loRes.AddParameter(lcSql, "x_fechaInicio",thisform.contenido.txtFecDesde.Value, .f., .t.)
-				lcSql = loRes.AddParameter(lcSql, "x_fechaFin", thisform.contenido.txtFecHasta.Value, .f., .t.)
-				loRes.ActiveConnection = goConn.ActiveConnection
-				loRes.Cursor_Name = "cur_x"
-				loRes.OpenQuery(lcSql)
-				
-				SELECT cur_rank_art
-				ZAP
-				APPEND FROM DBF("cur_x")
-				loRes.Close_Query()
-				
-				&& Mando el Excel
-				IF RECCOUNT("cur_rank_art") > 0 THEN
-					SELECT cur_rank_art
-					GO TOP
-					
-					SELECT codart, descripcio, cantidad FROM cur_rank_art ORDER BY cantidad DESC INTO CURSOR cur_temp
-			
-					genexcel("cur_temp","TOTAL DE ARTÍCULOS VENDIDOS")
-
-					RETURN .T.
-				ELSE
-					MESSAGEBOX("No se encontraron artículos", 0+48, Thisform.Caption)
-				ENDIF						
-			ENDIF
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tempo"
-
-IF !loRes.OpenQuery(lcSql) THEN	
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_tempo
-IF RECCOUNT("cur_tempo") > 0 THEN
-	GO TOP
-ELSE
-	MESSAGEBOX("No hay registros para mostrar", 0+48, Thisform.Caption)
-	loRes.Close_Query()
-	RETURN .F.
-ENDIF
-
-&& Calculo la venta total
-SELECT ROUND(SUM(cur_tempo.importe), 2) AS total FROM cur_tempo INTO CURSOR cur_x
-lnImpTotal = cur_x.total
-
-USE IN cur_x
-
-SELECT cur_ranking
-ZAP
-
-loTherm.show()
-DO WHILE !EOF("cur_tempo")
-	SELECT cur_ranking
-	APPEND BLANK
-	REPLACE cur_ranking.codigo WITH cur_tempo.codigo
-	
-	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
-		REPLACE cur_ranking.anio WITH cur_tempo.anio ADDITIVE
-		REPLACE cur_ranking.mes WITH loDT.getNombreMes(cur_tempo.mes) ADDITIVE
-	ELSE
-		REPLACE cur_ranking.porVta WITH (cur_tempo.importe * 100) / lnImpTotal ADDITIVE
-	ENDIF
-	
-	REPLACE cur_ranking.descripcio WITH cur_tempo.descripcio ADDITIVE
-	REPLACE cur_ranking.importe WITH cur_tempo.importe ADDITIVE
-	
-	loTherm.update((RECNO("cur_tempo") * 100) / RECCOUNT("cur_tempo"), "Generando reporte, aguarde por favor...")
-	SELECT cur_tempo
-	SKIP
-ENDDO
-
-loTherm.complete()
-loRes.Close_Query()
-
-m.fechaDD = thisform.contenido.txtFecDesde.Value
-m.fechaHH = thisform.contenido.txtFecHasta.Value
-
-SELECT cur_ranking
-GO TOP
-
-lcFileName = PUTFILE("Guardar como", "", "xls")
-
-IF !(ALLTRIM(lcFileName) == "") THEN
-	=Exp2Excel( "cur_ranking", lcFileName, m.titulo )
-ENDIF
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: chkDetalleMes
-************************************************************
-*** PROPIEDADES ***
-Top = 86
-Left = 13
-Height = 18
-Width = 132
-Alignment = 0
-Caption = "Detallar por mes"
-Value = 0
-Name = "chkDetalleMes"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cls_form_rankings
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
 OBJETO: cls_form_ventasportipopago
 ************************************************************
 *** PROPIEDADES ***
@@ -2107,6 +1330,738 @@ OBJETO: cls_form_totalventas
 Arial, 0, 8, 5, 14, 11, 29, 3, 0
 Arial, 1, 8, 5, 14, 11, 29, 3, 0
 Arial, 0, 9, 5, 15, 12, 32, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cls_form_rankings
+************************************************************
+*** PROPIEDADES ***
+BorderStyle = 2
+Height = 223
+Width = 600
+DoCreate = .T.
+Caption = "Genrador de Rankings de Ventas"
+titulo = 
+titulo_grupo = 
+es_ranking_articulos = .F.
+Name = "cls_form_rankings"
+contenido.Comment = ""
+contenido.Top = -12
+contenido.Left = 0
+contenido.Name = "contenido"
+
+*** METODOS ***
+PROCEDURE calcular_ranking_v1
+* option1 = clientes
+* option2 = proveedores
+* option3 = marcas
+* option4 = subfamilia
+
+LOCAL loRes, loDT, loTherm, lcSql
+LOCAL lImpTotal, lcFileName
+
+loRes = CREATEOBJECT("odbc_result")
+loTherm = CREATEOBJECT("_thermometer")
+loDT = CREATEOBJECT("datetime")
+lImpTotal = 0.00
+lcFileName = ""
+
+IF thisform.contenido.opt_group.option1.Value = 1 THEN
+	&& Rankign de clientes
+	
+	lcSql = "SELECT 	clientes.idCliente AS codigo, "
+	
+	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+		lcSql = lcSql + "   YEAR(ventascab.fecEmision) AS anio, "
+		lcSql = lcSql + "   MONTH(ventascab.fecEmision) AS mes, "
+	ENDIF
+	
+	lcSql = lcSql + "   MAX(clientes.razSoc) AS descripcio, "
+	lcSql = lcSql + "   ROUND(SUM(CASE WHEN ventascab.cbte = 'NC' THEN ventasdet.totNeto * -1 ELSE ventasdet.totNeto END), 2) AS importe "
+    lcSql = lcSql + "FROM ventascab "
+    lcSql = lcSql + "		INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
+	lcSql = lcSql + "     	INNER JOIN clientes ON ventascab.idCliente = clientes.idCliente "
+    lcSql = lcSql + "WHERE ventascab.cbte NOT IN ('PED', 'COT', 'ND') "
+   	lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
+    
+    IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+    	lcSql = lcSql + "GROUP BY 	clientes.idCliente, "
+	    lcSql = lcSql + " 	YEAR(ventascab.fecEmision), "
+	    lcSql = lcSql + " 	MONTH(ventascab.fecEmision) "
+	ELSE
+		lcSql = lcSql + "GROUP BY 	clientes.idCliente "
+	ENDIF
+	    
+    IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+    	lcSql = lcSql + "ORDER BY	clientes.idCliente, "
+	    lcSql = lcSql + " 	YEAR(ventascab.fecEmision), "
+	    lcSql = lcSql + " 	MONTH(ventascab.fecEmision) "
+	ELSE
+		lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventascab.impNeto ELSE ventascab.impNeto * -1 END), 2) DESC "
+	ENDIF
+
+    m.titulo = "CLIENTES"
+    m.titulo_brupo = "CLIENTE:"
+ELSE
+	IF thisform.contenido.opt_group.option2.Value = 1 THEN
+		&& Ranking de proveedores
+		
+		lcSql = "SELECT	proveedor.idProv AS codigo, "
+		
+		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+			lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
+			lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
+		ENDIF
+		
+		lcSql = lcSql + "		MAX(proveedor.razSoc) AS descripcio, "
+		lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) AS importe "
+		lcSql = lcSql + "FROM ventascab "
+		lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
+		lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
+		lcSql = lcSql + "	INNER JOIN proveedor ON proveedor.idProv = articulos.idProv "
+		lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT') "
+		lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
+		
+		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+			lcSql = lcSql + "GROUP BY proveedor.idProv, "
+			lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
+			lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
+		ELSE
+			lcSql = lcSql + "GROUP BY proveedor.idProv "
+		ENDIF
+		
+		IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+			lcSql = lcSql + "ORDER BY proveedor.idProv, "
+			lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
+			lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
+		ELSE
+			lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
+		ENDIF
+		
+	    m.titulo = "PROVEEDORES"
+	    m.titulo_brupo = "PROVEEDOR:"
+	ELSE
+		IF thisform.contenido.opt_group.option3.Value = 1 THEN
+			&& Ranking de marcas
+			
+			lcSql = "SELECT	marcas.idmarca AS codigo, "
+			
+			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+				lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
+				lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
+			ENDIF
+			
+			lcSql = lcSql + "		MAX(marcas.descripcio) AS descripcio, "
+			lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) AS importe "
+			lcSql = lcSql + "FROM ventascab "
+			lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
+			lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
+			lcSql = lcSql + "	INNER JOIN marcas ON marcas.idmarca = articulos.idmarca "
+			lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT') "
+			lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
+						
+			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+				lcSql = lcSql + "GROUP BY marcas.idmarca, "
+				lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
+				lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
+			ELSE
+				lcSql = lcSql + "GROUP BY marcas.idmarca "
+			ENDIF
+			
+			IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+				lcSql = lcSql + "ORDER BY marcas.idmarca, "
+				lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
+				lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
+			ELSE
+				lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
+			ENDIF
+			
+		    m.titulo = "MARCAS"
+		    m.titulo_brupo = "MARCA:"			
+		ELSE
+			IF thisform.contenido.opt_group.option4.Value = 1 THEN
+				&& Ranking de subfamilias
+				
+				lcSql = "SELECT	subfam.idSubFam AS codigo, "
+				
+				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+					lcSql = lcSql + "		YEAR(ventascab.fecEmision) AS anio, "
+					lcSql = lcSql + "		MONTH(ventascab.fecEmision) AS mes, "   
+				ENDIF
+				
+				lcSql = lcSql + "		MAX(subfam.descripcio) AS descripcio, "
+				lcSql = lcSql + "		ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) AS importe "
+				lcSql = lcSql + "FROM ventascab "
+				lcSql = lcSql + "	INNER JOIN ventasdet ON ventasdet.idVentasC = ventascab.idVentasC "
+				lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "        
+				lcSql = lcSql + "	INNER JOIN subfam ON subfam.idSubFam = articulos.idSubFam "
+				lcSql = lcSql + "WHERE	ventascab.cbte NOT IN ('PED', 'COT') "
+				lcSql = lcSql + "	AND ventascab.fecEmision BETWEEN " + loDT.toMySql(thisform.contenido.txtFecDesde.Value) + " AND " + loDT.toMySql(thisform.contenido.txtFecHasta.Value) + " "
+				
+				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+					lcSql = lcSql + "GROUP BY subfam.idSubFam, "
+					lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
+					lcSql = lcSql + "	MONTH(ventascab.fecEmision) "
+				ELSE
+					lcSql = lcSql + "GROUP BY subfam.idSubFam "
+				ENDIF
+				
+				IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+					lcSql = lcSql + "ORDER BY subfam.idSubFam, "
+					lcSql = lcSql + "	YEAR(ventascab.fecEmision), "
+					lcSql = lcSql + "	MONTH(ventascab.fecEmision)	"
+				ELSE
+					lcSql = lcSql + "ORDER BY ROUND(SUM(CASE WHEN ventascab.cbte = 'FC' THEN ventasdet.totNeto ELSE ventasdet.totNeto * -1 END), 2) DESC "
+				ENDIF
+				
+			    this.titulo = "SUB-FAMILIAS"
+			    this.titulo_grupo = "SUB-FAMILIA:"	
+			    
+		ELSE
+			IF thisform.contenido.opt_group.option5.Value = 1 THEN
+			
+				&& Llamo al SP que me devuelve los resultados de la consulta.
+				lcSql = "CALL ranking_Articulos(?x_SeparoPorMes, ?x_fechaInicio, ?x_fechaFin)"
+				lcSql = loRes.AddParameter(lcSql, "x_SeparoPorMes", ALLTRIM(STR(thisform.contenido.chkDetalleMes.Value)), .f., .f.)
+				lcSql = loRes.AddParameter(lcSql, "x_fechaInicio",thisform.contenido.txtFecDesde.Value, .f., .t.)
+				lcSql = loRes.AddParameter(lcSql, "x_fechaFin", thisform.contenido.txtFecHasta.Value, .f., .t.)
+				loRes.ActiveConnection = goConn.ActiveConnection
+				loRes.Cursor_Name = "cur_x"
+				loRes.OpenQuery(lcSql)
+				
+				SELECT cur_rank_art
+				ZAP
+				APPEND FROM DBF("cur_x")
+				loRes.Close_Query()
+				
+				&& Mando el Excel
+				IF RECCOUNT("cur_rank_art") > 0 THEN
+					SELECT cur_rank_art
+					GO TOP
+					
+					SELECT codart, descripcio, cantidad FROM cur_rank_art ORDER BY cantidad DESC INTO CURSOR cur_temp
+			
+					genexcel("cur_temp","TOTAL DE ARTÍCULOS VENDIDOS")
+
+					RETURN .T.
+				ELSE
+					MESSAGEBOX("No se encontraron artículos", 0+48, Thisform.Caption)
+				ENDIF						
+			ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_tempo"
+
+IF !loRes.OpenQuery(lcSql) THEN	
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_tempo
+IF RECCOUNT("cur_tempo") > 0 THEN
+	GO TOP
+ELSE
+	MESSAGEBOX("No hay registros para mostrar", 0+48, Thisform.Caption)
+	loRes.Close_Query()
+	RETURN .F.
+ENDIF
+
+&& Calculo la venta total
+SELECT ROUND(SUM(cur_tempo.importe), 2) AS total FROM cur_tempo INTO CURSOR cur_x
+lnImpTotal = cur_x.total
+
+USE IN cur_x
+
+SELECT cur_ranking
+ZAP
+
+loTherm.show()
+SELECT cur_ranking
+ZAP
+
+DO WHILE !EOF("cur_tempo")
+	SELECT cur_ranking
+	APPEND BLANK
+	REPLACE cur_ranking.codigo WITH cur_tempo.codigo
+	
+	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+		REPLACE cur_ranking.anio WITH cur_tempo.anio ADDITIVE
+		REPLACE cur_ranking.mes WITH loDT.getNombreMes(cur_tempo.mes) ADDITIVE
+	ELSE
+		REPLACE cur_ranking.porVta WITH (cur_tempo.importe * 100) / lnImpTotal ADDITIVE
+	ENDIF
+	
+	REPLACE cur_ranking.descripcio WITH cur_tempo.descripcio ADDITIVE
+	REPLACE cur_ranking.importe WITH cur_tempo.importe ADDITIVE
+	
+	loTherm.update((RECNO("cur_tempo") * 100) / RECCOUNT("cur_tempo"), "Generando reporte, aguarde por favor...")
+	SELECT cur_tempo
+	SKIP
+ENDDO
+
+loTherm.complete()
+loRes.Close_Query()
+
+RETURN .T.
+ENDPROC
+PROCEDURE calcular_ranking_v2
+**********************************************************************
+* Permite calcular los rankings de ventas según el SP ranking_ventas
+* En ésta versión se centraliza todo en un solo proceso.
+**********************************************************************
+LOCAL loRes, loTherm, loDT, lcSql, lcErrorMessage
+LOCAL lnImpTotal, lcTipoRanking, lnDetalleMes, lnInlcuirIVA
+LOCAL ldFechaInicio, ldFechaFin, llEsRankingArticulo, llOk
+
+STORE "" TO lcSql, lcErrorMessage, lcTipoRanking, lcOpcion
+STORE 0.00 TO lnImpTotal
+STORE .F. TO This.es_ranking_articulos, llOk
+
+ldFechaInicio = Thisform.contenido.txtFecDesde.Value
+ldFechaFin = Thisform.contenido.txtFecHasta.Value
+lnDetalleMes = Thisform.contenido.chkDetalleMes.Value
+lnInlcuirIVA = Thisform.contenido.chk_importe_con_iva.Value
+
+DO CASE
+	CASE Thisform.contenido.opt_group.option1.Value = 1
+		lcTipoRanking = "clientes"
+		This.titulo = "Clientes"
+		This.titulo_grupo = "Cliente:"
+	CASE Thisform.contenido.opt_group.option2.Value = 1
+		lcTipoRanking = "proveedores"
+		This.titulo = "Proveedores"
+		This.titulo_grupo = "Proveedor:"
+	CASE Thisform.contenido.opt_group.option3.Value = 1
+		lcTipoRanking = "marcas"
+		This.titulo = "Marcas"
+		This.titulo_grupo = "Marca:"
+	CASE Thisform.contenido.opt_group.option4.Value = 1
+		lcTipoRanking = "subfamilias"
+		This.titulo = "Subfamilias"
+		This.titulo_grupo = "Subfamilia:"
+	CASE Thisform.contenido.opt_group.option5.Value = 1
+		lcTipoRanking = "articulos"
+		This.es_ranking_articulos = .T.
+		This.titulo = "Artículos"
+		This.titulo_grupo = "Artículo:"
+ENDCASE
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")	
+	loTherm = CREATEOBJECT("_thermometer")
+	loDT = CREATEOBJECT("datetime")
+	
+	&& Limpio los cursores
+	SELECT cur_rank_art
+	ZAP
+	SELECT cur_ranking
+	ZAP	
+	
+	TEXT TO lcSql NOSHOW PRETEXT 15
+		CALL ranking_ventas(?pTipoRanking, ?pDetalleMes, ?pFechaInicio, ?pFechaFin, ?pIncluirIVA)	
+	ENDTEXT
+	
+	lcSql = loRes.AddParameter(lcSql, "pTipoRanking", ALLTRIM(lcTipoRanking), .T., .F.)
+	lcSql = loRes.AddParameter(lcSql, "pDetalleMes", ALLTRIM(STR(lnDetalleMes)), .F., .F.)
+	lcSql = loRes.AddParameter(lcSql, "pFechaInicio", ldFechaInicio, .F., .T.)
+	lcSql = loRes.AddParameter(lcSql, "pFechaFin", ldFechaFin, .F., .T.)
+	lcSql = loRes.AddParameter(lcSql, "pIncluirIVA", ALLTRIM(STR(lnInlcuirIVA)), .F., .F.)
+
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	
+	IF !loRes.OpenQuery(lcSql) THEN
+		MESSAGEBOX("Error al ejecutar el procedimiento: " + lcSql, 0+48, Thisform.Caption)
+		llOk = .F.
+	ELSE
+		llOk = .T.
+	ENDIF
+	
+	IF llOk THEN
+		SELECT cur_x	
+		IF RECCOUNT("cur_x") = 0 THEN
+			MESSAGEBOX("No hay registros para mostrar", 0+64, Thisform.Caption)
+			llOk = .F.
+		ENDIF	
+	
+		IF This.es_ranking_articulos THEN
+			&& Si es ranking de artículos lo guardo en cur_rank_art ya que el reporte está
+			&& apuntando a ese cursor.
+			SELECT cur_rank_art
+			GO TOP
+			APPEND FROM DBF("cur_x")
+			
+			SELECT cur_rank_art
+			GO TOP
+		ELSE
+			&& Paso por acá si no es ranking de artículos.
+			
+			loTherm.show()
+			
+			&& Calculo el total de ventas
+			SELECT ROUND(SUM(cur_x.importe), 2) AS total FROM cur_x INTO CURSOR cur_total
+			lnImpTotal = cur_total.total			
+			
+			SELECT cur_x
+			GO TOP
+			DO WHILE !EOF("cur_x")
+				SELECT cur_ranking
+				APPEND BLANK
+				REPLACE cur_ranking.codigo WITH cur_x.codigo
+				REPLACE cur_ranking.descripcio WITH cur_x.descripcio ADDITIVE
+				REPLACE cur_ranking.importe WITH cur_x.importe ADDITIVE
+				
+				IF lnDetalleMes = 1 THEN
+					* Si hay que dividir por mes, completo los campos.
+					REPLACE cur_ranking.anio WITH cur_x.anio ADDITIVE
+					REPLACE cur_ranking.mes WITH loDT.getNombreMes(cur_x.mes) ADDITIVE
+				ELSE
+					REPLACE cur_ranking.porVta WITH (cur_x.importe * 100) / lnImpTotal ADDITIVE
+				ENDIF
+				
+				&& Sumo al progressbar y paso al siguiente registro
+				loTherm.update((RECNO("cur_x") * 100) / RECCOUNT("cur_x"), "Generando reporte, aguarde por favor...")			
+				SELECT cur_x
+				SKIP
+			ENDDO
+			
+			loTherm.complete()
+			SELECT cur_ranking
+			GO TOP
+		ENDIF
+	ENDIF
+	
+	llOk = .T.
+CATCH TO oException
+	_cliptext = lcSql
+	llOk = .F.
+	lcErrorMessage = getErrorForCatch(oException)
+	MESSAGEBOX(lcErrorMessage, 0+48, Thisform.Caption)
+FINALLY
+	loRes.Close_Query()
+	
+	IF USED("cur_total") THEN
+		USE IN cur_total
+	ENDIF
+	
+	RELEASE loRes
+	RELEASE loTherm
+ENDTRY
+
+RETURN llOk
+
+
+
+ENDPROC
+PROCEDURE exportar_a_excel
+************************************************************************************
+* Este método permite exportar a Excel los rankings según la selección.
+************************************************************************************
+
+
+m.fechaDD = thisform.contenido.txtFecDesde.Value
+m.fechaHH = thisform.contenido.txtFecHasta.Value
+
+lcFileName = PUTFILE("Guardar como", "", "xls")
+
+IF !This.es_ranking_articulos THEN
+	&& Paso por acá si no es ranking de artículos
+	
+	SELECT cur_ranking
+	GO TOP
+
+	IF !(ALLTRIM(lcFileName) == "") THEN
+		Exp2Excel("cur_ranking", lcFileName, this.titulo)
+	ENDIF
+ELSE
+	&& Exportación para ranking de artículos
+	
+	SELECT cur_rank_art
+	GO TOP
+
+	IF !(ALLTRIM(lcFileName) == "") THEN
+		Exp2Excel("cur_rank_art", lcFileName, this.titulo)
+	ENDIF
+ENDIF
+ENDPROC
+PROCEDURE mostrar_vista_previa
+***************************************************************************
+* Permite mostrar la vista previa y enviar a imprimir en caso de
+* requerirlo.
+***************************************************************************
+
+LOCAL m.fechaDD, m.fechaHH, m.titulo, m.titulo_grupo
+
+m.fechaDD = thisform.contenido.txtFecDesde.Value
+m.fechaHH = thisform.contenido.txtFecHasta.Value
+m.titulo = This.titulo
+m.titulo_grupo = this.titulo_grupo
+
+IF This.es_ranking_articulos THEN
+	&& Si es un ranking de artículos llama al reporte que se comunica con el
+	&& cursor cur_rank_art
+	SELECT cur_rank_art
+	GO TOP
+	
+	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+		REPORT FORM "rep_ranking_art" TO PRINTER PROMPT PREVIEW
+	ELSE
+		REPORT FORM "rep_ranking_art_2" TO PRINTER PROMPT PREVIEW
+	ENDIF
+ELSE
+	&& Para el resto de los rankings
+	SELECT cur_ranking
+	GO TOP	
+	
+	IF thisform.contenido.chkDetalleMes.Value = 1 THEN
+		REPORT FORM "rep_rankings" TO PRINTER PROMPT PREVIEW
+	ELSE
+		REPORT FORM "rep_rankings_2" TO PRINTER PROMPT PREVIEW
+	ENDIF
+ENDIF
+ENDPROC
+PROCEDURE Load
+DODEFAULT()
+
+CREATE CURSOR cur_ranking (	;
+	codigo		int,;
+	anio		int,;
+	mes			varchar(20),;
+	descripcio	varchar(60),;
+	importe		float(10,2),;
+	porVta		float(10,2))
+
+CREATE CURSOR cur_rank_art ( ;
+	idarticulo	int,;
+	codart		varchar(10),;
+	descripcio	varchar(60),;
+	cantidad	int,;
+	importe int,;
+	anio		int,;
+	mes			varchar(20))
+ENDPROC
+PROCEDURE Init
+thisform.contenido.txtFecDesde.Value = DATE() -30
+thisform.contenido.txtFecHasta.Value = DATE()
+ENDPROC
+
+
+************************************************************
+OBJETO: opt_group
+************************************************************
+*** PROPIEDADES ***
+ButtonCount = 5
+Height = 35
+Left = 1
+Top = 11
+Width = 600
+Name = "opt_group"
+Option1.FontSize = 8
+Option1.Caption = "Clientes"
+Option1.Height = 16
+Option1.Left = 132
+Option1.Top = 8
+Option1.Width = 72
+Option1.ForeColor = 158,106,75
+Option1.Name = "Option1"
+Option2.FontSize = 8
+Option2.Caption = "Proveedores"
+Option2.Height = 16
+Option2.Left = 214
+Option2.Top = 8
+Option2.Width = 92
+Option2.ForeColor = 158,106,75
+Option2.Name = "Option2"
+Option3.FontBold = .T.
+Option3.FontSize = 8
+Option3.Caption = "Marcas"
+Option3.Height = 17
+Option3.Left = 317
+Option3.Top = 8
+Option3.Width = 65
+Option3.ForeColor = 158,106,75
+Option3.Name = "Option3"
+Option4.FontBold = .T.
+Option4.FontSize = 8
+Option4.Caption = "Sub-Familia"
+Option4.Height = 17
+Option4.Left = 390
+Option4.Top = 8
+Option4.Width = 89
+Option4.ForeColor = 158,106,75
+Option4.Name = "Option4"
+Option5.FontBold = .T.
+Option5.FontSize = 8
+Option5.Caption = "Artículo"
+Option5.Height = 17
+Option5.Left = 491
+Option5.Top = 8
+Option5.Width = 61
+Option5.ForeColor = 158,106,75
+Option5.Name = "Option5"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha desde:"
+Height = 15
+Left = 13
+Top = 61
+Width = 81
+Name = "Clsetiqueta1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta2
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha Hasta:"
+Height = 15
+Left = 202
+Top = 61
+Width = 74
+Name = "Clsetiqueta2"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecDesde
+************************************************************
+*** PROPIEDADES ***
+Left = 94
+Top = 57
+isdatetime = .T.
+Name = "txtFecDesde"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecHasta
+************************************************************
+*** PROPIEDADES ***
+Left = 277
+Top = 57
+isdatetime = .T.
+Name = "txtFecHasta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnCerrar
+************************************************************
+*** PROPIEDADES ***
+Top = 175
+Left = 495
+Name = "btnCerrar"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnImprimir
+************************************************************
+*** PROPIEDADES ***
+Comment = ""
+Top = 175
+Left = 400
+Name = "btnImprimir"
+
+*** METODOS ***
+PROCEDURE Click
+*****************************************************************
+* Muestro vista previa para enviar a imprimir el comprobante.
+*****************************************************************
+IF Thisform.calcular_ranking_v2() THEN
+	Thisform.mostrar_vista_previa()
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: btnExcel
+************************************************************
+*** PROPIEDADES ***
+Top = 175
+Left = 352
+Name = "btnExcel"
+
+*** METODOS ***
+PROCEDURE Click
+****************************************************************
+* Permite exportar los ranking de ventas a Excel
+****************************************************************
+IF Thisform.calcular_ranking_v2()
+	Thisform.exportar_a_excel()
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: chkDetalleMes
+************************************************************
+*** PROPIEDADES ***
+Top = 86
+Left = 13
+Height = 18
+Width = 132
+Alignment = 0
+Caption = "Detallar por mes"
+Value = 0
+Name = "chkDetalleMes"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta3
+************************************************************
+*** PROPIEDADES ***
+Caption = "Generar ranking de:"
+Height = 15
+Left = 6
+Top = 20
+Width = 115
+Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: chk_importe_con_iva
+************************************************************
+*** PROPIEDADES ***
+Top = 86
+Left = 157
+Height = 18
+Width = 203
+Alignment = 0
+Caption = "Calcular sobre importe con IVA"
+Name = "chk_importe_con_iva"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cls_form_rankings
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 *** METODOS ***
 
