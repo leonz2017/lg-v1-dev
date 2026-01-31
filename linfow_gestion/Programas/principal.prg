@@ -41,6 +41,7 @@ set classlib to "ordenes_trabajo.vcx"	additive	&& Módulo de ordenes de trabajo
 set classlib to "ventas_on_line.vcx"	additive	&& Módulo de pedidos On-Line
 Set Classlib To "update_version_utils" additive		&& Módulo de actualización del sistema
 SET CLASSLIB TO "logistica.vcx"			additive	&& Módulo para emisióin de remitos
+SET CLASSLIB TO "arca_services.vcx"		ADDITIVE	&& Librería para automatización de ARCA.
 
 *** Clases personalizadas
 set classlib to "mg_pedidos_online.vcx" additive	&& Contiene adaptaciones de pedidos on-line para MG Carburación

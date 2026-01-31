@@ -9,11 +9,6 @@ CREATE PROCEDURE IF NOT EXISTS ranking_ventas (
     IN p_fecha_fin DATE,
 	IN p_importe_con_iva INT		-- 1 = Tomar el importe con IVA incluído, 0 = Tomar el importe neto sin IVA
 )
-LANGUAGE SQL
-NOT DETERMINISTIC
-CONTAINS SQL
-SQL SECURITY DEFINER
-COMMENT 'Procedimiento genérico para rankings de ventas'
 BEGIN
 	DECLARE vIdClienteCF INT;
 	
@@ -26,13 +21,11 @@ BEGIN
 	WHERE
 		global_cfg.cfg_key = 'CLI_CF';
 	
-    -- ============================================================
-    -- RANKING DE CLIENTES
-    -- ============================================================
+    /* Ranking de clientes */
     IF p_tipo_ranking = 'clientes' THEN
         
         IF p_detalle_mes = 1 THEN
-            -- Con detalle mensual
+            /* Con detalle mensual */
             SELECT 
                 clientes.idCliente AS codigo,
                 YEAR(ventascab.fecEmision) AS anio,
@@ -59,7 +52,7 @@ BEGIN
                 YEAR(ventascab.fecEmision),
                 MONTH(ventascab.fecEmision);
         ELSE
-            -- Sin detalle mensual
+            /* Sin detalle mensual */
             SELECT 
                 clientes.idCliente AS codigo,
                 MAX(clientes.razSoc) AS descripcio,
@@ -79,13 +72,11 @@ BEGIN
             ORDER BY importe DESC;
         END IF;
     
-    -- ============================================================
-    -- RANKING DE PROVEEDORES
-    -- ============================================================
+	/* Ranking de proveedores */
     ELSEIF p_tipo_ranking = 'proveedores' THEN
         
         IF p_detalle_mes = 1 THEN
-            -- Con detalle mensual
+            /* Con detalle mensual */
             SELECT 
                 proveedor.idProv AS codigo,
                 YEAR(ventascab.fecEmision) AS anio,
@@ -112,7 +103,7 @@ BEGIN
                 YEAR(ventascab.fecEmision),
                 MONTH(ventascab.fecEmision);
         ELSE
-            -- Sin detalle mensual
+            /* Sin detalle mensual */
             SELECT 
                 proveedor.idProv AS codigo,
                 MAX(proveedor.razSoc) AS descripcio,
@@ -132,13 +123,11 @@ BEGIN
             ORDER BY importe DESC;
         END IF;
     
-    -- ============================================================
-    -- RANKING DE MARCAS
-    -- ============================================================
+    /* Ranking de Marcas */
     ELSEIF p_tipo_ranking = 'marcas' THEN
         
         IF p_detalle_mes = 1 THEN
-            -- Con detalle mensual
+            /* Con detalle mensual */
             SELECT 
                 marcas.idmarca AS codigo,
                 YEAR(ventascab.fecEmision) AS anio,
@@ -165,7 +154,7 @@ BEGIN
                 YEAR(ventascab.fecEmision),
                 MONTH(ventascab.fecEmision);
         ELSE
-            -- Sin detalle mensual
+            /* Sin detalle mensual */
             SELECT 
                 marcas.idmarca AS codigo,
                 MAX(marcas.descripcio) AS descripcio,
@@ -191,7 +180,7 @@ BEGIN
     ELSEIF p_tipo_ranking = 'subfamilias' THEN
         
         IF p_detalle_mes = 1 THEN
-            -- Con detalle mensual
+            /* Con detalle mensual */
             SELECT 
                 subfam.idSubFam AS codigo,
                 YEAR(ventascab.fecEmision) AS anio,
@@ -218,7 +207,7 @@ BEGIN
                 YEAR(ventascab.fecEmision),
                 MONTH(ventascab.fecEmision);
         ELSE
-            -- Sin detalle mensual
+            /* Sin detalle mensual */
             SELECT 
                 subfam.idSubFam AS codigo,
                 MAX(subfam.descripcio) AS descripcio,
@@ -238,13 +227,11 @@ BEGIN
             ORDER BY importe DESC;
         END IF;
     
-    -- ============================================================
-    -- RANKING DE ARTÍCULOS
-    -- ============================================================
+    /* Ranking de artículos */
     ELSEIF p_tipo_ranking = 'articulos' THEN
         
         IF p_detalle_mes = 1 THEN
-            -- Con detalle mensual
+            /* Con detalle mensual */
             SELECT 
                 articulos.idArticulo AS idarticulo,
                 articulos.codart AS codart,
@@ -273,7 +260,7 @@ BEGIN
                 YEAR(ventascab.fecEmision),
                 MONTH(ventascab.fecEmision);
         ELSE
-            -- Sin detalle mensual
+            /* Sin detalle mensual */
             SELECT 
                 articulos.idArticulo AS idarticulo,
                 articulos.codart AS codart,

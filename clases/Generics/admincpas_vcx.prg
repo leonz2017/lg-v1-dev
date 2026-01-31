@@ -8589,2899 +8589,6 @@ ENDPROC
 
 
 ************************************************************
-OBJETO: cls_frmcbtes_cpas
-************************************************************
-*** PROPIEDADES ***
-BorderStyle = 2
-Height = 544
-Width = 946
-DoCreate = .T.
-Caption = "Ingreso de comprobantes"
-idsitiva = 0
-idcomprac_orig = 0
-idoper = 0
-Name = "cls_frmcbtes_cpas"
-contenido.Name = "contenido"
-
-*** METODOS ***
-PROCEDURE blanquear
-&& Cabecera
-Thisform.Contenido.cmbCbte.ListIndex = 1
-Thisform.Contenido.cmbTipoDoc.ListIndex = 1
-Thisform.Contenido.txtPtoVta.Value = "0000"
-Thisform.Contenido.txtNroCbte.Value = "00000000"
-Thisform.Contenido.chkCosto.Value = 0
-Thisform.Contenido.sel_proveedor.blanquear()
-Thisform.Contenido.txtNroCUIT.blanquear()
-Thisform.Contenido.txtSitIVA.blanquear()
-Thisform.Contenido.sel_condpago.blanquear()
-Thisform.Contenido.txtFecEmision.Value = DATE()
-Thisform.Contenido.txtFecVto.blanquear()
-Thisform.contenido.btnSelCbteOrig.Enabled = .F.
-Thisform.contenido.txtcbteOrig.blanquear()
-Thisform.contenido.txtletraOrig.blanquear()
-Thisform.contenido.txtptoVtaOrig.blanquear()
-Thisform.contenido.txtnumeroOrig.blanquear()
-Thisform.idOper = 0
-
-&& Page 1
-Thisform.Contenido.page_group.page1.sel_articulo.blanquear()
-Thisform.Contenido.page_group.page1.cmbUnidCpa.Clear()
-Thisform.Contenido.page_group.page1.txtCantPack.blanquear()
-Thisform.Contenido.page_group.page1.txtCantidad.blanquear()
-Thisform.Contenido.page_group.page1.txtPrLista.blanquear()
-Thisform.Contenido.page_group.page1.txtBonif1.blanquear()
-Thisform.Contenido.page_group.page1.txtBonif2.blanquear()
-Thisform.Contenido.page_group.page1.txtBonif3.blanquear()
-Thisform.Contenido.page_group.page1.txtBonif4.blanquear()
-Thisform.Contenido.page_group.page1.txtAlicIVA.blanquear()
-Thisform.Contenido.page_group.page1.txtImpIVA.blanquear()
-Thisform.Contenido.page_group.page1.txtCostoRep.blanquear()
-Thisform.Contenido.page_group.page1.txtCostoFinal.blanquear()
-Thisform.Contenido.page_group.page1.txtSTFinal.blanquear()
-Thisform.Contenido.page_group.page1.txtSTNeto.blanquear()
-Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .F.
-Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .T.
-
-&& Page 2
-Thisform.Contenido.page_group.page2.sel_concepto.blanquear()
-Thisform.Contenido.page_group.page2.txtImpNeto.blanquear()
-Thisform.Contenido.page_group.page2.txtImpIVA.blanquear()
-Thisform.Contenido.page_group.page2.txtTotal.blanquear()
-
-&& Page 3
-Thisform.contenido.page_group.page3.txtGanancias.blanquear()
-Thisform.contenido.page_group.page3.txtIIBB.blanquear()
-Thisform.contenido.page_group.page3.txtIVA.blanquear()
-Thisform.contenido.page_group.page3.txtSUSS.blanquear()
-Thisform.contenido.page_group.page3.cmbPcias.ListIndex = 1
-Thisform.contenido.page_group.page3.txtImpuestos.blanquear()
-
-&& Totales
-Thisform.contenido.txtnoGravado.blanquear()
-Thisform.Contenido.txtTotalNeto.blanquear()
-Thisform.Contenido.txtImpIVA105.blanquear()
-Thisform.Contenido.txtImpIVA21.blanquear()
-Thisform.Contenido.txtPercepciones.blanquear()
-Thisform.Contenido.txtimpuestos.blanquear()
-Thisform.Contenido.txtTotalFinal.blanquear()
-
-
-Thisform.compras.limpiar()
-Thisform.mov_stock.limpiar()
-Thisform.Contenido.page_group.page1.SetFocus()
-Thisform.Contenido.cmbCbte.SetFocus()
-ENDPROC
-PROCEDURE calcular_item
-LOCAL lnPrLista, lnBonif1, lnBonif2, lnBonif3, lnBonif4
-LOCAL lnCostoRep, lnAlicIVA, lnImpIVA, lnCostoFinal
-LOCAL lnCantidad
-
-lnPrLista = 0.00
-lnBonif1 = 0.00
-lnBonif2 = 0.00
-lnBonif3 = 0.00
-lnBonif4 = 0.00
-lnCostoRep = 0.00
-lnAlicIVA = 0.00
-lnImpIVA = 0.00
-lnCostoFinal = 0.00
-lnCantidad = 0.00
-
-lnPrLista = Thisform.Contenido.page_group.page1.txtPrLista.Value
-lnBonif1 = Thisform.Contenido.page_group.page1.txtBonif1.Value
-lnBonif2 = Thisform.Contenido.page_group.page1.txtBonif2.Value
-lnBonif3 = Thisform.Contenido.page_group.page1.txtBonif3.Value
-lnBonif4 = Thisform.Contenido.page_group.page1.txtBonif4.Value
-lnAlicIVA = Thisform.Contenido.page_group.page1.txtAlicIVA.Value
-lnCantidad = Thisform.Contenido.page_group.page1.txtCantidad.Value
-
-lnCostoRep = Thisform.compras.calcular_costoneto(lnPrLista,lnBonif1,lnBonif2,lnBonif3,lnBonif4)
-lnImpIVA = Thisform.compras.calcular_impiva(lnCostoRep, lnAlicIVA)
-lnCostoFinal = lnCostoRep + lnImpIVA
-
-Thisform.Contenido.page_group.page1.txtImpIVA.Value = lnImpIVA
-Thisform.Contenido.page_group.page1.txtCostoRep.Value = lnCostoRep
-Thisform.Contenido.page_group.page1.txtCostoFinal.Value = lnCostoFinal
-Thisform.Contenido.page_group.page1.txtSTNeto.Value = Thisform.compras.calcular_totneto(lnCostoRep, lnCantidad)
-
-Thisform.Contenido.page_group.page1.txtSTFinal.Value = Thisform.Compras.calcular_totfinal(lnCantidad, ;
-	Thisform.Contenido.page_group.page1.txtSTNeto.Value, lnImpIVA)
-ENDPROC
-PROCEDURE calcular_item_cp
-LOCAL lnImpNeto, lcAlicIVA, lnImpIVA
-LOCAL lnTotal
-
-lnImpNeto = 0.00
-lnAlicIVA = 0.00
-lnImpIVA = 0.00
-lnTotal = 0.00
-
-lnImpNeto = Thisform.Contenido.page_group.page2.txtImpNeto.Value
-lnAlicIVA = FLOAT(VAL(Thisform.Contenido.page_group.page2.cmbAlicIva.Value)) 
-lnImpIVA = Thisform.Contenido.page_group.page2.txtImpIVA.Value
-lnTotal = Thisform.Contenido.page_group.page2.txtTotal.Value
-
-lnImpIVA = lnImpNeto * (lnAlicIVA / 100)
-lnTotal = lnImpNeto + lnImpIVA
-
-Thisform.Contenido.page_group.page2.txtImpIVA.Value = lnImpIVA
-Thisform.Contenido.page_group.page2.txtTotal.Value = lnTotal
-ENDPROC
-PROCEDURE validar_comprobante
-LOCAL loRes
-LOCAL lcSql
-LOCAL lnPtoVta
-LOCAL lnNumCbte
-LOCAL lnResp
-LOCAL lnIdProv
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-lnPtoVta = 0
-lnNumCbte = 0
-lnResp = 0
-lnIdProv = Thisform.Contenido.sel_Proveedor.valcpoid
-
-lnPtoVta = INT(VAL(Thisform.Contenido.txtPtoVta.Value))
-lnNumCbte = INT(VAL(Thisform.Contenido.txtNroCbte.Value))
-
-lcSql = "SELECT idCompraC "
-lcSql = lcSql + "FROM comprascab "
-lcSql = lcSql + "WHERE comprascab.ptoVta = " + ALLTRIM(STR(lnPtoVta)) + " "
-lcSql = lcSql + "	AND comprascab.numCbte = " + ALLTRIM(STR(lnNumCbte)) + " "
-lcSql = lcSql + "	AND comprascab.idProv = " + ALLTRIM(STR(lnIdProv))
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_x
-
-IF RECCOUNT("cur_x") > 0 THEN
-	lnResp = MESSAGEBOX("Este número de comprobante ya fue cargado, ¿Desea continuar de todos modos?", 4+32, Thisform.Caption)
-	IF lnResp = 6 THEN
-		loRes.Close_Query()
-		RETURN .T.
-	ELSE
-		loRes.Close_Query()
-		RETURN .F.
-	ENDIF
-ENDIF
-
-loRes.Close_Query()
-RETURN .T.
-
-ENDPROC
-PROCEDURE cambiar_estado
-PARAMETERS tlEstado
-
-Thisform.Contenido.CmbCbte.Enabled = tlEstado
-Thisform.Contenido.CmbTipoDoc.Enabled = tlEstado
-Thisform.Contenido.txtPtoVta.Enabled = tlEstado
-Thisform.Contenido.txtNroCbte.Enabled = tlEstado
-Thisform.Contenido.txtFecEmision.Enabled = tlEstado
-Thisform.Contenido.txtFEcVto.Enabled = tlEstado
-Thisform.Contenido.sel_proveedor.txtCodigo.Enabled = tlEstado
-Thisform.Contenido.sel_condpago.txtCodigo.Enabled = tlEstado
-Thisform.Contenido.btnSelCbteOrig.Enabled = tlEstado
-
-Thisform.Contenido.page_group.page1.Enabled = !tlEstado
-Thisform.Contenido.page_group.page2.Enabled = !tlEstado
-Thisform.Contenido.page_group.page3.Enabled = !tlEstado
-ENDPROC
-PROCEDURE cargar_comboiva
-&& Cargo el combobox con el iva
-LOCAL lnIVA1, lnIVA2
-
-lnIVA1 = GetGlobalCFG("IVA_1")
-lnIVA2 = GetGlobalCFG("IVA_2")
-
-Thisform.contenido.page_group.page2.cmbAlicIva.AddItem(ALLTRIM(STR(lnIVA1,10,2)))
-Thisform.contenido.page_group.page2.cmbAlicIva.AddItem(ALLTRIM(STR(lnIVA2,10,2)))
-Thisform.contenido.page_group.page2.cmbAlicIva.AddItem("0.00")
-
-Thisform.contenido.page_group.page2.cmbAlicIva.ListIndex = 1
-ENDPROC
-PROCEDURE cargar_provincias
-LOCAL loRes, lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-&& Levanto las provincias
-CREATE CURSOR pcias ( ;
-	descripcio varchar(60),;
-	idProvin int)
-
-lcSql = "SELECT * FROM provincias ORDER BY provincias.descripcio"
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tempo"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_tempo
-GO TOP
-DO WHILE !EOF("cur_tempo")
-	SELECT pcias
-	APPEND BLANK
-	REPLACE pcias.descripcio WITH cur_tempo.descripcio ADDITIVE
-	REPLACE pcias.idProvin WITH cur_tempo.idProvin
-
-
-	SELECT cur_tempo
-	SKIP
-ENDDO
-
-loRes.Close_Query()
-
-SELECT pcias
-GO TOP
-
-
-Thisform.contenido.page_group.page3.cmbPcias.BoundColumn = 2
-Thisform.contenido.page_group.page3.cmbPcias.RowSourceType = 2
-Thisform.contenido.page_group.page3.cmbPcias.RowSource = "pcias"
-
-Thisform.contenido.page_group.page3.cmbPcias.ListIndex = 1
-
-
-ENDPROC
-PROCEDURE validardetalle
-IF Thisform.contenido.page_group.page1.sel_articulo.valcpoid = 0 THEN
-	MESSAGEBOX("Debe ingresar el artículo", 0+48, Thisform.Caption)
-	Thisform.contenido.page_group.page1.sel_articulo.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.contenido.page_group.page1.txtCantidad.Value = 0 THEN
-	MESSAGEBOX("La cantidad no puede ser 0 (cero)", 0+48, Thisform.Caption)
-	Thisform.contenido.page_group.page1.txtCantidad.SetFocus()
-	RETURN .F.
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE validarcampos
-IF Thisform.Contenido.txtPtoVta.Value = "0000" .OR. ALLTRIM(Thisform.Contenido.txtPtoVta.Value) == "" THEN
-	MESSAGEBOX("Debe ingresar el punto de venta", 0+48, Thisform.Caption)
-	Thisform.Contenido.txtPtoVta.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.Contenido.txtNroCbte.Value == "00000000" .OR. ALLTRIM(Thisform.Contenido.txtNroCbte.Value) == "" THEN
-	MESSAGEBOX("Debe ingresar el número de comprobante", 0+48, Thisform.Caption)
-	Thisform.Contenido.txtNroCbte.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.contenido.sel_proveedor.valcpoid = 0 OR Thisform.contenido.sel_proveedor.txtCodigo.Value = 0 THEN
-	MESSAGEBOX("Debe ingresar el proveedor", 0+48, Thisform.Caption)
-	Thisform.contenido.sel_proveedor.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.contenido.sel_condpago.valcpoid = 0 THEN
-	MESSAGEBOX("Debe ingresar la condición de pago", 0+48,  Thisform.Caption)
-	Thisform.contenido.sel_condpago.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.Contenido.txtfecEmision.Value = {} THEN
-	MESSAGEBOX("Debe ingresar la fecha de emisión", 0+48, Thisform.Caption)
-	Thisform.Contenido.sel_CondPago.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.Contenido.txtFecVto.Value = {} THEN
-	MESSAGEBOX("Debe ingresar la fecha de vencimiento", 0+48, Thisform.Caption)
-	Thisform.Contenido.sel_CondPago.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE Init
-Thisform.mov_stock.circuito = "C"
-Thisform.mov_stock.crear_cursor()
-
-Thisform.compras.crear_cursor()
-Thisform.cargar_comboiva()
-Thisform.cargar_provincias()
-
-SELECT comprasdet
-Thisform.contenido.page_group.page1.grdDetalle.alias_name = "comprasdet"
-Thisform.contenido.page_group.page1.grdDetalle.RecordSource = "comprasdet"
-Thisform.contenido.page_group.page1.grdDetalle.list_controlsource = "codArt,descripcio,cantidad,prLista,costoNeto,alicIVA,impIVA,costoFinal,totNeto,totFinal"
-Thisform.contenido.page_group.page1.grdDetalle.lista_ancho_cols = "100,200,70,70,70,70,70,70,70,70"
-Thisform.contenido.page_group.page1.grdDetalle.titulos_cabeceras = "Código,Descripción,Cantidad,Pr. Lista,Costo Neto,IVA %,IVA $,Costo Final,Total Neto, Total Final"
-Thisform.contenido.page_group.page1.grdDetalle.generar_grid()
-
-SELECT cpasdet_cp
-Thisform.contenido.page_group.page2.grdDetalle.alias_name = "cpasdet_cp"
-Thisform.contenido.page_group.page2.grdDetalle.RecordSource = "cpasdet_cp"
-Thisform.contenido.page_group.page2.grdDetalle.list_controlsource = "codPlanCta,descripcio,impNeto,ivaPor,ivaImp,total"
-Thisform.contenido.page_group.page2.grdDetalle.titulos_cabeceras = "Código,Descripción,Imp. Neto,Alíc. IVA,IVA,Total"
-Thisform.contenido.page_group.page2.grdDetalle.lista_ancho_cols = "100,300,70,70,70,70"
-Thisform.contenido.page_group.page2.grdDetalle.generar_grid()
-
-SELECT comprasret
-Thisform.contenido.page_group.page3.grdIIBB.alias_name= "comprasret"
-Thisform.contenido.page_group.page3.grdIIBB.RecordSource = "comprasret"
-Thisform.contenido.page_group.page3.grdIIBB.list_controlsource = "Provincia,importe"
-Thisform.contenido.page_group.page3.grdIIBB.titulos_cabeceras = "Provincia,Importe"
-Thisform.contenido.page_group.page3.grdIIBB.lista_ancho_cols = "300,70"
-Thisform.contenido.page_group.page3.grdIIBB.generar_grid()
-
-Thisform.Contenido.cmbCbte.AddItem("FC")
-Thisform.Contenido.cmbCbte.AddItem("NC")
-Thisform.Contenido.cmbCbte.AddItem("ND")
-Thisform.Contenido.cmbCbte.ListIndex = 1
-
-IF INT(VAL(getconfig("DEMO"))) = 0 THEN 
-	Thisform.Contenido.cmbTipoDoc.AddItem("A")
-	Thisform.Contenido.cmbTipoDoc.AddItem("B")
-	Thisform.Contenido.cmbTipoDoc.AddItem("C")
-ELSE 
-	Thisform.Contenido.cmbTipoDoc.AddItem("X")
-ENDIF 
-
-Thisform.Contenido.cmbTipoDoc.ListIndex = 1
-
-Thisform.Contenido.txtPtoVta.Value = "0000"
-Thisform.Contenido.txtNroCbte.Value = "00000000"
-Thisform.Contenido.txtFecEmision.Value = DATE()
-Thisform.idOper = 0
-
-Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .F.
-Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .T.
-Thisform.Cambiar_estado(.T.)
-Thisform.contenido.btnSelCbteOrig.Enabled = .F.
-
-&& Inicializo el tipo de movimiento de stock
-IF ALLTRIM(Thisform.Contenido.cmbCbte.Value) == "FC" THEN
-	Thisform.mov_stock.tipomov = "ENT"
-ELSE 
-	IF ALLTRIM(Thisform.Contenido.cmbCbte.Value) == "NC" THEN
-		Thisform.mov_stock.tipomov = "SAL"
-	ENDIF
-ENDIF 
-ENDPROC
-
-
-************************************************************
-OBJETO: compras
-************************************************************
-*** PROPIEDADES ***
-Top = 504
-Left = 84
-Height = 17
-Width = 24
-Name = "compras"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: mov_stock
-************************************************************
-*** PROPIEDADES ***
-Top = 504
-Left = 120
-Height = 17
-Width = 38
-Name = "mov_stock"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Proveedor:"
-Height = 15
-Left = 13
-Top = 34
-Width = 72
-TabIndex = 17
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_proveedor
-************************************************************
-*** PROPIEDADES ***
-Top = 29
-Left = 102
-TabIndex = 5
-pkfield = idProv
-nombre_tabla = proveedor
-nombre_campo_codigo = idProv
-nombre_campo_desc = razSoc
-esnumerico = .T.
-alternative_cols = nomFant
-title_cols = Descripción,Nombre Fantasía
-anchos_cols = 400,250
-Name = "sel_proveedor"
-txtCodigo.Name = "txtCodigo"
-txtDescripcion.Name = "txtDescripcion"
-
-*** METODOS ***
-PROCEDURE recuperar_datos
-LOCAL loRes
-LOCAL lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-&& Recupero la situación de IVA del proveedor
-lcSql = "SELECT * FROM sitiva "
-lcSql = lcSql + "WHERE sitiva.idSitIVA = " + ALLTRIM(STR(proveedor.idSitIVA))
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_sitiva"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_sitiva
-GO TOP
-Thisform.contenido.txtSitIVA.Value = ALLTRIM(cur_sitiva.descripcio)
-Thisform.idsitiva = cur_sitiva.idSitIva
-
-loRes.Close_Query()
-
-&& Recupero la condición de pago del proveedor
-lcSql = "SELECT * FROM condpagos "
-lcSql = lcSql + "WHERE condpagos.idCondPago = " + ALLTRIM(STR(proveedor.idCondPago))
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_condpago"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_condpago
-GO TOP
-Thisform.contenido.sel_condpago.valcpoid = cur_condpago.idCondPago
-Thisform.contenido.sel_condpago.txtCodigo.Value = cur_condpago.idCondPago
-Thisform.contenido.sel_condpago.txtDescripcion.Value = ALLTRIM(cur_condpago.descripcio)
-Thisform.Contenido.txtFecVto.Value = Thisform.Contenido.txtFecEmision.Value + cur_condpago.cntDias
-
-loRes.Close_Query()
-
-Thisform.contenido.txtNroCUIT.Value = ALLTRIM(proveedor.nroCUIT)
-
-*!*	lcSql = "SELECT * FROM padronib WHERE CUIT = '" + ALLTRIM(proveedor.nroCUIT) + "'"
-*!*	loRes.ActiveConnection = goConn.ActiveConnection
-*!*	loRes.Cursor_Name = "cur_x"
-
-*!*	IF !loRes.OpenQuery(lcSql) THEN
-*!*		MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-*!*		RETURN
-*!*	ENDIF
-
-*!*	SELECT cur_x
-*!*	IF RECCOUNT("cur_x") > 0 THEN
-*!*		GO TOP
-*!*		
-*!*		Thisform.compras.poriibb = cur_x.alicuotaRet
-*!*		Thisform.Contenido.txtPorIIBB.Value = cur_x.alicuotaRet
-*!*	ENDIF
-
-*!*	loRes.Close_Query()
-
-This.Parent.page_group.page1.sel_articulo.criterio_filtro = "articulos.idProv = " + ALLTRIM(STR(This.valcpoid))
-
-&& Pongo el ID de proveedor seleccionado en la variable global
-gnSelectedIdProv = This.valcpoid
-
-
-
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta2
-************************************************************
-*** PROPIEDADES ***
-Caption = "Situación I.V.A.:"
-Height = 15
-Left = 12
-Top = 59
-Width = 89
-TabIndex = 25
-Name = "Clsetiqueta2"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta3
-************************************************************
-*** PROPIEDADES ***
-Caption = "Nro. C.U.I.T.:"
-Height = 15
-Left = 621
-Top = 34
-Width = 72
-TabIndex = 26
-Name = "Clsetiqueta3"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtNroCUIT
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 696
-ReadOnly = .T.
-TabIndex = 28
-Top = 31
-Width = 133
-ischaracter = .T.
-Name = "txtNroCUIT"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtSitIVA
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 104
-ReadOnly = .T.
-TabIndex = 29
-Top = 54
-Width = 236
-ischaracter = .T.
-Name = "txtSitIVA"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta4
-************************************************************
-*** PROPIEDADES ***
-Caption = "Condición de Pago:"
-Height = 15
-Left = 352
-Top = 59
-Width = 111
-TabIndex = 30
-Name = "Clsetiqueta4"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_condpago
-************************************************************
-*** PROPIEDADES ***
-Top = 52
-Left = 461
-Width = 483
-Height = 25
-TabIndex = 7
-pkfield = idCondPago
-nombre_tabla = condpagos
-nombre_campo_codigo = idcondpago
-nombre_campo_desc = descripcio
-esnumerico = .T.
-Name = "sel_condpago"
-txtCodigo.Name = "txtCodigo"
-txtDescripcion.Name = "txtDescripcion"
-
-*** METODOS ***
-PROCEDURE recuperar_datos
-SELECT condpagos
-Thisform.Contenido.txtFecVto.Value = Thisform.Contenido.txtFecEmision.Value + condpagos.cntDias
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta14
-************************************************************
-*** PROPIEDADES ***
-Caption = "Gravado"
-Height = 15
-Left = 103
-Top = 454
-Width = 84
-TabIndex = 31
-Name = "Clsetiqueta14"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtTotalNeto
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 102
-ReadOnly = .T.
-TabIndex = 33
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtTotalNeto"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta15
-************************************************************
-*** PROPIEDADES ***
-Caption = "I.V.A. 21%"
-Height = 15
-Left = 196
-Top = 454
-Width = 60
-TabIndex = 35
-Name = "Clsetiqueta15"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta16
-************************************************************
-*** PROPIEDADES ***
-Caption = "I.V.A. 10.5%"
-Height = 15
-Left = 286
-Top = 454
-Width = 62
-TabIndex = 36
-Name = "Clsetiqueta16"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpIVA21
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 193
-ReadOnly = .T.
-TabIndex = 37
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtImpIVA21"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpIVA105
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 284
-ReadOnly = .T.
-TabIndex = 38
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtImpIVA105"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta17
-************************************************************
-*** PROPIEDADES ***
-Caption = "Total Final"
-Height = 15
-Left = 558
-Top = 454
-Width = 63
-TabIndex = 39
-Name = "Clsetiqueta17"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtTotalFinal
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 557
-ReadOnly = .T.
-TabIndex = 40
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtTotalFinal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnGrabar
-************************************************************
-*** PROPIEDADES ***
-Top = 494
-Left = 849
-TabIndex = 13
-Name = "btnGrabar"
-
-*** METODOS ***
-PROCEDURE Click
-IF RECCOUNT("comprasdet") = 0 .AND. RECCOUNT("cpasdet_cp") = 0 THEN
-	MESSAGEBOX("Debe ingresar al menos un ítem ya sea artículo o concepto", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-Thisform.compras.fecemis = Thisform.Contenido.txtFecEmision.Value
-Thisform.compras.fecvto = Thisform.Contenido.txtFecVto.Value
-Thisform.compras.cbte = Thisform.Contenido.cmbCbte.Value
-Thisform.compras.tipodoc = Thisform.Contenido.cmbTipoDoc.Value
-Thisform.compras.ptovta = INT(VAL(Thisform.Contenido.txtPtoVta.Value))
-Thisform.compras.numcbte = INT(VAL(Thisform.Contenido.txtNroCbte.Value))
-Thisform.compras.idprov = Thisform.Contenido.sel_proveedor.valcpoid
-Thisform.compras.idsitiva = Thisform.idsitiva
-Thisform.compras.totNeto = Thisform.Contenido.txtTotalNeto.Value
-
-IF Thisform.compras.aliciva21 <> 0 THEN
-	Thisform.compras.aliciva21 = 21
-	Thisform.compras.impIVA21 = Thisform.Contenido.txtImpIVA21.Value
-ENDIF
-
-IF Thisform.compras.aliciva105 <> 0 THEN
-	Thisform.compras.aliciva105 = 10.5
-	Thisform.compras.impIVA105 = Thisform.Contenido.txtImpIVA105.Value
-ENDIF
-
-SELECT pcias
-GO Thisform.contenido.page_group.page3.cmbPcias.ListIndex
-Thisform.compras.idprovin = pcias.idprovin
-Thisform.compras.percepciones = Thisform.Contenido.txtPercepciones.Value 
-Thisform.compras.impuestos = Thisform.Contenido.txtimpuestos.Value
-Thisform.compras.totfinal = Thisform.Contenido.txtTotalFinal.Value
-Thisform.compras.idcondpago = Thisform.Contenido.sel_condpago.valcpoid
-Thisform.compras.razsocpv = ALLTRIM(Thisform.Contenido.sel_proveedor.txtDescripcion.Value)
-Thisform.compras.cuitpv = ALLTRIM(Thisform.Contenido.txtNroCUIT.Value)
-Thisform.compras.idOper = Thisform.idOper
-Thisform.compras.idcomprac_orig = Thisform.idcomprac_orig
-
-IF !Thisform.compras.grabar() THEN
-	MESSAGEBOX(Thisform.compras.error_message, 0+48, Thisform.Caption)
-ENDIF
-
-************************************************************************************************
-* Agrego que se genere el movimiento de stock al grabar la operación
-* siempre y cuando el sistema se encuentre configurado para soportar esta funcionalidad
-************************************************************************************************
-IF getGlobalCFG("STK_MODULE") .AND. getGlobalCFG("INGSTKCOMP") .AND. (ALLTRIM(Thisform.compras.cbte) == "FC") THEN
-	IF ALLTRIM(thisform.compras.tipodoc) == "X" THEN
-		Thisform.mov_stock.circuito = "S"
-		Thisform.mov_stock.tipodoc = ""
-		Thisform.mov_stock.cbte = ""
-		
-		IF !Thisform.mov_stock.grabar3() THEN
-			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
-	ELSE
-		Thisform.mov_stock.circuito = "C"
-		Thisform.mov_stock.idcliente = 0
-		Thisform.mov_stock.idprov = Thisform.compras.idprov
-		Thisform.mov_stock.tipodoc = Thisform.compras.tipodoc
-		Thisform.mov_stock.cbte = Thisform.compras.cbte
-		Thisform.mov_stock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.compras.ptovta)))) + ALLTRIM(STR(Thisform.compras.ptovta)) + "-" + ;
-									  REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.compras.numcbte)))) + ALLTRIM(STR(Thisform.compras.numcbte))		
-	
-		IF !Thisform.mov_stock.grabar2() THEN
-			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
-	ENDIF
-ENDIF
-************************************************************************************************
-
-MESSAGEBOX("El comprobante se grabó con éxito", 0+64, Thisform.Caption)
-
-
-Thisform.Cambiar_estado(.T.)
-Thisform.blanquear()
-
-&& Inicializo nuevamente el tipo de movimiento de stock
-IF ALLTRIM(Thisform.compras.cbte) == "FC" THEN
-	Thisform.mov_stock.tipomov = "ENT"
-ELSE 
-	IF ALLTRIM(Thisform.compras.cbte) == "NC" THEN
-		Thisform.mov_stock.tipomov = "SAL"
-	ENDIF
-ENDIF 
-ENDPROC
-
-
-************************************************************
-OBJETO: btnCancelar
-************************************************************
-*** PROPIEDADES ***
-Top = 494
-Left = 13
-Picture = ..\imagen\iconos bajados\deshacer-icono-5403.ico
-TabIndex = 14
-Name = "btnCancelar"
-
-*** METODOS ***
-PROCEDURE Click
-Thisform.Cambiar_estado(.T.)
-Thisform.blanquear()
-ENDPROC
-
-
-************************************************************
-OBJETO: btnSalir
-************************************************************
-*** PROPIEDADES ***
-Top = 494
-Left = 896
-TabIndex = 15
-Name = "btnSalir"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta19
-************************************************************
-*** PROPIEDADES ***
-Caption = "Percepciones"
-Height = 15
-Left = 376
-Top = 454
-Width = 81
-TabIndex = 42
-Name = "Clsetiqueta19"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPercepciones
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 375
-ReadOnly = .T.
-TabIndex = 44
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtPercepciones"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta20
-************************************************************
-*** PROPIEDADES ***
-Caption = "Comprobante:"
-Height = 15
-Left = 13
-Top = 10
-Width = 85
-TabIndex = 19
-Name = "Clsetiqueta20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbCbte
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 104
-TabIndex = 1
-Top = 8
-Width = 57
-Name = "cmbCbte"
-
-*** METODOS ***
-PROCEDURE InteractiveChange
-IF This.Value = "FC" THEN 
-	Thisform.contenido.btnSelCbteOrig.Enabled = .F.
-ELSE 
-	Thisform.contenido.btnSelCbteOrig.Enabled = .T.
-ENDIF 
-
-Thisform.contenido.txtcbteOrig.Value = ""
-Thisform.contenido.txtletraOrig.Value = ""
-Thisform.contenido.txtptoVtaOrig.Value = ""
-Thisform.contenido.txtnumeroOrig.Value = ""
-ENDPROC
-
-
-************************************************************
-OBJETO: cmbTipoDoc
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 163
-TabIndex = 2
-Top = 8
-Width = 57
-Name = "cmbTipoDoc"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPtoVta
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 221
-MaxLength = 4
-TabIndex = 3
-Top = 8
-Width = 81
-ischaracter = .T.
-autocompleta = .T.
-Name = "txtPtoVta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtNroCbte
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 304
-MaxLength = 8
-TabIndex = 4
-Top = 8
-Width = 130
-ischaracter = .T.
-autocompleta = .T.
-Name = "txtNroCbte"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: chkCosto
-************************************************************
-*** PROPIEDADES ***
-Top = 8
-Left = 445
-Height = 18
-Width = 480
-Alignment = 0
-Caption = "Los precios unitarios de los artículos de este comprobante corresponde al costo."
-TabIndex = 16
-Visible = .F.
-Name = "chkCosto"
-
-*** METODOS ***
-PROCEDURE Click
-IF This.Value = 1 THEN
-	Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .T.
-	Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .F.
-ELSE
-	Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .F.
-	Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .T.
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta23
-************************************************************
-*** PROPIEDADES ***
-Caption = "Fecha de Emisión:"
-Height = 15
-Left = 12
-Top = 83
-Width = 101
-TabIndex = 22
-Name = "Clsetiqueta23"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecEmision
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 121
-TabIndex = 8
-Top = 77
-Width = 108
-isdatetime = .T.
-Name = "txtFecEmision"
-
-*** METODOS ***
-PROCEDURE LostFocus
-This.Parent.txtFecVto.Value = This.Value + condpagos.cntDias
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta24
-************************************************************
-*** PROPIEDADES ***
-Caption = "Fecha de Vto.:"
-Height = 15
-Left = 235
-Top = 83
-Width = 90
-TabIndex = 21
-Name = "Clsetiqueta24"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecVto
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 320
-TabIndex = 9
-Top = 77
-Width = 108
-isdatetime = .T.
-Name = "txtFecVto"
-
-*** METODOS ***
-PROCEDURE Valid
-IF (This.Value < This.Parent.txtFecEmision.Value) THEN
-	MESSAGEBOX("La fecha de vencimiento no puede ser menor a la de compra.", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: page_group
-************************************************************
-*** PROPIEDADES ***
-ErasePage = .T.
-PageCount = 3
-Top = 108
-Left = 5
-Width = 941
-Height = 345
-TabIndex = 12
-Name = "page_group"
-Page1.Caption = "Artículos"
-Page1.Name = "Page1"
-Page2.Caption = "Conceptos"
-Page2.Name = "Page2"
-Page3.FontBold = .T.
-Page3.FontItalic = .T.
-Page3.FontSize = 8
-Page3.Caption = "Percepciones e Impuestos"
-Page3.ForeColor = 128,64,64
-Page3.Name = "Page3"
-
-*** METODOS ***
-PROCEDURE Page2.Click
-Thisform.contenido.page_group.page2.sel_concepto.SetFocus()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta5
-************************************************************
-*** PROPIEDADES ***
-Caption = "Bonificaciones:"
-Height = 15
-Left = 168
-Top = 37
-Width = 89
-TabIndex = 31
-Name = "Clsetiqueta5"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtBonif1
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 260
-TabIndex = 12
-Top = 33
-Width = 64
-isnumeric = .T.
-Name = "txtBonif1"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-=Thisform.Calcular_item()
-ENDPROC
-
-
-************************************************************
-OBJETO: txtBonif2
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 326
-TabIndex = 13
-Top = 33
-Width = 64
-isnumeric = .T.
-Name = "txtBonif2"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-=Thisform.Calcular_item()
-ENDPROC
-
-
-************************************************************
-OBJETO: txtBonif3
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 392
-TabIndex = 14
-Top = 33
-Width = 64
-isnumeric = .T.
-Name = "txtBonif3"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-=Thisform.Calcular_item()
-ENDPROC
-
-
-************************************************************
-OBJETO: txtBonif4
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 458
-TabIndex = 15
-Top = 33
-Width = 64
-isnumeric = .T.
-Name = "txtBonif4"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-=Thisform.Calcular_item()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta6
-************************************************************
-*** PROPIEDADES ***
-Caption = "Artículo:"
-Height = 15
-Left = 6
-Top = 14
-Width = 56
-TabIndex = 22
-Name = "Clsetiqueta6"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_articulo
-************************************************************
-*** PROPIEDADES ***
-Top = 8
-Left = 76
-Width = 509
-Height = 25
-TabIndex = 8
-pkfield = idArticulo
-nombre_tabla = articulos
-nombre_campo_codigo = codArt
-nombre_campo_desc = descripcio
-esnumerico = .F.
-alternative_cols = 
-title_cols = Descripción
-anchos_cols = 400
-autocompletar_ceros = .F.
-nombre_alta_form = cls_alta_articulo
-permitir_agregar_regs = .T.
-Name = "sel_articulo"
-txtCodigo.Height = 21
-txtCodigo.Left = 2
-txtCodigo.Top = 2
-txtCodigo.Width = 148
-txtCodigo.Name = "txtCodigo"
-txtDescripcion.Height = 21
-txtDescripcion.Left = 152
-txtDescripcion.Top = 2
-txtDescripcion.Width = 350
-txtDescripcion.Name = "txtDescripcion"
-
-*** METODOS ***
-PROCEDURE recuperar_datos
-LOCAL loRes
-LOCAL lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-lcSql = "SELECT * FROM codiart "
-lcSql = lcSql + "WHERE codiart.idArticulo = " + ALLTRIM(STR(articulos.idArticulo)) + " "
-lcSql = lcSql + "	AND (codiart.circuito = 'CV' OR codiart.circuito = 'C') "
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_codiart"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-This.Parent.cmbUnidCpa.Clear()
-SELECT cur_codiart
-GO TOP
-DO WHILE !EOF("cur_codiart")
-	This.Parent.cmbUnidCpa.AddItem(ALLTRIM(STR(cur_codiart.cantiDesp)))
-
-	SELECT cur_codiart
-	SKIP
-ENDDO
-
-IF RECCOUNT("cur_codiart") > 0 THEN
-	This.Parent.cmbUnidCpa.ListIndex = 1
-ENDIF
-
-This.Parent.txtPrLista.Value = articulos.prLista
-This.Parent.txtBonif1.Value = articulos.bonif1
-This.Parent.txtBonif2.Value = articulos.bonif2
-This.Parent.txtBonif3.Value = articulos.bonif3
-This.Parent.txtBonif4.Value = articulos.bonif4
-This.Parent.txtCostoRep.Value = articulos.costorep
-
-IF INT(VAL(getConfig("DEMO"))) = 0 THEN 
-	This.Parent.txtAlicIVA.Value = articulos.alicIVA
-ELSE 
-	This.Parent.txtAlicIVA.Value = 0.00
-ENDIF 
-	
-
-Thisform.calcular_item()
-
-loRes.Close_Query()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta7
-************************************************************
-*** PROPIEDADES ***
-Caption = "Unid. CPA.:"
-Height = 15
-Left = 584
-Top = 14
-Width = 62
-TabIndex = 32
-Name = "Clsetiqueta7"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbUnidCpa
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 652
-TabIndex = 9
-Top = 10
-Width = 71
-Name = "cmbUnidCpa"
-
-*** METODOS ***
-PROCEDURE InteractiveChange
-LOCAL lnUnidVta
-
-lnUnidVta = 0.00
-
-lnUnidVta = VAL(this.Parent.cboUnidVta.Value)
-
-this.Parent.txtCantidad.Value = ROUND(lnUnidVta * this.Parent.txtCantPack.Value, 2)
-ENDPROC
-
-
-************************************************************
-OBJETO: txtCantPack
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 725
-ReadOnly = .T.
-TabIndex = 23
-Top = 10
-Width = 64
-isnumeric = .T.
-Name = "txtCantPack"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta8
-************************************************************
-*** PROPIEDADES ***
-Caption = "Cantidad:"
-Height = 15
-Left = 801
-Top = 14
-Width = 56
-TabIndex = 33
-Name = "Clsetiqueta8"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtCantidad
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 856
-TabIndex = 10
-Top = 10
-Width = 64
-isnumeric = .T.
-Name = "txtCantidad"
-
-*** METODOS ***
-PROCEDURE Valid
-LOCAL lnUnidVta
-
-lnUnidVta = 0.00
-
-lnUnidVta = VAL(This.Parent.cmbUnidCpa.Value)
-
-IF lnUnidVta <> 0 THEN
-	IF (this.Value % lnUnidVta) <> 0 THEN
-		MESSAGEBOX("La cantidad debe ser múltiplo de " + ALLTRIM(STR(lnUnidVta, 10, 2)), 0+48, Thisform.Caption)
-		RETURN .F.
-	ELSE	
-		this.Parent.txtCantPack.Value = ROUND(this.Value / lnUnidVta, 2)
-	ENDIF
-ENDIF
-
-IF This.Value < 0 THEN
-	MESSAGEBOX("La cantidad no puede ser negativa", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE LostFocus
-DODEFAULT()
-=Thisform.Calcular_item()
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta9
-************************************************************
-*** PROPIEDADES ***
-Caption = "Precio Lista:"
-Height = 15
-Left = 6
-Top = 37
-Width = 71
-TabIndex = 34
-Name = "Clsetiqueta9"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPrLista
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 78
-TabIndex = 11
-Top = 33
-Width = 87
-isnumeric = .T.
-Name = "txtPrLista"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-=Thisform.Calcular_item()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta10
-************************************************************
-*** PROPIEDADES ***
-Caption = "Costo Rep.:"
-Height = 15
-Left = 584
-Top = 37
-Width = 68
-TabIndex = 35
-Name = "Clsetiqueta10"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtCostoRep
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 652
-ReadOnly = .F.
-TabIndex = 16
-Top = 33
-Width = 85
-isnumeric = .T.
-Name = "txtCostoRep"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-
-LOCAL lnBonif1, lnBonif2, lnBonif3, lnBonif4
-
-lnBonif1 = This.Parent.txtBonif1.Value
-lnBonif2 = This.Parent.txtBonif2.Value
-lnBonif3 = This.Parent.txtBonif3.Value
-lnBonif4 = This.Parent.txtBonif4.value
-
-IF Thisform.contenido.chkCosto.Value = 1 THEN
-	This.Parent.txtPrLista.Value = Thisform.Compras.calcular_prlista(This.Value, lnBonif1, lnBonif2, lnBonif3, lnBonif4)
-ENDIF
-
-=Thisform.Calcular_item()
-
-ENDPROC
-
-
-************************************************************
-OBJETO: btnAgregar
-************************************************************
-*** PROPIEDADES ***
-Top = 41
-Left = 849
-Height = 37
-Width = 36
-TabIndex = 17
-Name = "btnAgregar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnIdArticulo
-LOCAL lnCantidad
-LOCAL lnCantPack
-LOCAL lnPrLista
-LOCAL lnPorDesc1
-LOCAL lnPorDesc2
-LOCAL lnPorDesc3
-LOCAL lnPorDesc4
-LOCAL lnCostoRep
-LOCAL lnAlicIVA
-LOCAL lnImpIVA
-LOCAL lnCostoFinal
-LOCAL lnSTNeto
-LOCAL lnSTFinal
-LOCAL lnResp
-LOCAL lcCodArt
-
-lnIdArticulo = 0
-lnCantidad = 0.00
-lnCantPack = 0.00
-lnPrLista = 0.00
-lnPorDesc1 = 0.00
-lnPorDesc2 = 0.00
-lnPorDesc3 = 0.00
-lnPorDesc4 = 0.00
-lnCostoRep = 0.00
-lnAlicIVA = 0.00
-lnImpIVA = 0.00
-lnCostoFinal = 0.00
-lnSTNeto = 0.00
-lnSTFinal = 0.00
-lnResp = 0
-lcCodArt = ""
-
-IF !Thisform.validardetalle() THEN
-	RETURN
-ENDIF
-
-
-lnIdArticulo = This.Parent.sel_articulo.valcpoid
-lnCantidad = This.Parent.txtCantidad.Value
-lnCantPack = This.Parent.txtCantPack.Value
-lnPrLista = This.Parent.txtPrLista.Value
-lnPorDesc1 = This.Parent.txtBonif1.Value
-lnPorDesc2 = This.Parent.txtBonif2.Value
-lnPorDesc3 = This.Parent.txtBonif3.Value
-lnPorDesc4 = This.Parent.txtBonif4.Value
-lnCostoRep = This.Parent.txtCostoRep.Value
-lnAlicIVA = This.Parent.txtAlicIVA.Value
-lnImpIVA = This.Parent.txtImpIVA.Value
-lnCostoFinal = This.Parent.txtCostoFinal.Value
-lnSTNeto = This.Parent.txtSTNeto.Value
-lnSTFinal = This.Parent.txtSTFinal.Value
-lcCodArt = ALLTRIM(This.Parent.sel_Articulo.txtCodigo.Value)
-
-IF !Thisform.compras.articulo_duplicado(lnIdArticulo) THEN
-	lnResp = MESSAGEBOX(Thisform.compras.error_message, 4+32, Thisform.Caption)
-	
-	IF lnResp = 7 THEN
-		RETURN
-	ENDIF
-ENDIF
-
-Thisform.compras.agregar_detalle(lnIdArticulo, lnCantidad, lnCantPack,; 
-	lnPrLista, lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4, lnCostoRep,;
-	lnAlicIVA, lnImpIVA, lnCostoFinal, lnSTNeto, lnSTFinal)
-
-Thisform.compras.totalizar_cbte()
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-&& Si está habilitado el módulo de stock, entonces, genero el movimiento.
-IF getGlobalCFG("STK_MODULE") THEN
-	IF !(RIGHT(ALLTRIM(lcCodArt), 3) == "ARX") THEN
-		Thisform.mov_stock.agregar_articulo(lnIdArticulo, lnCantidad, "")
-	ENDIF
-ENDIF
-	
-SELECT comprasdet
-This.Parent.grdDetalle.Refresh()
-
-This.Parent.sel_articulo.blanquear()
-This.Parent.cmbUnidCpa.Clear()
-This.Parent.txtCantPack.blanquear()
-This.Parent.txtCantidad.blanquear()
-This.Parent.txtPrLista.blanquear()
-This.Parent.txtBonif1.blanquear()
-This.Parent.txtBonif2.blanquear()
-This.Parent.txtBonif3.blanquear()
-This.Parent.txtBonif4.blanquear()
-This.Parent.txtAlicIVA.blanquear()
-This.Parent.txtImpIVA.blanquear()
-This.Parent.txtCostoRep.blanquear()
-This.Parent.txtCostoFinal.blanquear()
-This.Parent.txtSTFinal.blanquear()
-This.Parent.txtSTNeto.blanquear()
-	
-This.Parent.grdDetalle.Refresh()
-This.Parent.sel_articulo.txtCodigo.SetFocus()
-ENDPROC
-
-
-************************************************************
-OBJETO: btnEliminar
-************************************************************
-*** PROPIEDADES ***
-Top = 41
-Left = 885
-Height = 37
-Width = 36
-TabIndex = 18
-Name = "btnEliminar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp
-
-lnResp = MESSAGEBOX("¿Está seguro que desea eliminar este ítem?", 4+32, Thisform.Caption)
-
-IF lnResp = 6 THEN
-
-	&& Si está habilitado el módulo de stock, entonces, elimino el movimiento.
-	IF getGlobalCFG("STK_MODULE") THEN
-		IF !(RIGHT(ALLTRIM(This.Parent.sel_articulo.txtCodigo.Value), 3) == "ARX") THEN
-			SELECT comprasdet 
-			Thisform.mov_stock.eliminar(comprasdet.IdArticulo)
-		ENDIF
-	ENDIF
-	
-	Thisform.compras.eliminar_articulo()		
-	This.Parent.grdDetalle.Refresh()
-
-	Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-	Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-	Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-	Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-	Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-	
-	This.Parent.sel_articulo.blanquear()
-	This.Parent.cmbUnidCpa.Clear()
-	This.Parent.txtCantPack.blanquear()
-	This.Parent.txtCantidad.blanquear()
-	This.Parent.txtPrLista.blanquear()
-	This.Parent.txtBonif1.blanquear()
-	This.Parent.txtBonif2.blanquear()
-	This.Parent.txtBonif3.blanquear()
-	This.Parent.txtBonif4.blanquear()
-	This.Parent.txtAlicIVA.blanquear()
-	This.Parent.txtImpIVA.blanquear()
-	This.Parent.txtCostoRep.blanquear()
-	This.Parent.txtCostoFinal.blanquear()
-	This.Parent.txtSTFinal.blanquear()
-	This.Parent.txtSTNeto.blanquear()
-	This.Parent.sel_articulo.txtCodigo.SetFocus()
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: grdDetalle
-************************************************************
-*** PROPIEDADES ***
-Height = 224
-Left = 5
-TabIndex = 36
-Top = 86
-Width = 915
-permitir_busqueda = .F.
-permitir_ordenamiento = .F.
-Name = "grdDetalle"
-COLUMN1.Header1.Name = "Header1"
-COLUMN1.Text1.Name = "Text1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.Header1.Name = "Header1"
-COLUMN2.Text1.Name = "Text1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.Header1.Name = "Header1"
-COLUMN3.Text1.Name = "Text1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.Header1.Name = "Header1"
-COLUMN4.Text1.Name = "Text1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.Header1.Name = "Header1"
-COLUMN5.Text1.Name = "Text1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.Header1.Name = "Header1"
-COLUMN6.Text1.Name = "Text1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.Header1.Name = "Header1"
-COLUMN7.Text1.Name = "Text1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.Header1.Name = "Header1"
-COLUMN8.Text1.Name = "Text1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.Header1.Name = "Header1"
-COLUMN9.Text1.Name = "Text1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.Header1.Name = "Header1"
-COLUMN10.Text1.Name = "Text1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.Header1.Name = "Header1"
-COLUMN11.Text1.Name = "Text1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.Header1.Name = "Header1"
-COLUMN12.Text1.Name = "Text1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.Header1.Name = "Header1"
-COLUMN13.Text1.Name = "Text1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.Header1.Name = "Header1"
-COLUMN14.Text1.Name = "Text1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.Header1.Name = "Header1"
-COLUMN15.Text1.Name = "Text1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.Header1.Name = "Header1"
-COLUMN16.Text1.Name = "Text1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.Header1.Name = "Header1"
-COLUMN17.Text1.Name = "Text1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.Header1.Name = "Header1"
-COLUMN18.Text1.Name = "Text1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.Header1.Name = "Header1"
-COLUMN19.Text1.Name = "Text1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.Header1.Name = "Header1"
-COLUMN20.Text1.Name = "Text1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta11
-************************************************************
-*** PROPIEDADES ***
-Caption = "Alíc. I.V.A.:"
-Height = 15
-Left = 6
-Top = 60
-Width = 62
-TabIndex = 37
-Name = "Clsetiqueta11"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtAlicIVA
-************************************************************
-*** PROPIEDADES ***
-Enabled = .T.
-Height = 21
-Left = 78
-ReadOnly = .F.
-TabIndex = 38
-Top = 56
-Width = 87
-isnumeric = .T.
-Name = "txtAlicIVA"
-
-*** METODOS ***
-PROCEDURE calcular
-=Thisform.Calcular_item()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta12
-************************************************************
-*** PROPIEDADES ***
-Caption = "Importe I.V.A.:"
-Height = 15
-Left = 169
-Top = 60
-Width = 80
-TabIndex = 39
-Name = "Clsetiqueta12"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpIVA
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 260
-ReadOnly = .T.
-TabIndex = 40
-Top = 56
-Width = 79
-isnumeric = .T.
-Name = "txtImpIVA"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta13
-************************************************************
-*** PROPIEDADES ***
-Caption = "Costo Final:"
-Height = 15
-Left = 343
-Top = 60
-Width = 67
-TabIndex = 43
-Name = "Clsetiqueta13"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtCostoFinal
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 412
-ReadOnly = .T.
-TabIndex = 46
-Top = 56
-Width = 88
-isnumeric = .T.
-Name = "txtCostoFinal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta21
-************************************************************
-*** PROPIEDADES ***
-Caption = "Subtotal Neto:"
-Height = 15
-Left = 502
-Top = 60
-Width = 87
-TabIndex = 41
-Name = "Clsetiqueta21"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtSTNeto
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 583
-ReadOnly = .T.
-TabIndex = 45
-Top = 56
-Width = 88
-isnumeric = .T.
-Name = "txtSTNeto"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta22
-************************************************************
-*** PROPIEDADES ***
-Caption = "Subtotal Final:"
-Height = 15
-Left = 674
-Top = 60
-Width = 87
-TabIndex = 42
-Name = "Clsetiqueta22"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtSTFinal
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 755
-ReadOnly = .T.
-TabIndex = 44
-Top = 56
-Width = 88
-isnumeric = .T.
-Name = "txtSTFinal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Concepto:"
-Height = 15
-Left = 15
-Top = 17
-Width = 72
-TabIndex = 10
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_concepto
-************************************************************
-*** PROPIEDADES ***
-Top = 12
-Left = 81
-TabIndex = 1
-nombre_tabla = planctas
-pkfield = idPlanCta
-nombre_campo_codigo = codPlanCta
-nombre_campo_desc = descripcio
-criterio_filtro = planctas.esImput = 1
-Name = "sel_concepto"
-txtCodigo.Name = "txtCodigo"
-txtDescripcion.Name = "txtDescripcion"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta2
-************************************************************
-*** PROPIEDADES ***
-Caption = "Imp. Neto:"
-Height = 15
-Left = 16
-Top = 41
-Width = 64
-TabIndex = 11
-Name = "Clsetiqueta2"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta3
-************************************************************
-*** PROPIEDADES ***
-Caption = "Alic. I.V.A.:"
-Height = 15
-Left = 189
-Top = 41
-Width = 64
-TabIndex = 12
-Name = "Clsetiqueta3"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta4
-************************************************************
-*** PROPIEDADES ***
-Caption = "Total:"
-Height = 15
-Left = 396
-Top = 41
-Width = 36
-TabIndex = 13
-Name = "Clsetiqueta4"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpNeto
-************************************************************
-*** PROPIEDADES ***
-Left = 83
-TabIndex = 2
-Top = 38
-isnumeric = .T.
-Name = "txtImpNeto"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-Thisform.calcular_item_cp()
-ENDPROC
-
-
-************************************************************
-OBJETO: txtImpIVA
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 319
-ReadOnly = .T.
-TabIndex = 8
-Top = 38
-Width = 72
-isnumeric = .T.
-Name = "txtImpIVA"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtTotal
-************************************************************
-*** PROPIEDADES ***
-Left = 435
-ReadOnly = .T.
-TabIndex = 9
-Top = 38
-isnumeric = .T.
-Name = "txtTotal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnAgregar
-************************************************************
-*** PROPIEDADES ***
-Top = 47
-Left = 849
-Height = 37
-Width = 36
-TabIndex = 4
-Name = "btnAgregar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnIdPlanCta, lnIdBanco, lnIdCheque, lnImpNeto, lnPorIVA
-LOCAL lcCodPlanCta, lnResp
-
-IF This.Parent.sel_concepto.valcpoid = 0 THEN
-	MESSAGEBOX("Debe ingresar el concepto", 0+48, Thisform.Caption)
-	This.Parent.sel_concepto.txtCodigo.SetFocus()
-	RETURN
-ENDIF
-
-IF This.Parent.txtImpNeto.Value = 0 THEN
-	MESSAGEBOX("Debe ingresar el importe", 0+48, Thisform.Caption)
-	This.Parent.txtImpNeto.SetFocus()
-	RETURN
-ENDIF
-
-lnIdPlanCta = This.Parent.sel_concepto.valcpoid
-lcCodPlanCta = ALLTRIM(This.Parent.sel_concepto.txtCodigo.Value)
-lnIdBanco = 0
-lnIdCheque = 0
-lnImpNeto = This.Parent.txtImpNeto.Value
-lnPorIVA = FLOAT(VAL(This.Parent.cmbAlicIva.Value)) 
-lnResp = 0
-
-IF !Thisform.compras.concepto_duplicado(lnIdPlanCta) THEN
-	lnResp = MESSAGEBOX(Thisform.compras.error_message, 4+32, Thisform.Caption)
-	
-	IF lnResp = 7 THEN
-		RETURN
-	ENDIF
-ENDIF
-
-Thisform.compras.agregar_detalle_cp(0, lnIdPlanCta, lcCodPlanCta, ALLTRIM(This.Parent.sel_concepto.txtDescripcion.Value), ;
-	lnIdBanco, lnIdCheque, lnImpNeto, lnPorIVA)
-
-Thisform.compras.totalizar_cbte()
-Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-SELECT cpasdet_cp
-This.Parent.grdDetalle.Refresh()
-
-This.Parent.sel_concepto.blanquear()
-This.Parent.txtImpNeto.blanquear()
-This.Parent.txtImpIVA.blanquear()
-This.Parent.txtTotal.blanquear()
-This.Parent.sel_concepto.txtCodigo.SetFocus()
-ENDPROC
-
-
-************************************************************
-OBJETO: btnEliminar
-************************************************************
-*** PROPIEDADES ***
-Top = 47
-Left = 885
-Height = 37
-Width = 36
-TabIndex = 5
-Name = "btnEliminar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp
-
-lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el concepto?", 4+32, Thisform.Caption)
-IF lnResp = 6 THEN
-	Thisform.compras.eliminar_cp()
-	Thisform.compras.totalizar_cbte()
-	This.Parent.grdDetalle.Refresh()
-	
-	Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-	Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-	Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-	Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-	Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-	Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-	
-	This.Parent.sel_concepto.blanquear()
-	This.Parent.txtImpNeto.blanquear()
-	This.Parent.txtImpIVA.blanquear()
-	This.Parent.txtTotal.blanquear()
-	This.Parent.sel_concepto.txtCodigo.SetFocus()	
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: grdDetalle
-************************************************************
-*** PROPIEDADES ***
-Height = 207
-Left = 5
-TabIndex = 7
-Top = 90
-Width = 915
-permitir_busqueda = .F.
-permitir_ordenamiento = .F.
-Name = "grdDetalle"
-COLUMN1.Header1.Name = "Header1"
-COLUMN1.Text1.Name = "Text1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.Header1.Name = "Header1"
-COLUMN2.Text1.Name = "Text1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.Header1.Name = "Header1"
-COLUMN3.Text1.Name = "Text1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.Header1.Name = "Header1"
-COLUMN4.Text1.Name = "Text1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.Header1.Name = "Header1"
-COLUMN5.Text1.Name = "Text1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.Header1.Name = "Header1"
-COLUMN6.Text1.Name = "Text1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.Header1.Name = "Header1"
-COLUMN7.Text1.Name = "Text1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.Header1.Name = "Header1"
-COLUMN8.Text1.Name = "Text1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.Header1.Name = "Header1"
-COLUMN9.Text1.Name = "Text1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.Header1.Name = "Header1"
-COLUMN10.Text1.Name = "Text1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.Header1.Name = "Header1"
-COLUMN11.Text1.Name = "Text1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.Header1.Name = "Header1"
-COLUMN12.Text1.Name = "Text1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.Header1.Name = "Header1"
-COLUMN13.Text1.Name = "Text1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.Header1.Name = "Header1"
-COLUMN14.Text1.Name = "Text1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.Header1.Name = "Header1"
-COLUMN15.Text1.Name = "Text1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.Header1.Name = "Header1"
-COLUMN16.Text1.Name = "Text1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.Header1.Name = "Header1"
-COLUMN17.Text1.Name = "Text1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.Header1.Name = "Header1"
-COLUMN18.Text1.Name = "Text1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.Header1.Name = "Header1"
-COLUMN19.Text1.Name = "Text1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.Header1.Name = "Header1"
-COLUMN20.Text1.Name = "Text1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbAlicIva
-************************************************************
-*** PROPIEDADES ***
-ControlSource = ""
-Height = 21
-Left = 250
-TabIndex = 8
-Top = 38
-Width = 67
-Name = "cmbAlicIva"
-
-*** METODOS ***
-PROCEDURE InteractiveChange
-Thisform.calcular_item_cp()
-ENDPROC
-PROCEDURE LostFocus
-Thisform.calcular_item_cp()
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "I.V.A.:"
-Height = 15
-Left = 14
-Top = 14
-Width = 84
-TabIndex = 6
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta2
-************************************************************
-*** PROPIEDADES ***
-Caption = "Ingresos Brutos:"
-Height = 15
-Left = 14
-Top = 40
-Width = 97
-TabIndex = 7
-Name = "Clsetiqueta2"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta3
-************************************************************
-*** PROPIEDADES ***
-Caption = "Provincia:"
-Height = 15
-Left = 231
-Top = 41
-Width = 60
-TabIndex = 8
-Name = "Clsetiqueta3"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta4
-************************************************************
-*** PROPIEDADES ***
-Caption = "Ganancias:"
-Height = 15
-Left = 14
-Top = 65
-Width = 97
-TabIndex = 9
-Name = "Clsetiqueta4"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta5
-************************************************************
-*** PROPIEDADES ***
-Caption = "SUSS:"
-Height = 15
-Left = 14
-Top = 90
-Width = 97
-TabIndex = 10
-Name = "Clsetiqueta5"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtIVA
-************************************************************
-*** PROPIEDADES ***
-Left = 120
-TabIndex = 1
-Top = 11
-isnumeric = .T.
-Name = "txtIVA"
-
-*** METODOS ***
-PROCEDURE calcular
-Thisform.compras.retiva = this.Value 
-
-Thisform.compras.totalizar_cbte()
-Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-
-ENDPROC
-
-
-************************************************************
-OBJETO: txtIIBB
-************************************************************
-*** PROPIEDADES ***
-Left = 120
-TabIndex = 2
-Top = 36
-isnumeric = .T.
-Name = "txtIIBB"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbPcias
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 292
-TabIndex = 3
-Top = 36
-Width = 367
-Name = "cmbPcias"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtGanancias
-************************************************************
-*** PROPIEDADES ***
-Left = 120
-TabIndex = 5
-Top = 61
-isnumeric = .T.
-Name = "txtGanancias"
-
-*** METODOS ***
-PROCEDURE calcular
-Thisform.compras.retgan = this.Value 
-
-Thisform.compras.totalizar_cbte()
-Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-
-ENDPROC
-
-
-************************************************************
-OBJETO: txtSUSS
-************************************************************
-*** PROPIEDADES ***
-Left = 120
-TabIndex = 6
-Top = 86
-isnumeric = .T.
-Name = "txtSUSS"
-
-*** METODOS ***
-PROCEDURE calcular
-Thisform.compras.retsuss = this.Value 
-
-Thisform.compras.totalizar_cbte()
-Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta6
-************************************************************
-*** PROPIEDADES ***
-Caption = "Impuestos:"
-Height = 15
-Left = 14
-Top = 149
-Width = 97
-TabIndex = 10
-Name = "Clsetiqueta6"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpuestos
-************************************************************
-*** PROPIEDADES ***
-Left = 120
-TabIndex = 7
-Top = 145
-isnumeric = .T.
-Name = "txtImpuestos"
-
-*** METODOS ***
-PROCEDURE calcular
-Thisform.compras.impuestos = this.Value 
-
-Thisform.compras.totalizar_cbte()
-Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtImpuestos.Value = Thisform.compras.impuestos
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-ENDPROC
-
-
-************************************************************
-OBJETO: grdIIBB
-************************************************************
-*** PROPIEDADES ***
-Height = 207
-Left = 292
-RecordMark = .F.
-ScrollBars = 0
-TabIndex = 20
-Top = 61
-Width = 367
-permitir_busqueda = .F.
-permitir_ordenamiento = .F.
-Name = "grdIIBB"
-COLUMN1.HEADER1.Name = "HEADER1"
-COLUMN1.TEXT1.Name = "TEXT1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.HEADER1.Name = "HEADER1"
-COLUMN2.TEXT1.Name = "TEXT1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.HEADER1.Name = "HEADER1"
-COLUMN3.TEXT1.Name = "TEXT1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.HEADER1.Name = "HEADER1"
-COLUMN4.TEXT1.Name = "TEXT1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.HEADER1.Name = "HEADER1"
-COLUMN5.TEXT1.Name = "TEXT1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.HEADER1.Name = "HEADER1"
-COLUMN6.TEXT1.Name = "TEXT1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.HEADER1.Name = "HEADER1"
-COLUMN7.TEXT1.Name = "TEXT1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.HEADER1.Name = "HEADER1"
-COLUMN8.TEXT1.Name = "TEXT1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.HEADER1.Name = "HEADER1"
-COLUMN9.TEXT1.Name = "TEXT1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.HEADER1.Name = "HEADER1"
-COLUMN10.TEXT1.Name = "TEXT1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.HEADER1.Name = "HEADER1"
-COLUMN11.TEXT1.Name = "TEXT1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.HEADER1.Name = "HEADER1"
-COLUMN12.TEXT1.Name = "TEXT1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.HEADER1.Name = "HEADER1"
-COLUMN13.TEXT1.Name = "TEXT1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.HEADER1.Name = "HEADER1"
-COLUMN14.TEXT1.Name = "TEXT1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.HEADER1.Name = "HEADER1"
-COLUMN15.TEXT1.Name = "TEXT1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.HEADER1.Name = "HEADER1"
-COLUMN16.TEXT1.Name = "TEXT1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.HEADER1.Name = "HEADER1"
-COLUMN17.TEXT1.Name = "TEXT1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.HEADER1.Name = "HEADER1"
-COLUMN18.TEXT1.Name = "TEXT1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.HEADER1.Name = "HEADER1"
-COLUMN19.TEXT1.Name = "TEXT1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.HEADER1.Name = "HEADER1"
-COLUMN20.TEXT1.Name = "TEXT1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: CLSAGREGAR1
-************************************************************
-*** PROPIEDADES ***
-Top = 20
-Left = 665
-Height = 37
-Width = 36
-TabIndex = 4
-Name = "CLSAGREGAR1"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnIdProvin, lcDescripcio, lnImporte, lnResp
-
-IF This.Parent.txtIIBB.Value = 0 THEN
-	MESSAGEBOX("Debe ingresar el importe", 0+48, Thisform.Caption)
-	This.Parent.txtIIBB.SetFocus()
-	RETURN
-ENDIF
-
-SELECT pcias
-lnIdProvin = INT(VAL(This.Parent.cmbPcias.Value))
-lcDescripcio = ALLTRIM(This.Parent.cmbPcias.DisplayValue)
-lnImporte = This.Parent.txtIIBB.Value 
-lnResp = 0
-
-*!*	IF !Thisform.compras.concepto_duplicado(lnIdPlanCta) THEN
-*!*		lnResp = MESSAGEBOX(Thisform.compras.error_message, 4+32, Thisform.Caption)
-*!*		
-*!*		IF lnResp = 7 THEN
-*!*			RETURN
-*!*		ENDIF
-*!*	ENDIF
-
-Thisform.compras.agregar_detalle_ret('RIB', lnIdProvin, lcDescripcio, lnImporte)
-
-Thisform.compras.retiibb = Thisform.compras.retiibb + this.Parent.txtIIBB.Value 
-
-Thisform.compras.totalizar_cbte()
-Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-
-This.Parent.grdIIBB.Refresh()
-
-This.Parent.txtIIBB.blanquear()
-This.Parent.txtIIBB.SetFocus()
-ENDPROC
-
-
-************************************************************
-OBJETO: CLSDELETE1
-************************************************************
-*** PROPIEDADES ***
-Top = 20
-Left = 703
-Height = 37
-Width = 36
-Name = "CLSDELETE1"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp
-
-lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el ingreso bruto de esta provincia?", 4+32, Thisform.Caption)
-IF lnResp = 6 THEN
-	Thisform.compras.eliminar_ret()
-	Thisform.compras.retiibb = Thisform.compras.retiibb - comprasret.importe
-	Thisform.compras.totalizar_cbte()
-	
-	Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
-	Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
-	Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
-	Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
-	Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
-	Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
-	
-	This.Parent.grdIIBB.Refresh()
-
-	This.Parent.txtIIBB.blanquear()
-	This.Parent.txtIIBB.SetFocus()
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: btnSelCbteOrig
-************************************************************
-*** PROPIEDADES ***
-Top = 75
-Left = 435
-Height = 31
-Width = 212
-Caption = "\<Seleccionar comprobante de Origen"
-TabIndex = 10
-Name = "btnSelCbteOrig"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL loForm, lnResp
-
-lnResp = 0
-
-loForm = CREATEOBJECT("cls_buscacbte_cpas")
-loForm.idProv = Thisform.contenido.sel_proveedor.valcpoid
-loForm.cbte = "FC"
-loForm.leer_cbtes()
-
-loForm.Show()
-
-IF loForm.press_ok THEN
-	Thisform.Contenido.txtCbteOrig.Value = loForm.sel_cbte
-	Thisform.Contenido.txtLetraOrig.Value = loForm.sel_letra
-	Thisform.Contenido.txtPtoVtaOrig.Value = loForm.sel_ptovta
-	Thisform.Contenido.txtNumeroOrig.Value = loForm.sel_numCbte
-	Thisform.idComprac_orig = loForm.idCompraC
-	Thisform.idOper = loForm.idOper
-	
-	loForm.Release()
-ELSE
-	loForm.Release()
-ENDIF
-
-ENDPROC
-
-
-************************************************************
-OBJETO: txtCbteOrig
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 702
-ReadOnly = .T.
-TabIndex = 20
-Top = 77
-Width = 36
-ischaracter = .T.
-Name = "txtCbteOrig"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta5
-************************************************************
-*** PROPIEDADES ***
-Caption = "Origen:"
-Height = 15
-Left = 653
-Top = 80
-Width = 48
-TabIndex = 18
-Name = "Clsetiqueta5"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtLetraOrig
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 740
-ReadOnly = .T.
-TabIndex = 23
-Top = 77
-Width = 36
-ischaracter = .T.
-Name = "txtLetraOrig"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPtoVtaOrig
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 778
-ReadOnly = .T.
-TabIndex = 24
-Top = 77
-Width = 58
-ischaracter = .T.
-Name = "txtPtoVtaOrig"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtNumeroOrig
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 838
-ReadOnly = .T.
-TabIndex = 27
-Top = 77
-Width = 103
-ischaracter = .T.
-Name = "txtNumeroOrig"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsaceptar1
-************************************************************
-*** PROPIEDADES ***
-Top = 8
-Left = 896
-TabIndex = 11
-Name = "Clsaceptar1"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp, loForm
-
-lnResp = 0
-
-IF !Thisform.validarcampos() THEN
-	RETURN
-ENDIF
-
-IF !Thisform.validar_comprobante() THEN
-	Thisform.Contenido.txtPtoVta.SetFocus()
-	RETURN
-ENDIF
-
-Thisform.Contenido.Page_group.page1.sel_Articulo.txtCodigo.SetFocus()
-Thisform.Cambiar_estado(.F.)
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta6
-************************************************************
-*** PROPIEDADES ***
-Caption = "No Gravado"
-Height = 15
-Left = 12
-Top = 454
-Width = 84
-TabIndex = 32
-Name = "Clsetiqueta6"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtNoGravado
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 11
-ReadOnly = .T.
-TabIndex = 34
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtNoGravado"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta7
-************************************************************
-*** PROPIEDADES ***
-Caption = "Impuestos"
-Height = 15
-Left = 467
-Top = 454
-Width = 81
-TabIndex = 41
-Name = "Clsetiqueta7"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpuestos
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 466
-ReadOnly = .T.
-TabIndex = 43
-Top = 469
-Width = 85
-isnumeric = .T.
-Name = "txtImpuestos"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnAgregarProveedor
-************************************************************
-*** PROPIEDADES ***
-Top = 30
-Left = 580
-Height = 23
-Width = 22
-Picture = ..\imagen\iconos_chicos\add_3.jpg
-TabIndex = 6
-ToolTipText = "Dar de alta un proveedor"
-Name = "btnAgregarProveedor"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL loForm
-
-loForm = CREATEOBJECT("cls_alta_prov")
-loForm.Show()
-IF loForm.accept_press THEN
-	This.Parent.sel_proveedor.txtCodigo.Value = loForm.idprov
-	This.Parent.sel_proveedor.txtCodigo.LostFocus()
-	This.Parent.txtFecEmision.SetFocus()
-ENDIF
-RELEASE loForm
-
-ENDPROC
-
-
-************************************************************
-OBJETO: cls_frmcbtes_cpas
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
 OBJETO: cls_alta_prov
 ************************************************************
 *** PROPIEDADES ***
@@ -16257,6 +13364,2908 @@ Arial, 0, 9, 5, 15, 12, 32, 3, 0
 Arial, 1, 8, 5, 14, 11, 29, 3, 0
 Arial, 1, 10, 6, 16, 13, 34, 3, 0
 Arial, 1, 9, 6, 15, 12, 32, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cls_frmcbtes_cpas
+************************************************************
+*** PROPIEDADES ***
+Height = 544
+Width = 946
+DoCreate = .T.
+BorderStyle = 2
+Caption = "Ingreso de comprobantes"
+idsitiva = 0
+idcomprac_orig = 0
+idoper = 0
+Name = "cls_frmcbtes_cpas"
+contenido.Name = "contenido"
+
+*** METODOS ***
+PROCEDURE blanquear
+&& Cabecera
+Thisform.Contenido.cmbCbte.ListIndex = 1
+Thisform.Contenido.cmbTipoDoc.ListIndex = 1
+Thisform.Contenido.txtPtoVta.Value = "0000"
+Thisform.Contenido.txtNroCbte.Value = "00000000"
+Thisform.Contenido.chkCosto.Value = 0
+Thisform.Contenido.sel_proveedor.blanquear()
+Thisform.Contenido.txtNroCUIT.blanquear()
+Thisform.Contenido.txtSitIVA.blanquear()
+Thisform.Contenido.sel_condpago.blanquear()
+Thisform.Contenido.txtFecEmision.Value = DATE()
+Thisform.Contenido.txtFecVto.blanquear()
+Thisform.contenido.btnSelCbteOrig.Enabled = .F.
+Thisform.contenido.txtcbteOrig.blanquear()
+Thisform.contenido.txtletraOrig.blanquear()
+Thisform.contenido.txtptoVtaOrig.blanquear()
+Thisform.contenido.txtnumeroOrig.blanquear()
+Thisform.idOper = 0
+
+&& Page 1
+Thisform.Contenido.page_group.page1.sel_articulo.blanquear()
+Thisform.Contenido.page_group.page1.cmbUnidCpa.Clear()
+Thisform.Contenido.page_group.page1.txtCantPack.blanquear()
+Thisform.Contenido.page_group.page1.txtCantidad.blanquear()
+Thisform.Contenido.page_group.page1.txtPrLista.blanquear()
+Thisform.Contenido.page_group.page1.txtBonif1.blanquear()
+Thisform.Contenido.page_group.page1.txtBonif2.blanquear()
+Thisform.Contenido.page_group.page1.txtBonif3.blanquear()
+Thisform.Contenido.page_group.page1.txtBonif4.blanquear()
+Thisform.Contenido.page_group.page1.txtAlicIVA.blanquear()
+Thisform.Contenido.page_group.page1.txtImpIVA.blanquear()
+Thisform.Contenido.page_group.page1.txtCostoRep.blanquear()
+Thisform.Contenido.page_group.page1.txtCostoFinal.blanquear()
+Thisform.Contenido.page_group.page1.txtSTFinal.blanquear()
+Thisform.Contenido.page_group.page1.txtSTNeto.blanquear()
+Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .F.
+Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .T.
+
+&& Page 2
+Thisform.Contenido.page_group.page2.sel_concepto.blanquear()
+Thisform.Contenido.page_group.page2.txtImpNeto.blanquear()
+Thisform.Contenido.page_group.page2.txtImpIVA.blanquear()
+Thisform.Contenido.page_group.page2.txtTotal.blanquear()
+
+&& Page 3
+Thisform.contenido.page_group.page3.txtGanancias.blanquear()
+Thisform.contenido.page_group.page3.txtIIBB.blanquear()
+Thisform.contenido.page_group.page3.txtIVA.blanquear()
+Thisform.contenido.page_group.page3.txtSUSS.blanquear()
+Thisform.contenido.page_group.page3.cmbPcias.ListIndex = 1
+Thisform.contenido.page_group.page3.txtImpuestos.blanquear()
+
+&& Totales
+Thisform.contenido.txtnoGravado.blanquear()
+Thisform.Contenido.txtTotalNeto.blanquear()
+Thisform.Contenido.txtImpIVA105.blanquear()
+Thisform.Contenido.txtImpIVA21.blanquear()
+Thisform.Contenido.txtPercepciones.blanquear()
+Thisform.Contenido.txtimpuestos.blanquear()
+Thisform.Contenido.txtTotalFinal.blanquear()
+
+
+Thisform.compras.limpiar()
+Thisform.mov_stock.limpiar()
+Thisform.Contenido.page_group.page1.SetFocus()
+Thisform.Contenido.cmbCbte.SetFocus()
+ENDPROC
+PROCEDURE calcular_item
+LOCAL lnPrLista, lnBonif1, lnBonif2, lnBonif3, lnBonif4
+LOCAL lnCostoRep, lnAlicIVA, lnImpIVA, lnCostoFinal
+LOCAL lnCantidad
+
+lnPrLista = 0.00
+lnBonif1 = 0.00
+lnBonif2 = 0.00
+lnBonif3 = 0.00
+lnBonif4 = 0.00
+lnCostoRep = 0.00
+lnAlicIVA = 0.00
+lnImpIVA = 0.00
+lnCostoFinal = 0.00
+lnCantidad = 0.00
+
+lnPrLista = Thisform.Contenido.page_group.page1.txtPrLista.Value
+lnBonif1 = Thisform.Contenido.page_group.page1.txtBonif1.Value
+lnBonif2 = Thisform.Contenido.page_group.page1.txtBonif2.Value
+lnBonif3 = Thisform.Contenido.page_group.page1.txtBonif3.Value
+lnBonif4 = Thisform.Contenido.page_group.page1.txtBonif4.Value
+lnAlicIVA = Thisform.Contenido.page_group.page1.txtAlicIVA.Value
+lnCantidad = Thisform.Contenido.page_group.page1.txtCantidad.Value
+
+lnCostoRep = Thisform.compras.calcular_costoneto(lnPrLista,lnBonif1,lnBonif2,lnBonif3,lnBonif4)
+lnImpIVA = Thisform.compras.calcular_impiva(lnCostoRep, lnAlicIVA)
+lnCostoFinal = lnCostoRep + lnImpIVA
+
+Thisform.Contenido.page_group.page1.txtImpIVA.Value = lnImpIVA
+Thisform.Contenido.page_group.page1.txtCostoRep.Value = lnCostoRep
+Thisform.Contenido.page_group.page1.txtCostoFinal.Value = lnCostoFinal
+Thisform.Contenido.page_group.page1.txtSTNeto.Value = Thisform.compras.calcular_totneto(lnCostoRep, lnCantidad)
+
+Thisform.Contenido.page_group.page1.txtSTFinal.Value = Thisform.Compras.calcular_totfinal(lnCantidad, ;
+	Thisform.Contenido.page_group.page1.txtSTNeto.Value, lnImpIVA)
+ENDPROC
+PROCEDURE calcular_item_cp
+LOCAL lnImpNeto, lcAlicIVA, lnImpIVA
+LOCAL lnTotal
+
+lnImpNeto = 0.00
+lnAlicIVA = 0.00
+lnImpIVA = 0.00
+lnTotal = 0.00
+
+lnImpNeto = Thisform.Contenido.page_group.page2.txtImpNeto.Value
+lnAlicIVA = FLOAT(VAL(Thisform.Contenido.page_group.page2.cmbAlicIva.Value)) 
+lnImpIVA = Thisform.Contenido.page_group.page2.txtImpIVA.Value
+lnTotal = Thisform.Contenido.page_group.page2.txtTotal.Value
+
+lnImpIVA = lnImpNeto * (lnAlicIVA / 100)
+lnTotal = lnImpNeto + lnImpIVA
+
+Thisform.Contenido.page_group.page2.txtImpIVA.Value = lnImpIVA
+Thisform.Contenido.page_group.page2.txtTotal.Value = lnTotal
+ENDPROC
+PROCEDURE validar_comprobante
+LOCAL loRes
+LOCAL lcSql
+LOCAL lnPtoVta
+LOCAL lnNumCbte
+LOCAL lnResp
+LOCAL lnIdProv
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+lnPtoVta = 0
+lnNumCbte = 0
+lnResp = 0
+lnIdProv = Thisform.Contenido.sel_Proveedor.valcpoid
+
+lnPtoVta = INT(VAL(Thisform.Contenido.txtPtoVta.Value))
+lnNumCbte = INT(VAL(Thisform.Contenido.txtNroCbte.Value))
+
+lcSql = "SELECT idCompraC "
+lcSql = lcSql + "FROM comprascab "
+lcSql = lcSql + "WHERE comprascab.ptoVta = " + ALLTRIM(STR(lnPtoVta)) + " "
+lcSql = lcSql + "	AND comprascab.numCbte = " + ALLTRIM(STR(lnNumCbte)) + " "
+lcSql = lcSql + "	AND comprascab.idProv = " + ALLTRIM(STR(lnIdProv))
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_x
+
+IF RECCOUNT("cur_x") > 0 THEN
+	MESSAGEBOX("Este número de comprobante ya fue cargado", 0+48, Thisform.Caption)	
+	loRes.Close_Query()
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+RETURN .T.
+
+ENDPROC
+PROCEDURE cambiar_estado
+PARAMETERS tlEstado
+
+Thisform.Contenido.CmbCbte.Enabled = tlEstado
+Thisform.Contenido.CmbTipoDoc.Enabled = tlEstado
+Thisform.Contenido.txtPtoVta.Enabled = tlEstado
+Thisform.Contenido.txtNroCbte.Enabled = tlEstado
+Thisform.Contenido.txtFecEmision.Enabled = tlEstado
+Thisform.Contenido.txtFEcVto.Enabled = tlEstado
+Thisform.Contenido.sel_proveedor.txtCodigo.Enabled = tlEstado
+Thisform.Contenido.sel_condpago.txtCodigo.Enabled = tlEstado
+Thisform.Contenido.btnSelCbteOrig.Enabled = tlEstado
+
+Thisform.Contenido.page_group.page1.Enabled = !tlEstado
+Thisform.Contenido.page_group.page2.Enabled = !tlEstado
+Thisform.Contenido.page_group.page3.Enabled = !tlEstado
+ENDPROC
+PROCEDURE cargar_comboiva
+&& Cargo el combobox con el iva
+LOCAL lnIVA1, lnIVA2
+
+lnIVA1 = GetGlobalCFG("IVA_1")
+lnIVA2 = GetGlobalCFG("IVA_2")
+
+Thisform.contenido.page_group.page2.cmbAlicIva.AddItem(ALLTRIM(STR(lnIVA1,10,2)))
+Thisform.contenido.page_group.page2.cmbAlicIva.AddItem(ALLTRIM(STR(lnIVA2,10,2)))
+Thisform.contenido.page_group.page2.cmbAlicIva.AddItem("0.00")
+
+Thisform.contenido.page_group.page2.cmbAlicIva.ListIndex = 1
+ENDPROC
+PROCEDURE cargar_provincias
+LOCAL loRes, lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+&& Levanto las provincias
+CREATE CURSOR pcias ( ;
+	descripcio varchar(60),;
+	idProvin int)
+
+lcSql = "SELECT * FROM provincias ORDER BY provincias.descripcio"
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_tempo"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_tempo
+GO TOP
+DO WHILE !EOF("cur_tempo")
+	SELECT pcias
+	APPEND BLANK
+	REPLACE pcias.descripcio WITH cur_tempo.descripcio ADDITIVE
+	REPLACE pcias.idProvin WITH cur_tempo.idProvin
+
+
+	SELECT cur_tempo
+	SKIP
+ENDDO
+
+loRes.Close_Query()
+
+SELECT pcias
+GO TOP
+
+
+Thisform.contenido.page_group.page3.cmbPcias.BoundColumn = 2
+Thisform.contenido.page_group.page3.cmbPcias.RowSourceType = 2
+Thisform.contenido.page_group.page3.cmbPcias.RowSource = "pcias"
+
+Thisform.contenido.page_group.page3.cmbPcias.ListIndex = 1
+
+
+ENDPROC
+PROCEDURE Init
+Thisform.mov_stock.circuito = "C"
+Thisform.mov_stock.crear_cursor()
+
+Thisform.compras.crear_cursor()
+Thisform.cargar_comboiva()
+Thisform.cargar_provincias()
+
+SELECT comprasdet
+Thisform.contenido.page_group.page1.grdDetalle.alias_name = "comprasdet"
+Thisform.contenido.page_group.page1.grdDetalle.RecordSource = "comprasdet"
+Thisform.contenido.page_group.page1.grdDetalle.list_controlsource = "codArt,descripcio,cantidad,prLista,costoNeto,alicIVA,impIVA,costoFinal,totNeto,totFinal"
+Thisform.contenido.page_group.page1.grdDetalle.lista_ancho_cols = "100,200,70,70,70,70,70,70,70,70"
+Thisform.contenido.page_group.page1.grdDetalle.titulos_cabeceras = "Código,Descripción,Cantidad,Pr. Lista,Costo Neto,IVA %,IVA $,Costo Final,Total Neto, Total Final"
+Thisform.contenido.page_group.page1.grdDetalle.generar_grid()
+
+SELECT cpasdet_cp
+Thisform.contenido.page_group.page2.grdDetalle.alias_name = "cpasdet_cp"
+Thisform.contenido.page_group.page2.grdDetalle.RecordSource = "cpasdet_cp"
+Thisform.contenido.page_group.page2.grdDetalle.list_controlsource = "codPlanCta,descripcio,impNeto,ivaPor,ivaImp,total"
+Thisform.contenido.page_group.page2.grdDetalle.titulos_cabeceras = "Código,Descripción,Imp. Neto,Alíc. IVA,IVA,Total"
+Thisform.contenido.page_group.page2.grdDetalle.lista_ancho_cols = "100,300,70,70,70,70"
+Thisform.contenido.page_group.page2.grdDetalle.generar_grid()
+
+SELECT comprasret
+Thisform.contenido.page_group.page3.grdIIBB.alias_name= "comprasret"
+Thisform.contenido.page_group.page3.grdIIBB.RecordSource = "comprasret"
+Thisform.contenido.page_group.page3.grdIIBB.list_controlsource = "Provincia,importe"
+Thisform.contenido.page_group.page3.grdIIBB.titulos_cabeceras = "Provincia,Importe"
+Thisform.contenido.page_group.page3.grdIIBB.lista_ancho_cols = "300,70"
+Thisform.contenido.page_group.page3.grdIIBB.generar_grid()
+
+Thisform.Contenido.cmbCbte.AddItem("FC")
+Thisform.Contenido.cmbCbte.AddItem("NC")
+Thisform.Contenido.cmbCbte.AddItem("ND")
+Thisform.Contenido.cmbCbte.ListIndex = 1
+
+IF INT(VAL(getconfig("DEMO"))) = 0 THEN 
+	Thisform.Contenido.cmbTipoDoc.AddItem("A")
+	Thisform.Contenido.cmbTipoDoc.AddItem("B")
+	Thisform.Contenido.cmbTipoDoc.AddItem("C")
+ELSE 
+	Thisform.Contenido.cmbTipoDoc.AddItem("X")
+ENDIF 
+
+Thisform.Contenido.cmbTipoDoc.ListIndex = 1
+
+Thisform.Contenido.txtPtoVta.Value = "0000"
+Thisform.Contenido.txtNroCbte.Value = "00000000"
+Thisform.Contenido.txtFecEmision.Value = DATE()
+Thisform.idOper = 0
+
+Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .F.
+Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .T.
+Thisform.Cambiar_estado(.T.)
+Thisform.contenido.btnSelCbteOrig.Enabled = .F.
+
+&& Inicializo el tipo de movimiento de stock
+IF ALLTRIM(Thisform.Contenido.cmbCbte.Value) == "FC" THEN
+	Thisform.mov_stock.tipomov = "ENT"
+ELSE 
+	IF ALLTRIM(Thisform.Contenido.cmbCbte.Value) == "NC" THEN
+		Thisform.mov_stock.tipomov = "SAL"
+	ENDIF
+ENDIF 
+ENDPROC
+PROCEDURE validarcampos
+IF Thisform.Contenido.txtPtoVta.Value = "0000" .OR. ALLTRIM(Thisform.Contenido.txtPtoVta.Value) == "" THEN
+	MESSAGEBOX("Debe ingresar el punto de venta", 0+48, Thisform.Caption)
+	Thisform.Contenido.txtPtoVta.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.Contenido.txtNroCbte.Value == "00000000" .OR. ALLTRIM(Thisform.Contenido.txtNroCbte.Value) == "" THEN
+	MESSAGEBOX("Debe ingresar el número de comprobante", 0+48, Thisform.Caption)
+	Thisform.Contenido.txtNroCbte.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.contenido.sel_proveedor.valcpoid = 0 OR Thisform.contenido.sel_proveedor.txtCodigo.Value = 0 THEN
+	MESSAGEBOX("Debe ingresar el proveedor", 0+48, Thisform.Caption)
+	Thisform.contenido.sel_proveedor.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.contenido.sel_condpago.valcpoid = 0 THEN
+	MESSAGEBOX("Debe ingresar la condición de pago", 0+48,  Thisform.Caption)
+	Thisform.contenido.sel_condpago.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.Contenido.txtfecEmision.Value = {} THEN
+	MESSAGEBOX("Debe ingresar la fecha de emisión", 0+48, Thisform.Caption)
+	Thisform.Contenido.sel_CondPago.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.Contenido.txtFecVto.Value = {} THEN
+	MESSAGEBOX("Debe ingresar la fecha de vencimiento", 0+48, Thisform.Caption)
+	Thisform.Contenido.sel_CondPago.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+RETURN .T.
+ENDPROC
+PROCEDURE validardetalle
+IF Thisform.contenido.page_group.page1.sel_articulo.valcpoid = 0 THEN
+	MESSAGEBOX("Debe ingresar el artículo", 0+48, Thisform.Caption)
+	Thisform.contenido.page_group.page1.sel_articulo.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.contenido.page_group.page1.txtCantidad.Value = 0 THEN
+	MESSAGEBOX("La cantidad no puede ser 0 (cero)", 0+48, Thisform.Caption)
+	Thisform.contenido.page_group.page1.txtCantidad.SetFocus()
+	RETURN .F.
+ENDIF
+
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: compras
+************************************************************
+*** PROPIEDADES ***
+Top = 504
+Left = 84
+Height = 17
+Width = 24
+Name = "compras"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: mov_stock
+************************************************************
+*** PROPIEDADES ***
+Top = 504
+Left = 120
+Height = 17
+Width = 38
+Name = "mov_stock"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Proveedor:"
+Height = 15
+Left = 13
+Top = 34
+Width = 72
+TabIndex = 17
+Name = "Clsetiqueta1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_proveedor
+************************************************************
+*** PROPIEDADES ***
+Top = 29
+Left = 102
+TabIndex = 5
+pkfield = idProv
+nombre_tabla = proveedor
+nombre_campo_codigo = idProv
+nombre_campo_desc = razSoc
+esnumerico = .T.
+alternative_cols = nomFant
+title_cols = Descripción,Nombre Fantasía
+anchos_cols = 400,250
+Name = "sel_proveedor"
+txtCodigo.Name = "txtCodigo"
+txtDescripcion.Name = "txtDescripcion"
+
+*** METODOS ***
+PROCEDURE recuperar_datos
+LOCAL loRes
+LOCAL lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+&& Recupero la situación de IVA del proveedor
+lcSql = "SELECT * FROM sitiva "
+lcSql = lcSql + "WHERE sitiva.idSitIVA = " + ALLTRIM(STR(proveedor.idSitIVA))
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_sitiva"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_sitiva
+GO TOP
+Thisform.contenido.txtSitIVA.Value = ALLTRIM(cur_sitiva.descripcio)
+Thisform.idsitiva = cur_sitiva.idSitIva
+
+loRes.Close_Query()
+
+&& Recupero la condición de pago del proveedor
+lcSql = "SELECT * FROM condpagos "
+lcSql = lcSql + "WHERE condpagos.idCondPago = " + ALLTRIM(STR(proveedor.idCondPago))
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_condpago"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_condpago
+GO TOP
+Thisform.contenido.sel_condpago.valcpoid = cur_condpago.idCondPago
+Thisform.contenido.sel_condpago.txtCodigo.Value = cur_condpago.idCondPago
+Thisform.contenido.sel_condpago.txtDescripcion.Value = ALLTRIM(cur_condpago.descripcio)
+Thisform.Contenido.txtFecVto.Value = Thisform.Contenido.txtFecEmision.Value + cur_condpago.cntDias
+
+loRes.Close_Query()
+
+Thisform.contenido.txtNroCUIT.Value = ALLTRIM(proveedor.nroCUIT)
+
+*!*	lcSql = "SELECT * FROM padronib WHERE CUIT = '" + ALLTRIM(proveedor.nroCUIT) + "'"
+*!*	loRes.ActiveConnection = goConn.ActiveConnection
+*!*	loRes.Cursor_Name = "cur_x"
+
+*!*	IF !loRes.OpenQuery(lcSql) THEN
+*!*		MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+*!*		RETURN
+*!*	ENDIF
+
+*!*	SELECT cur_x
+*!*	IF RECCOUNT("cur_x") > 0 THEN
+*!*		GO TOP
+*!*		
+*!*		Thisform.compras.poriibb = cur_x.alicuotaRet
+*!*		Thisform.Contenido.txtPorIIBB.Value = cur_x.alicuotaRet
+*!*	ENDIF
+
+*!*	loRes.Close_Query()
+
+This.Parent.page_group.page1.sel_articulo.criterio_filtro = "articulos.idProv = " + ALLTRIM(STR(This.valcpoid))
+
+&& Pongo el ID de proveedor seleccionado en la variable global
+gnSelectedIdProv = This.valcpoid
+
+
+
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta2
+************************************************************
+*** PROPIEDADES ***
+Caption = "Situación I.V.A.:"
+Height = 15
+Left = 12
+Top = 59
+Width = 89
+TabIndex = 25
+Name = "Clsetiqueta2"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta3
+************************************************************
+*** PROPIEDADES ***
+Caption = "Nro. C.U.I.T.:"
+Height = 15
+Left = 621
+Top = 34
+Width = 72
+TabIndex = 26
+Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtNroCUIT
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 696
+ReadOnly = .T.
+TabIndex = 28
+Top = 31
+Width = 133
+ischaracter = .T.
+Name = "txtNroCUIT"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtSitIVA
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 104
+ReadOnly = .T.
+TabIndex = 29
+Top = 54
+Width = 236
+ischaracter = .T.
+Name = "txtSitIVA"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta4
+************************************************************
+*** PROPIEDADES ***
+Caption = "Condición de Pago:"
+Height = 15
+Left = 352
+Top = 59
+Width = 111
+TabIndex = 30
+Name = "Clsetiqueta4"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_condpago
+************************************************************
+*** PROPIEDADES ***
+Top = 52
+Left = 461
+Width = 483
+Height = 25
+TabIndex = 7
+pkfield = idCondPago
+nombre_tabla = condpagos
+nombre_campo_codigo = idcondpago
+nombre_campo_desc = descripcio
+esnumerico = .T.
+Name = "sel_condpago"
+txtCodigo.Name = "txtCodigo"
+txtDescripcion.Name = "txtDescripcion"
+
+*** METODOS ***
+PROCEDURE recuperar_datos
+SELECT condpagos
+Thisform.Contenido.txtFecVto.Value = Thisform.Contenido.txtFecEmision.Value + condpagos.cntDias
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta14
+************************************************************
+*** PROPIEDADES ***
+Caption = "Gravado"
+Height = 15
+Left = 103
+Top = 454
+Width = 84
+TabIndex = 31
+Name = "Clsetiqueta14"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtTotalNeto
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 102
+ReadOnly = .T.
+TabIndex = 33
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtTotalNeto"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta15
+************************************************************
+*** PROPIEDADES ***
+Caption = "I.V.A. 21%"
+Height = 15
+Left = 196
+Top = 454
+Width = 60
+TabIndex = 35
+Name = "Clsetiqueta15"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta16
+************************************************************
+*** PROPIEDADES ***
+Caption = "I.V.A. 10.5%"
+Height = 15
+Left = 286
+Top = 454
+Width = 62
+TabIndex = 36
+Name = "Clsetiqueta16"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpIVA21
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 193
+ReadOnly = .T.
+TabIndex = 37
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtImpIVA21"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpIVA105
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 284
+ReadOnly = .T.
+TabIndex = 38
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtImpIVA105"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta17
+************************************************************
+*** PROPIEDADES ***
+Caption = "Total Final"
+Height = 15
+Left = 558
+Top = 454
+Width = 63
+TabIndex = 39
+Name = "Clsetiqueta17"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtTotalFinal
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 557
+ReadOnly = .T.
+TabIndex = 40
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtTotalFinal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnGrabar
+************************************************************
+*** PROPIEDADES ***
+Top = 494
+Left = 849
+TabIndex = 13
+Name = "btnGrabar"
+
+*** METODOS ***
+PROCEDURE Click
+IF RECCOUNT("comprasdet") = 0 .AND. RECCOUNT("cpasdet_cp") = 0 THEN
+	MESSAGEBOX("Debe ingresar al menos un ítem ya sea artículo o concepto", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+Thisform.compras.fecemis = Thisform.Contenido.txtFecEmision.Value
+Thisform.compras.fecvto = Thisform.Contenido.txtFecVto.Value
+Thisform.compras.cbte = Thisform.Contenido.cmbCbte.Value
+Thisform.compras.tipodoc = Thisform.Contenido.cmbTipoDoc.Value
+Thisform.compras.ptovta = INT(VAL(Thisform.Contenido.txtPtoVta.Value))
+Thisform.compras.numcbte = INT(VAL(Thisform.Contenido.txtNroCbte.Value))
+Thisform.compras.idprov = Thisform.Contenido.sel_proveedor.valcpoid
+Thisform.compras.idsitiva = Thisform.idsitiva
+Thisform.compras.totNeto = Thisform.Contenido.txtTotalNeto.Value
+
+IF Thisform.compras.aliciva21 <> 0 THEN
+	Thisform.compras.aliciva21 = 21
+	Thisform.compras.impIVA21 = Thisform.Contenido.txtImpIVA21.Value
+ENDIF
+
+IF Thisform.compras.aliciva105 <> 0 THEN
+	Thisform.compras.aliciva105 = 10.5
+	Thisform.compras.impIVA105 = Thisform.Contenido.txtImpIVA105.Value
+ENDIF
+
+SELECT pcias
+GO Thisform.contenido.page_group.page3.cmbPcias.ListIndex
+Thisform.compras.idprovin = pcias.idprovin
+Thisform.compras.percepciones = Thisform.Contenido.txtPercepciones.Value 
+Thisform.compras.impuestos = Thisform.Contenido.txtimpuestos.Value
+Thisform.compras.totfinal = Thisform.Contenido.txtTotalFinal.Value
+Thisform.compras.idcondpago = Thisform.Contenido.sel_condpago.valcpoid
+Thisform.compras.razsocpv = ALLTRIM(Thisform.Contenido.sel_proveedor.txtDescripcion.Value)
+Thisform.compras.cuitpv = ALLTRIM(Thisform.Contenido.txtNroCUIT.Value)
+Thisform.compras.idOper = Thisform.idOper
+Thisform.compras.idcomprac_orig = Thisform.idcomprac_orig
+
+IF !Thisform.compras.grabar() THEN
+	MESSAGEBOX(Thisform.compras.error_message, 0+48, Thisform.Caption)
+ENDIF
+
+************************************************************************************************
+* Agrego que se genere el movimiento de stock al grabar la operación
+* siempre y cuando el sistema se encuentre configurado para soportar esta funcionalidad
+************************************************************************************************
+IF getGlobalCFG("STK_MODULE") .AND. getGlobalCFG("INGSTKCOMP") .AND. (ALLTRIM(Thisform.compras.cbte) == "FC") THEN
+	IF ALLTRIM(thisform.compras.tipodoc) == "X" THEN
+		Thisform.mov_stock.circuito = "S"
+		Thisform.mov_stock.tipodoc = ""
+		Thisform.mov_stock.cbte = ""
+		
+		IF !Thisform.mov_stock.grabar3() THEN
+			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ELSE
+		Thisform.mov_stock.circuito = "C"
+		Thisform.mov_stock.idcliente = 0
+		Thisform.mov_stock.idprov = Thisform.compras.idprov
+		Thisform.mov_stock.tipodoc = Thisform.compras.tipodoc
+		Thisform.mov_stock.cbte = Thisform.compras.cbte
+		Thisform.mov_stock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.compras.ptovta)))) + ALLTRIM(STR(Thisform.compras.ptovta)) + "-" + ;
+									  REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.compras.numcbte)))) + ALLTRIM(STR(Thisform.compras.numcbte))		
+	
+		IF !Thisform.mov_stock.grabar2() THEN
+			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ENDIF
+ENDIF
+************************************************************************************************
+
+MESSAGEBOX("El comprobante se grabó con éxito", 0+64, Thisform.Caption)
+
+
+Thisform.Cambiar_estado(.T.)
+Thisform.blanquear()
+
+&& Inicializo nuevamente el tipo de movimiento de stock
+IF ALLTRIM(Thisform.compras.cbte) == "FC" THEN
+	Thisform.mov_stock.tipomov = "ENT"
+ELSE 
+	IF ALLTRIM(Thisform.compras.cbte) == "NC" THEN
+		Thisform.mov_stock.tipomov = "SAL"
+	ENDIF
+ENDIF 
+ENDPROC
+
+
+************************************************************
+OBJETO: btnCancelar
+************************************************************
+*** PROPIEDADES ***
+Top = 494
+Left = 13
+Picture = ..\imagen\iconos bajados\deshacer-icono-5403.ico
+TabIndex = 14
+Name = "btnCancelar"
+
+*** METODOS ***
+PROCEDURE Click
+Thisform.Cambiar_estado(.T.)
+Thisform.blanquear()
+ENDPROC
+
+
+************************************************************
+OBJETO: btnSalir
+************************************************************
+*** PROPIEDADES ***
+Top = 494
+Left = 896
+TabIndex = 15
+Name = "btnSalir"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta19
+************************************************************
+*** PROPIEDADES ***
+Caption = "Percepciones"
+Height = 15
+Left = 376
+Top = 454
+Width = 81
+TabIndex = 42
+Name = "Clsetiqueta19"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPercepciones
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 375
+ReadOnly = .T.
+TabIndex = 44
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtPercepciones"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta20
+************************************************************
+*** PROPIEDADES ***
+Caption = "Comprobante:"
+Height = 15
+Left = 13
+Top = 10
+Width = 85
+TabIndex = 19
+Name = "Clsetiqueta20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbCbte
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 104
+TabIndex = 1
+Top = 8
+Width = 57
+Name = "cmbCbte"
+
+*** METODOS ***
+PROCEDURE InteractiveChange
+IF This.Value = "FC" THEN 
+	Thisform.contenido.btnSelCbteOrig.Enabled = .F.
+ELSE 
+	Thisform.contenido.btnSelCbteOrig.Enabled = .T.
+ENDIF 
+
+Thisform.contenido.txtcbteOrig.Value = ""
+Thisform.contenido.txtletraOrig.Value = ""
+Thisform.contenido.txtptoVtaOrig.Value = ""
+Thisform.contenido.txtnumeroOrig.Value = ""
+ENDPROC
+
+
+************************************************************
+OBJETO: cmbTipoDoc
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 163
+TabIndex = 2
+Top = 8
+Width = 57
+Name = "cmbTipoDoc"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPtoVta
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 221
+MaxLength = 4
+TabIndex = 3
+Top = 8
+Width = 81
+ischaracter = .T.
+autocompleta = .T.
+Name = "txtPtoVta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtNroCbte
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 304
+MaxLength = 8
+TabIndex = 4
+Top = 8
+Width = 130
+ischaracter = .T.
+autocompleta = .T.
+Name = "txtNroCbte"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: chkCosto
+************************************************************
+*** PROPIEDADES ***
+Top = 8
+Left = 445
+Height = 18
+Width = 480
+Alignment = 0
+Caption = "Los precios unitarios de los artículos de este comprobante corresponde al costo."
+TabIndex = 16
+Visible = .F.
+Name = "chkCosto"
+
+*** METODOS ***
+PROCEDURE Click
+IF This.Value = 1 THEN
+	Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .T.
+	Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .F.
+ELSE
+	Thisform.Contenido.page_group.page1.txtPrLista.ReadOnly = .F.
+	Thisform.Contenido.page_group.page1.txtCostoRep.ReadOnly = .T.
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta23
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha de Emisión:"
+Height = 15
+Left = 12
+Top = 83
+Width = 101
+TabIndex = 22
+Name = "Clsetiqueta23"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecEmision
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 121
+TabIndex = 8
+Top = 77
+Width = 108
+isdatetime = .T.
+Name = "txtFecEmision"
+
+*** METODOS ***
+PROCEDURE LostFocus
+This.Parent.txtFecVto.Value = This.Value + condpagos.cntDias
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta24
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha de Vto.:"
+Height = 15
+Left = 235
+Top = 83
+Width = 90
+TabIndex = 21
+Name = "Clsetiqueta24"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecVto
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 320
+TabIndex = 9
+Top = 77
+Width = 108
+isdatetime = .T.
+Name = "txtFecVto"
+
+*** METODOS ***
+PROCEDURE Valid
+IF (This.Value < This.Parent.txtFecEmision.Value) THEN
+	MESSAGEBOX("La fecha de vencimiento no puede ser menor a la de compra.", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: page_group
+************************************************************
+*** PROPIEDADES ***
+ErasePage = .T.
+PageCount = 3
+Top = 108
+Left = 5
+Width = 941
+Height = 345
+TabIndex = 12
+Name = "page_group"
+Page1.Caption = "Artículos"
+Page1.Name = "Page1"
+Page2.Caption = "Conceptos"
+Page2.Name = "Page2"
+Page3.FontBold = .T.
+Page3.FontItalic = .T.
+Page3.FontSize = 8
+Page3.Caption = "Percepciones e Impuestos"
+Page3.ForeColor = 128,64,64
+Page3.Name = "Page3"
+
+*** METODOS ***
+PROCEDURE Page2.Click
+Thisform.contenido.page_group.page2.sel_concepto.SetFocus()
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta5
+************************************************************
+*** PROPIEDADES ***
+Caption = "Bonificaciones:"
+Height = 15
+Left = 168
+Top = 37
+Width = 89
+TabIndex = 31
+Name = "Clsetiqueta5"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtBonif1
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 260
+TabIndex = 12
+Top = 33
+Width = 64
+isnumeric = .T.
+Name = "txtBonif1"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+=Thisform.Calcular_item()
+ENDPROC
+
+
+************************************************************
+OBJETO: txtBonif2
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 326
+TabIndex = 13
+Top = 33
+Width = 64
+isnumeric = .T.
+Name = "txtBonif2"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+=Thisform.Calcular_item()
+ENDPROC
+
+
+************************************************************
+OBJETO: txtBonif3
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 392
+TabIndex = 14
+Top = 33
+Width = 64
+isnumeric = .T.
+Name = "txtBonif3"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+=Thisform.Calcular_item()
+ENDPROC
+
+
+************************************************************
+OBJETO: txtBonif4
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 458
+TabIndex = 15
+Top = 33
+Width = 64
+isnumeric = .T.
+Name = "txtBonif4"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+=Thisform.Calcular_item()
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta6
+************************************************************
+*** PROPIEDADES ***
+Caption = "Artículo:"
+Height = 15
+Left = 6
+Top = 14
+Width = 56
+TabIndex = 22
+Name = "Clsetiqueta6"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_articulo
+************************************************************
+*** PROPIEDADES ***
+Top = 8
+Left = 76
+Width = 509
+Height = 25
+TabIndex = 8
+pkfield = idArticulo
+nombre_tabla = articulos
+nombre_campo_codigo = codArt
+nombre_campo_desc = descripcio
+esnumerico = .F.
+alternative_cols = 
+title_cols = Descripción
+anchos_cols = 400
+autocompletar_ceros = .F.
+nombre_alta_form = cls_alta_articulo
+permitir_agregar_regs = .T.
+Name = "sel_articulo"
+txtCodigo.Height = 21
+txtCodigo.Left = 2
+txtCodigo.Top = 2
+txtCodigo.Width = 148
+txtCodigo.Name = "txtCodigo"
+txtDescripcion.Height = 21
+txtDescripcion.Left = 152
+txtDescripcion.Top = 2
+txtDescripcion.Width = 350
+txtDescripcion.Name = "txtDescripcion"
+
+*** METODOS ***
+PROCEDURE recuperar_datos
+LOCAL loRes
+LOCAL lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+lcSql = "SELECT * FROM codiart "
+lcSql = lcSql + "WHERE codiart.idArticulo = " + ALLTRIM(STR(articulos.idArticulo)) + " "
+lcSql = lcSql + "	AND (codiart.circuito = 'CV' OR codiart.circuito = 'C') "
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_codiart"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+This.Parent.cmbUnidCpa.Clear()
+SELECT cur_codiart
+GO TOP
+DO WHILE !EOF("cur_codiart")
+	This.Parent.cmbUnidCpa.AddItem(ALLTRIM(STR(cur_codiart.cantiDesp)))
+
+	SELECT cur_codiart
+	SKIP
+ENDDO
+
+IF RECCOUNT("cur_codiart") > 0 THEN
+	This.Parent.cmbUnidCpa.ListIndex = 1
+ENDIF
+
+This.Parent.txtPrLista.Value = articulos.prLista
+This.Parent.txtBonif1.Value = articulos.bonif1
+This.Parent.txtBonif2.Value = articulos.bonif2
+This.Parent.txtBonif3.Value = articulos.bonif3
+This.Parent.txtBonif4.Value = articulos.bonif4
+This.Parent.txtCostoRep.Value = articulos.costorep
+
+IF INT(VAL(getConfig("DEMO"))) = 0 THEN 
+	This.Parent.txtAlicIVA.Value = articulos.alicIVA
+ELSE 
+	This.Parent.txtAlicIVA.Value = 0.00
+ENDIF 
+	
+
+Thisform.calcular_item()
+
+loRes.Close_Query()
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta7
+************************************************************
+*** PROPIEDADES ***
+Caption = "Unid. CPA.:"
+Height = 15
+Left = 584
+Top = 14
+Width = 62
+TabIndex = 32
+Name = "Clsetiqueta7"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbUnidCpa
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 652
+TabIndex = 9
+Top = 10
+Width = 71
+Name = "cmbUnidCpa"
+
+*** METODOS ***
+PROCEDURE InteractiveChange
+LOCAL lnUnidVta
+
+lnUnidVta = 0.00
+
+lnUnidVta = VAL(this.Parent.cboUnidVta.Value)
+
+this.Parent.txtCantidad.Value = ROUND(lnUnidVta * this.Parent.txtCantPack.Value, 2)
+ENDPROC
+
+
+************************************************************
+OBJETO: txtCantPack
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 725
+ReadOnly = .T.
+TabIndex = 23
+Top = 10
+Width = 64
+isnumeric = .T.
+Name = "txtCantPack"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta8
+************************************************************
+*** PROPIEDADES ***
+Caption = "Cantidad:"
+Height = 15
+Left = 801
+Top = 14
+Width = 56
+TabIndex = 33
+Name = "Clsetiqueta8"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtCantidad
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 856
+TabIndex = 10
+Top = 10
+Width = 64
+isnumeric = .T.
+Name = "txtCantidad"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+=Thisform.Calcular_item()
+
+ENDPROC
+PROCEDURE Valid
+LOCAL lnUnidVta
+
+lnUnidVta = 0.00
+
+lnUnidVta = VAL(This.Parent.cmbUnidCpa.Value)
+
+IF lnUnidVta <> 0 THEN
+	IF (this.Value % lnUnidVta) <> 0 THEN
+		MESSAGEBOX("La cantidad debe ser múltiplo de " + ALLTRIM(STR(lnUnidVta, 10, 2)), 0+48, Thisform.Caption)
+		RETURN .F.
+	ELSE	
+		this.Parent.txtCantPack.Value = ROUND(this.Value / lnUnidVta, 2)
+	ENDIF
+ENDIF
+
+IF This.Value < 0 THEN
+	MESSAGEBOX("La cantidad no puede ser negativa", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+RETURN .T.
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta9
+************************************************************
+*** PROPIEDADES ***
+Caption = "Precio Lista:"
+Height = 15
+Left = 6
+Top = 37
+Width = 71
+TabIndex = 34
+Name = "Clsetiqueta9"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPrLista
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 78
+TabIndex = 11
+Top = 33
+Width = 87
+isnumeric = .T.
+Name = "txtPrLista"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+=Thisform.Calcular_item()
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta10
+************************************************************
+*** PROPIEDADES ***
+Caption = "Costo Rep.:"
+Height = 15
+Left = 584
+Top = 37
+Width = 68
+TabIndex = 35
+Name = "Clsetiqueta10"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtCostoRep
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 652
+ReadOnly = .F.
+TabIndex = 16
+Top = 33
+Width = 85
+isnumeric = .T.
+Name = "txtCostoRep"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+
+LOCAL lnBonif1, lnBonif2, lnBonif3, lnBonif4
+
+lnBonif1 = This.Parent.txtBonif1.Value
+lnBonif2 = This.Parent.txtBonif2.Value
+lnBonif3 = This.Parent.txtBonif3.Value
+lnBonif4 = This.Parent.txtBonif4.value
+
+IF Thisform.contenido.chkCosto.Value = 1 THEN
+	This.Parent.txtPrLista.Value = Thisform.Compras.calcular_prlista(This.Value, lnBonif1, lnBonif2, lnBonif3, lnBonif4)
+ENDIF
+
+=Thisform.Calcular_item()
+
+ENDPROC
+
+
+************************************************************
+OBJETO: btnAgregar
+************************************************************
+*** PROPIEDADES ***
+Top = 41
+Left = 849
+Height = 37
+Width = 36
+TabIndex = 17
+Name = "btnAgregar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnIdArticulo
+LOCAL lnCantidad
+LOCAL lnCantPack
+LOCAL lnPrLista
+LOCAL lnPorDesc1
+LOCAL lnPorDesc2
+LOCAL lnPorDesc3
+LOCAL lnPorDesc4
+LOCAL lnCostoRep
+LOCAL lnAlicIVA
+LOCAL lnImpIVA
+LOCAL lnCostoFinal
+LOCAL lnSTNeto
+LOCAL lnSTFinal
+LOCAL lnResp
+LOCAL lcCodArt
+
+lnIdArticulo = 0
+lnCantidad = 0.00
+lnCantPack = 0.00
+lnPrLista = 0.00
+lnPorDesc1 = 0.00
+lnPorDesc2 = 0.00
+lnPorDesc3 = 0.00
+lnPorDesc4 = 0.00
+lnCostoRep = 0.00
+lnAlicIVA = 0.00
+lnImpIVA = 0.00
+lnCostoFinal = 0.00
+lnSTNeto = 0.00
+lnSTFinal = 0.00
+lnResp = 0
+lcCodArt = ""
+
+IF !Thisform.validardetalle() THEN
+	RETURN
+ENDIF
+
+
+lnIdArticulo = This.Parent.sel_articulo.valcpoid
+lnCantidad = This.Parent.txtCantidad.Value
+lnCantPack = This.Parent.txtCantPack.Value
+lnPrLista = This.Parent.txtPrLista.Value
+lnPorDesc1 = This.Parent.txtBonif1.Value
+lnPorDesc2 = This.Parent.txtBonif2.Value
+lnPorDesc3 = This.Parent.txtBonif3.Value
+lnPorDesc4 = This.Parent.txtBonif4.Value
+lnCostoRep = This.Parent.txtCostoRep.Value
+lnAlicIVA = This.Parent.txtAlicIVA.Value
+lnImpIVA = This.Parent.txtImpIVA.Value
+lnCostoFinal = This.Parent.txtCostoFinal.Value
+lnSTNeto = This.Parent.txtSTNeto.Value
+lnSTFinal = This.Parent.txtSTFinal.Value
+lcCodArt = ALLTRIM(This.Parent.sel_Articulo.txtCodigo.Value)
+
+IF !Thisform.compras.articulo_duplicado(lnIdArticulo) THEN
+	lnResp = MESSAGEBOX(Thisform.compras.error_message, 4+32, Thisform.Caption)
+	
+	IF lnResp = 7 THEN
+		RETURN
+	ENDIF
+ENDIF
+
+Thisform.compras.agregar_detalle(lnIdArticulo, lnCantidad, lnCantPack,; 
+	lnPrLista, lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4, lnCostoRep,;
+	lnAlicIVA, lnImpIVA, lnCostoFinal, lnSTNeto, lnSTFinal)
+
+Thisform.compras.totalizar_cbte()
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+&& Si está habilitado el módulo de stock, entonces, genero el movimiento.
+IF getGlobalCFG("STK_MODULE") THEN
+	IF !(RIGHT(ALLTRIM(lcCodArt), 3) == "ARX") THEN
+		Thisform.mov_stock.agregar_articulo(lnIdArticulo, lnCantidad, "")
+	ENDIF
+ENDIF
+	
+SELECT comprasdet
+This.Parent.grdDetalle.Refresh()
+
+This.Parent.sel_articulo.blanquear()
+This.Parent.cmbUnidCpa.Clear()
+This.Parent.txtCantPack.blanquear()
+This.Parent.txtCantidad.blanquear()
+This.Parent.txtPrLista.blanquear()
+This.Parent.txtBonif1.blanquear()
+This.Parent.txtBonif2.blanquear()
+This.Parent.txtBonif3.blanquear()
+This.Parent.txtBonif4.blanquear()
+This.Parent.txtAlicIVA.blanquear()
+This.Parent.txtImpIVA.blanquear()
+This.Parent.txtCostoRep.blanquear()
+This.Parent.txtCostoFinal.blanquear()
+This.Parent.txtSTFinal.blanquear()
+This.Parent.txtSTNeto.blanquear()
+	
+This.Parent.grdDetalle.Refresh()
+This.Parent.sel_articulo.txtCodigo.SetFocus()
+ENDPROC
+
+
+************************************************************
+OBJETO: btnEliminar
+************************************************************
+*** PROPIEDADES ***
+Top = 41
+Left = 885
+Height = 37
+Width = 36
+TabIndex = 18
+Name = "btnEliminar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp
+
+lnResp = MESSAGEBOX("¿Está seguro que desea eliminar este ítem?", 4+32, Thisform.Caption)
+
+IF lnResp = 6 THEN
+
+	&& Si está habilitado el módulo de stock, entonces, elimino el movimiento.
+	IF getGlobalCFG("STK_MODULE") THEN
+		IF !(RIGHT(ALLTRIM(This.Parent.sel_articulo.txtCodigo.Value), 3) == "ARX") THEN
+			SELECT comprasdet 
+			Thisform.mov_stock.eliminar(comprasdet.IdArticulo)
+		ENDIF
+	ENDIF
+	
+	Thisform.compras.eliminar_articulo()		
+	This.Parent.grdDetalle.Refresh()
+
+	Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+	Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+	Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+	Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+	Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+	
+	This.Parent.sel_articulo.blanquear()
+	This.Parent.cmbUnidCpa.Clear()
+	This.Parent.txtCantPack.blanquear()
+	This.Parent.txtCantidad.blanquear()
+	This.Parent.txtPrLista.blanquear()
+	This.Parent.txtBonif1.blanquear()
+	This.Parent.txtBonif2.blanquear()
+	This.Parent.txtBonif3.blanquear()
+	This.Parent.txtBonif4.blanquear()
+	This.Parent.txtAlicIVA.blanquear()
+	This.Parent.txtImpIVA.blanquear()
+	This.Parent.txtCostoRep.blanquear()
+	This.Parent.txtCostoFinal.blanquear()
+	This.Parent.txtSTFinal.blanquear()
+	This.Parent.txtSTNeto.blanquear()
+	This.Parent.sel_articulo.txtCodigo.SetFocus()
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: grdDetalle
+************************************************************
+*** PROPIEDADES ***
+Height = 224
+Left = 5
+TabIndex = 36
+Top = 86
+Width = 915
+permitir_busqueda = .F.
+permitir_ordenamiento = .F.
+Name = "grdDetalle"
+COLUMN1.Header1.Name = "Header1"
+COLUMN1.Text1.Name = "Text1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.Header1.Name = "Header1"
+COLUMN2.Text1.Name = "Text1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.Header1.Name = "Header1"
+COLUMN3.Text1.Name = "Text1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.Header1.Name = "Header1"
+COLUMN4.Text1.Name = "Text1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.Header1.Name = "Header1"
+COLUMN5.Text1.Name = "Text1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.Header1.Name = "Header1"
+COLUMN6.Text1.Name = "Text1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.Header1.Name = "Header1"
+COLUMN7.Text1.Name = "Text1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.Header1.Name = "Header1"
+COLUMN8.Text1.Name = "Text1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.Header1.Name = "Header1"
+COLUMN9.Text1.Name = "Text1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.Header1.Name = "Header1"
+COLUMN10.Text1.Name = "Text1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.Header1.Name = "Header1"
+COLUMN11.Text1.Name = "Text1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.Header1.Name = "Header1"
+COLUMN12.Text1.Name = "Text1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.Header1.Name = "Header1"
+COLUMN13.Text1.Name = "Text1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.Header1.Name = "Header1"
+COLUMN14.Text1.Name = "Text1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.Header1.Name = "Header1"
+COLUMN15.Text1.Name = "Text1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.Header1.Name = "Header1"
+COLUMN16.Text1.Name = "Text1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.Header1.Name = "Header1"
+COLUMN17.Text1.Name = "Text1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.Header1.Name = "Header1"
+COLUMN18.Text1.Name = "Text1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.Header1.Name = "Header1"
+COLUMN19.Text1.Name = "Text1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.Header1.Name = "Header1"
+COLUMN20.Text1.Name = "Text1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta11
+************************************************************
+*** PROPIEDADES ***
+Caption = "Alíc. I.V.A.:"
+Height = 15
+Left = 6
+Top = 60
+Width = 62
+TabIndex = 37
+Name = "Clsetiqueta11"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtAlicIVA
+************************************************************
+*** PROPIEDADES ***
+Enabled = .T.
+Height = 21
+Left = 78
+ReadOnly = .F.
+TabIndex = 38
+Top = 56
+Width = 87
+isnumeric = .T.
+Name = "txtAlicIVA"
+
+*** METODOS ***
+PROCEDURE calcular
+=Thisform.Calcular_item()
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta12
+************************************************************
+*** PROPIEDADES ***
+Caption = "Importe I.V.A.:"
+Height = 15
+Left = 169
+Top = 60
+Width = 80
+TabIndex = 39
+Name = "Clsetiqueta12"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpIVA
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 260
+ReadOnly = .T.
+TabIndex = 40
+Top = 56
+Width = 79
+isnumeric = .T.
+Name = "txtImpIVA"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta13
+************************************************************
+*** PROPIEDADES ***
+Caption = "Costo Final:"
+Height = 15
+Left = 343
+Top = 60
+Width = 67
+TabIndex = 43
+Name = "Clsetiqueta13"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtCostoFinal
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 412
+ReadOnly = .T.
+TabIndex = 46
+Top = 56
+Width = 88
+isnumeric = .T.
+Name = "txtCostoFinal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta21
+************************************************************
+*** PROPIEDADES ***
+Caption = "Subtotal Neto:"
+Height = 15
+Left = 502
+Top = 60
+Width = 87
+TabIndex = 41
+Name = "Clsetiqueta21"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtSTNeto
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 583
+ReadOnly = .T.
+TabIndex = 45
+Top = 56
+Width = 88
+isnumeric = .T.
+Name = "txtSTNeto"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta22
+************************************************************
+*** PROPIEDADES ***
+Caption = "Subtotal Final:"
+Height = 15
+Left = 674
+Top = 60
+Width = 87
+TabIndex = 42
+Name = "Clsetiqueta22"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtSTFinal
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 755
+ReadOnly = .T.
+TabIndex = 44
+Top = 56
+Width = 88
+isnumeric = .T.
+Name = "txtSTFinal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Concepto:"
+Height = 15
+Left = 15
+Top = 17
+Width = 72
+TabIndex = 10
+Name = "Clsetiqueta1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_concepto
+************************************************************
+*** PROPIEDADES ***
+Top = 12
+Left = 81
+TabIndex = 1
+nombre_tabla = planctas
+pkfield = idPlanCta
+nombre_campo_codigo = codPlanCta
+nombre_campo_desc = descripcio
+criterio_filtro = planctas.esImput = 1
+Name = "sel_concepto"
+txtCodigo.Name = "txtCodigo"
+txtDescripcion.Name = "txtDescripcion"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta2
+************************************************************
+*** PROPIEDADES ***
+Caption = "Imp. Neto:"
+Height = 15
+Left = 16
+Top = 41
+Width = 64
+TabIndex = 11
+Name = "Clsetiqueta2"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta3
+************************************************************
+*** PROPIEDADES ***
+Caption = "Alic. I.V.A.:"
+Height = 15
+Left = 189
+Top = 41
+Width = 64
+TabIndex = 12
+Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta4
+************************************************************
+*** PROPIEDADES ***
+Caption = "Total:"
+Height = 15
+Left = 396
+Top = 41
+Width = 36
+TabIndex = 13
+Name = "Clsetiqueta4"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpNeto
+************************************************************
+*** PROPIEDADES ***
+Left = 83
+TabIndex = 2
+Top = 38
+isnumeric = .T.
+Name = "txtImpNeto"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+Thisform.calcular_item_cp()
+ENDPROC
+
+
+************************************************************
+OBJETO: txtImpIVA
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 319
+ReadOnly = .T.
+TabIndex = 8
+Top = 38
+Width = 72
+isnumeric = .T.
+Name = "txtImpIVA"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtTotal
+************************************************************
+*** PROPIEDADES ***
+Left = 435
+ReadOnly = .T.
+TabIndex = 9
+Top = 38
+isnumeric = .T.
+Name = "txtTotal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnAgregar
+************************************************************
+*** PROPIEDADES ***
+Top = 47
+Left = 849
+Height = 37
+Width = 36
+TabIndex = 4
+Name = "btnAgregar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnIdPlanCta, lnIdBanco, lnIdCheque, lnImpNeto, lnPorIVA
+LOCAL lcCodPlanCta, lnResp
+
+IF This.Parent.sel_concepto.valcpoid = 0 THEN
+	MESSAGEBOX("Debe ingresar el concepto", 0+48, Thisform.Caption)
+	This.Parent.sel_concepto.txtCodigo.SetFocus()
+	RETURN
+ENDIF
+
+IF This.Parent.txtImpNeto.Value = 0 THEN
+	MESSAGEBOX("Debe ingresar el importe", 0+48, Thisform.Caption)
+	This.Parent.txtImpNeto.SetFocus()
+	RETURN
+ENDIF
+
+* Valido que no se agregue IVA a una factura de tipo C 
+IF thisform.contenido.cmbTipoDoc.Value == "C" .and. this.Parent.txtIMPIVA.Value <> 0 then
+	MESSAGEBOX("Éste tipo de factura no se debe cargar IVA", 0+48, thisform.Caption)
+	RETURN .f.
+ELSE
+* Si no es tipo C, valido que contenga IVA para A y B
+	IF thisform.contenido.cmbTipoDoc.value <> "C" .and. this.Parent.txtIMPIVA.value = 0 then
+		MESSAGEBOX("Éste tipo de factura debe cargar IVA", 0+48, thisform.Caption)
+		RETURN .f.
+	endif
+ENDIF 
+
+
+
+lnIdPlanCta = This.Parent.sel_concepto.valcpoid
+lcCodPlanCta = ALLTRIM(This.Parent.sel_concepto.txtCodigo.Value)
+lnIdBanco = 0
+lnIdCheque = 0
+lnImpNeto = This.Parent.txtImpNeto.Value
+lnPorIVA = FLOAT(VAL(This.Parent.cmbAlicIva.Value)) 
+lnResp = 0
+
+IF !Thisform.compras.concepto_duplicado(lnIdPlanCta) THEN
+	lnResp = MESSAGEBOX(Thisform.compras.error_message, 4+32, Thisform.Caption)
+	
+	IF lnResp = 7 THEN
+		RETURN
+	ENDIF
+ENDIF
+
+Thisform.compras.agregar_detalle_cp(0, lnIdPlanCta, lcCodPlanCta, ALLTRIM(This.Parent.sel_concepto.txtDescripcion.Value), ;
+	lnIdBanco, lnIdCheque, lnImpNeto, lnPorIVA)
+
+Thisform.compras.totalizar_cbte()
+Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+SELECT cpasdet_cp
+This.Parent.grdDetalle.Refresh()
+
+This.Parent.sel_concepto.blanquear()
+This.Parent.txtImpNeto.blanquear()
+This.Parent.txtImpIVA.blanquear()
+This.Parent.txtTotal.blanquear()
+This.Parent.sel_concepto.txtCodigo.SetFocus()
+ENDPROC
+
+
+************************************************************
+OBJETO: btnEliminar
+************************************************************
+*** PROPIEDADES ***
+Top = 47
+Left = 885
+Height = 37
+Width = 36
+TabIndex = 5
+Name = "btnEliminar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp
+
+lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el concepto?", 4+32, Thisform.Caption)
+IF lnResp = 6 THEN
+	Thisform.compras.eliminar_cp()
+	Thisform.compras.totalizar_cbte()
+	This.Parent.grdDetalle.Refresh()
+	
+	Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+	Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+	Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+	Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+	Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+	Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+	
+	This.Parent.sel_concepto.blanquear()
+	This.Parent.txtImpNeto.blanquear()
+	This.Parent.txtImpIVA.blanquear()
+	This.Parent.txtTotal.blanquear()
+	This.Parent.sel_concepto.txtCodigo.SetFocus()	
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: grdDetalle
+************************************************************
+*** PROPIEDADES ***
+Height = 207
+Left = 5
+TabIndex = 7
+Top = 90
+Width = 915
+permitir_busqueda = .F.
+permitir_ordenamiento = .F.
+Name = "grdDetalle"
+COLUMN1.Header1.Name = "Header1"
+COLUMN1.Text1.Name = "Text1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.Header1.Name = "Header1"
+COLUMN2.Text1.Name = "Text1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.Header1.Name = "Header1"
+COLUMN3.Text1.Name = "Text1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.Header1.Name = "Header1"
+COLUMN4.Text1.Name = "Text1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.Header1.Name = "Header1"
+COLUMN5.Text1.Name = "Text1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.Header1.Name = "Header1"
+COLUMN6.Text1.Name = "Text1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.Header1.Name = "Header1"
+COLUMN7.Text1.Name = "Text1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.Header1.Name = "Header1"
+COLUMN8.Text1.Name = "Text1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.Header1.Name = "Header1"
+COLUMN9.Text1.Name = "Text1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.Header1.Name = "Header1"
+COLUMN10.Text1.Name = "Text1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.Header1.Name = "Header1"
+COLUMN11.Text1.Name = "Text1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.Header1.Name = "Header1"
+COLUMN12.Text1.Name = "Text1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.Header1.Name = "Header1"
+COLUMN13.Text1.Name = "Text1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.Header1.Name = "Header1"
+COLUMN14.Text1.Name = "Text1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.Header1.Name = "Header1"
+COLUMN15.Text1.Name = "Text1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.Header1.Name = "Header1"
+COLUMN16.Text1.Name = "Text1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.Header1.Name = "Header1"
+COLUMN17.Text1.Name = "Text1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.Header1.Name = "Header1"
+COLUMN18.Text1.Name = "Text1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.Header1.Name = "Header1"
+COLUMN19.Text1.Name = "Text1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.Header1.Name = "Header1"
+COLUMN20.Text1.Name = "Text1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbAlicIva
+************************************************************
+*** PROPIEDADES ***
+ControlSource = ""
+Height = 21
+Left = 250
+TabIndex = 8
+Top = 38
+Width = 67
+Name = "cmbAlicIva"
+
+*** METODOS ***
+PROCEDURE LostFocus
+Thisform.calcular_item_cp()
+ENDPROC
+PROCEDURE InteractiveChange
+Thisform.calcular_item_cp()
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta1
+************************************************************
+*** PROPIEDADES ***
+Caption = "I.V.A.:"
+Height = 15
+Left = 14
+Top = 14
+Width = 84
+TabIndex = 6
+Name = "Clsetiqueta1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta2
+************************************************************
+*** PROPIEDADES ***
+Caption = "Ingresos Brutos:"
+Height = 15
+Left = 14
+Top = 40
+Width = 97
+TabIndex = 7
+Name = "Clsetiqueta2"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta3
+************************************************************
+*** PROPIEDADES ***
+Caption = "Provincia:"
+Height = 15
+Left = 231
+Top = 41
+Width = 60
+TabIndex = 8
+Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta4
+************************************************************
+*** PROPIEDADES ***
+Caption = "Ganancias:"
+Height = 15
+Left = 14
+Top = 65
+Width = 97
+TabIndex = 9
+Name = "Clsetiqueta4"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta5
+************************************************************
+*** PROPIEDADES ***
+Caption = "SUSS:"
+Height = 15
+Left = 14
+Top = 90
+Width = 97
+TabIndex = 10
+Name = "Clsetiqueta5"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtIVA
+************************************************************
+*** PROPIEDADES ***
+Left = 120
+TabIndex = 1
+Top = 11
+isnumeric = .T.
+Name = "txtIVA"
+
+*** METODOS ***
+PROCEDURE calcular
+Thisform.compras.retiva = this.Value 
+
+Thisform.compras.totalizar_cbte()
+Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+
+ENDPROC
+
+
+************************************************************
+OBJETO: txtIIBB
+************************************************************
+*** PROPIEDADES ***
+Left = 120
+TabIndex = 2
+Top = 36
+isnumeric = .T.
+Name = "txtIIBB"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbPcias
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 292
+TabIndex = 3
+Top = 36
+Width = 367
+Name = "cmbPcias"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtGanancias
+************************************************************
+*** PROPIEDADES ***
+Left = 120
+TabIndex = 5
+Top = 61
+isnumeric = .T.
+Name = "txtGanancias"
+
+*** METODOS ***
+PROCEDURE calcular
+Thisform.compras.retgan = this.Value 
+
+Thisform.compras.totalizar_cbte()
+Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+
+ENDPROC
+
+
+************************************************************
+OBJETO: txtSUSS
+************************************************************
+*** PROPIEDADES ***
+Left = 120
+TabIndex = 6
+Top = 86
+isnumeric = .T.
+Name = "txtSUSS"
+
+*** METODOS ***
+PROCEDURE calcular
+Thisform.compras.retsuss = this.Value 
+
+Thisform.compras.totalizar_cbte()
+Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta6
+************************************************************
+*** PROPIEDADES ***
+Caption = "Impuestos:"
+Height = 15
+Left = 14
+Top = 149
+Width = 97
+TabIndex = 10
+Name = "Clsetiqueta6"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpuestos
+************************************************************
+*** PROPIEDADES ***
+Left = 120
+TabIndex = 7
+Top = 145
+isnumeric = .T.
+Name = "txtImpuestos"
+
+*** METODOS ***
+PROCEDURE calcular
+Thisform.compras.impuestos = this.Value 
+
+Thisform.compras.totalizar_cbte()
+Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtImpuestos.Value = Thisform.compras.impuestos
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+ENDPROC
+
+
+************************************************************
+OBJETO: grdIIBB
+************************************************************
+*** PROPIEDADES ***
+Height = 207
+Left = 292
+RecordMark = .F.
+ScrollBars = 0
+TabIndex = 20
+Top = 61
+Width = 367
+permitir_busqueda = .F.
+permitir_ordenamiento = .F.
+Name = "grdIIBB"
+COLUMN1.HEADER1.Name = "HEADER1"
+COLUMN1.TEXT1.Name = "TEXT1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.HEADER1.Name = "HEADER1"
+COLUMN2.TEXT1.Name = "TEXT1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.HEADER1.Name = "HEADER1"
+COLUMN3.TEXT1.Name = "TEXT1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.HEADER1.Name = "HEADER1"
+COLUMN4.TEXT1.Name = "TEXT1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.HEADER1.Name = "HEADER1"
+COLUMN5.TEXT1.Name = "TEXT1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.HEADER1.Name = "HEADER1"
+COLUMN6.TEXT1.Name = "TEXT1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.HEADER1.Name = "HEADER1"
+COLUMN7.TEXT1.Name = "TEXT1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.HEADER1.Name = "HEADER1"
+COLUMN8.TEXT1.Name = "TEXT1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.HEADER1.Name = "HEADER1"
+COLUMN9.TEXT1.Name = "TEXT1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.HEADER1.Name = "HEADER1"
+COLUMN10.TEXT1.Name = "TEXT1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.HEADER1.Name = "HEADER1"
+COLUMN11.TEXT1.Name = "TEXT1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.HEADER1.Name = "HEADER1"
+COLUMN12.TEXT1.Name = "TEXT1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.HEADER1.Name = "HEADER1"
+COLUMN13.TEXT1.Name = "TEXT1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.HEADER1.Name = "HEADER1"
+COLUMN14.TEXT1.Name = "TEXT1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.HEADER1.Name = "HEADER1"
+COLUMN15.TEXT1.Name = "TEXT1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.HEADER1.Name = "HEADER1"
+COLUMN16.TEXT1.Name = "TEXT1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.HEADER1.Name = "HEADER1"
+COLUMN17.TEXT1.Name = "TEXT1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.HEADER1.Name = "HEADER1"
+COLUMN18.TEXT1.Name = "TEXT1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.HEADER1.Name = "HEADER1"
+COLUMN19.TEXT1.Name = "TEXT1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.HEADER1.Name = "HEADER1"
+COLUMN20.TEXT1.Name = "TEXT1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: CLSAGREGAR1
+************************************************************
+*** PROPIEDADES ***
+Top = 20
+Left = 665
+Height = 37
+Width = 36
+TabIndex = 4
+Name = "CLSAGREGAR1"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnIdProvin, lcDescripcio, lnImporte, lnResp
+
+IF This.Parent.txtIIBB.Value = 0 THEN
+	MESSAGEBOX("Debe ingresar el importe", 0+48, Thisform.Caption)
+	This.Parent.txtIIBB.SetFocus()
+	RETURN
+ENDIF
+
+SELECT pcias
+lnIdProvin = INT(VAL(This.Parent.cmbPcias.Value))
+lcDescripcio = ALLTRIM(This.Parent.cmbPcias.DisplayValue)
+lnImporte = This.Parent.txtIIBB.Value 
+lnResp = 0
+
+*!*	IF !Thisform.compras.concepto_duplicado(lnIdPlanCta) THEN
+*!*		lnResp = MESSAGEBOX(Thisform.compras.error_message, 4+32, Thisform.Caption)
+*!*		
+*!*		IF lnResp = 7 THEN
+*!*			RETURN
+*!*		ENDIF
+*!*	ENDIF
+
+Thisform.compras.agregar_detalle_ret('RIB', lnIdProvin, lcDescripcio, lnImporte)
+
+Thisform.compras.retiibb = Thisform.compras.retiibb + this.Parent.txtIIBB.Value 
+
+Thisform.compras.totalizar_cbte()
+Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+
+This.Parent.grdIIBB.Refresh()
+
+This.Parent.txtIIBB.blanquear()
+This.Parent.txtIIBB.SetFocus()
+ENDPROC
+
+
+************************************************************
+OBJETO: CLSDELETE1
+************************************************************
+*** PROPIEDADES ***
+Top = 20
+Left = 703
+Height = 37
+Width = 36
+Name = "CLSDELETE1"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp
+
+lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el ingreso bruto de esta provincia?", 4+32, Thisform.Caption)
+IF lnResp = 6 THEN
+	Thisform.compras.eliminar_ret()
+	Thisform.compras.retiibb = Thisform.compras.retiibb - comprasret.importe
+	Thisform.compras.totalizar_cbte()
+	
+	Thisform.contenido.txtNoGravado.Value = Thisform.compras.nogravado
+	Thisform.Contenido.txtTotalNeto.Value = Thisform.compras.totneto
+	Thisform.Contenido.txtImpIVA21.Value = Thisform.compras.impiva21
+	Thisform.Contenido.txtImpIVA105.Value = Thisform.compras.impiva105
+	Thisform.Contenido.txtPercepciones.Value = Thisform.compras.percepciones
+	Thisform.Contenido.txtTotalFinal.Value = Thisform.compras.totfinal
+	
+	This.Parent.grdIIBB.Refresh()
+
+	This.Parent.txtIIBB.blanquear()
+	This.Parent.txtIIBB.SetFocus()
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: btnSelCbteOrig
+************************************************************
+*** PROPIEDADES ***
+Top = 75
+Left = 435
+Height = 31
+Width = 212
+Caption = "\<Seleccionar comprobante de Origen"
+TabIndex = 10
+Name = "btnSelCbteOrig"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL loForm, lnResp
+
+lnResp = 0
+
+loForm = CREATEOBJECT("cls_buscacbte_cpas")
+loForm.idProv = Thisform.contenido.sel_proveedor.valcpoid
+loForm.cbte = "FC"
+loForm.leer_cbtes()
+
+loForm.Show()
+
+IF loForm.press_ok THEN
+	Thisform.Contenido.txtCbteOrig.Value = loForm.sel_cbte
+	Thisform.Contenido.txtLetraOrig.Value = loForm.sel_letra
+	Thisform.Contenido.txtPtoVtaOrig.Value = loForm.sel_ptovta
+	Thisform.Contenido.txtNumeroOrig.Value = loForm.sel_numCbte
+	Thisform.idComprac_orig = loForm.idCompraC
+	Thisform.idOper = loForm.idOper
+	
+	loForm.Release()
+ELSE
+	loForm.Release()
+ENDIF
+
+ENDPROC
+
+
+************************************************************
+OBJETO: txtCbteOrig
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 702
+ReadOnly = .T.
+TabIndex = 20
+Top = 77
+Width = 36
+ischaracter = .T.
+Name = "txtCbteOrig"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta5
+************************************************************
+*** PROPIEDADES ***
+Caption = "Origen:"
+Height = 15
+Left = 653
+Top = 80
+Width = 48
+TabIndex = 18
+Name = "Clsetiqueta5"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtLetraOrig
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 740
+ReadOnly = .T.
+TabIndex = 23
+Top = 77
+Width = 36
+ischaracter = .T.
+Name = "txtLetraOrig"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPtoVtaOrig
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 778
+ReadOnly = .T.
+TabIndex = 24
+Top = 77
+Width = 58
+ischaracter = .T.
+Name = "txtPtoVtaOrig"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtNumeroOrig
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 838
+ReadOnly = .T.
+TabIndex = 27
+Top = 77
+Width = 103
+ischaracter = .T.
+Name = "txtNumeroOrig"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsaceptar1
+************************************************************
+*** PROPIEDADES ***
+Top = 8
+Left = 896
+TabIndex = 11
+Name = "Clsaceptar1"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp, loForm
+
+lnResp = 0
+
+IF !Thisform.validarcampos() THEN
+	RETURN
+ENDIF
+
+IF !Thisform.validar_comprobante() THEN
+	Thisform.Contenido.txtNroCbte.SetFocus()
+	RETURN 
+ENDIF
+
+Thisform.Contenido.Page_group.page1.sel_Articulo.txtCodigo.SetFocus()
+Thisform.Cambiar_estado(.F.)
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta6
+************************************************************
+*** PROPIEDADES ***
+Caption = "No Gravado"
+Height = 15
+Left = 12
+Top = 454
+Width = 84
+TabIndex = 32
+Name = "Clsetiqueta6"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtNoGravado
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 11
+ReadOnly = .T.
+TabIndex = 34
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtNoGravado"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta7
+************************************************************
+*** PROPIEDADES ***
+Caption = "Impuestos"
+Height = 15
+Left = 467
+Top = 454
+Width = 81
+TabIndex = 41
+Name = "Clsetiqueta7"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpuestos
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 466
+ReadOnly = .T.
+TabIndex = 43
+Top = 469
+Width = 85
+isnumeric = .T.
+Name = "txtImpuestos"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnAgregarProveedor
+************************************************************
+*** PROPIEDADES ***
+Top = 30
+Left = 580
+Height = 23
+Width = 22
+Picture = ..\imagen\iconos_chicos\add_3.jpg
+TabIndex = 6
+ToolTipText = "Dar de alta un proveedor"
+Name = "btnAgregarProveedor"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL loForm
+
+loForm = CREATEOBJECT("cls_alta_prov")
+loForm.Show()
+IF loForm.accept_press THEN
+	This.Parent.sel_proveedor.txtCodigo.Value = loForm.idprov
+	This.Parent.sel_proveedor.txtCodigo.LostFocus()
+	This.Parent.txtFecEmision.SetFocus()
+ENDIF
+RELEASE loForm
+
+ENDPROC
+
+
+************************************************************
+OBJETO: cls_frmcbtes_cpas
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 *** METODOS ***
 

@@ -798,7 +798,7 @@ FUNCTION getErrorForCatch
 	
 	lcSalto = CHR(13) + CHR(10)
 	
-	TEXT TO lcMensaje NOSHOW TEXTMERGE PRETEXT 15
+	TEXT TO lcMensaje NOSHOW TEXTMERGE PRETEXT 7
 		Error Nº: <<toException.ErrorNo>><<lcSalto>>
 		Mensaje: <<toException.Message>><<lcSalto>>
 		Línea Nº: <<toException.LineNo>><<lcSalto>>

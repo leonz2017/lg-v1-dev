@@ -4645,6 +4645,7 @@ lcSql = lcSql + "	idStkCab, "
 
 IF This.idCliente <> 0 THEN
 	lcSql = lcSql + " idCliente,"
+	lcSql = lcSql + " idVentasC, "
 ENDIF
 
 IF This.idProv <> 0 THEN
@@ -4663,6 +4664,7 @@ lcSql = lcSql + ALLTRIM(STR(This.idStkCab)) + ", "
 
 IF This.idCliente <> 0 THEN
 	lcSql = lcSql + ALLTRIM(STR(This.idCliente)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(This.idventasc)) + ", "
 ENDIF
 
 IF This.idProv <> 0 THEN

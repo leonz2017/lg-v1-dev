@@ -10710,1704 +10710,6 @@ Arial, 1, 9, 6, 15, 12, 32, 3, 0
 
 
 ************************************************************
-OBJETO: frm_ncnd_cc_sf
-************************************************************
-*** PROPIEDADES ***
-BorderStyle = 2
-Height = 520
-Width = 776
-DoCreate = .T.
-Caption = "Nota de crédito"
-cbte = NC
-idventascab = -1
-cbteref = 
-tipodocref = 
-ptovtaref = 
-numcbteref = 
-importecbteref = 
-idcliente = -1
-idcc_cli = -1
-printerdevice = 
-idoper = 
-imptotiva21 = 0.00
-imptotiva105 = 0.00
-poriva21 = 0.00
-poriva105 = 0.00
-ptovta = 
-nrocbte = 
-cli_calle = 
-cli_codpostal = 
-cli_localidad = 
-cli_pcia = 
-cli_sitiva = 
-cli_razsoc = 
-cli_cuit = 
-fiscal_nrodoc = 0
-usa_fiscal = .F.
-sqlsrv = .F.
-codabr = 
-idcheque = 0
-idsitiva = 0
-cli_tipodoc = 
-cli_idtipodoc = 0
-condicion_iva_receptor_id = 0.00
-Name = "frm_ncnd_cc_sf"
-
-*** METODOS ***
-PROCEDURE imprimir
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.impIVA105, m.impIVA21, m.impNeto, m.impFinal, m.porIIBB, m.impIIBB, m.observ
-LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
-LOCAL loResCli, loResLoc, loResPcia
-LOCAL lnIdNum
-LOCAL lcRepNameCP
-
-loNumerador = CREATEOBJECT("odbc_result")
-loResCli = CREATEOBJECT("odbc_result")
-loResLoc = CREATEOBJECT("odbc_result")
-loResPcia = CREATEOBJECT("odbc_result")
-loResSitIVA = CREATEOBJECT("odbc_result")
-lcSql = ""
-lnIdNum = 0
-
-m.Total = 0.00
-m.tipoDoc = ""
-m.NroCbte = ""
-m.leyenda = ""
-m.Fecha = DATETIME()
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.tipoDoc = Thisform.tipodocref
-m.ptoVta = Thisform.ptovta
-m.NroCbte = Thisform.ptovta + "-" + Thisform.nrocbte
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-m.observ = ""
-lcRepNameCP = ""
-
-&& Me fijo cuantas copias tengo que imprimir
-lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(INT(VAL(m.ptoVta))))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-m.NroCbte = m.ptoVta + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_num.numActual)))) + ALLTRIM(STR(cur_num.numActual))
-lnIdNum = cur_num.idNum
-lcRepNameCP = ALLTRIM(cur_num.repnamecp)
-
-loNumerador.close_query()
-
-lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' "
-lcSql = lcSql + " AND idNum = " + ALLTRIM(STR(lnIdNum))
-
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-IF RECCOUNT("cur_num") = 0 THEN
-	MESSAGEBOX("La impresora no está instalada para este puesto de trabajo", 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-lcPrinterName = ALLTRIM(cur_num.impresora)
-lnCantCpia = cur_num.copias
-
-loNumerador.Close_Query()
-
-&& Recupero los datos del cliente
-lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
-loResCli.cursor_name = "cur_Cliente"
-loResCli.ActiveConnection = goConn.ActiveConnection
-loResCli.OpenQuery(lcSql)
-
-m.NroCli = cur_Cliente.idCliente
-m.RazSoc = cur_Cliente.razSoc
-m.Telefono = cur_Cliente.telefono
-m.direccion = cur_Cliente.direccion
-
-&& Levanto los datos de la localidad que tiene asignada el cliente
-lcSql = "SELECT * FROM localidad WHERE idLocalid = " + ALLTRIM(STR(cur_Cliente.idLocalid))
-loResLoc.Cursor_Name = "cur_Loc"
-loResLoc.ActiveConnection = goConn.ActiveConnection
-loResLoc.OpenQuery(lcSql)
-
-m.localidad = ALLTRIM(cur_Loc.descripcio)
-m.codPostal = ALLTRIM(cur_Loc.codPostal)
-
-&& Levanto los datos de la provincia que tiene asignada la localidad
-lcSql = "SELECT * FROM provincias WHERE idProvin = " + ALLTRIM(STR(cur_Loc.idProvin))
-loResPcia.Cursor_Name = "cur_Pcia"
-loResPcia.ActiveConnection = goConn.ActiveConnection
-loResPcia.OpenQuery(lcSql)
-
-m.pcia = ALLTRIM(cur_Pcia.descripcio)
-
-loResPcia.Close_Query()
-loResLoc.Close_Query()
-
-m.nroCUIT = cur_Cliente.nroCUIT
-
-&& Levanto los datos de la situación de IVA que tiene el cliente
-lcSql = "SELECT * FROM sitiva WHERE idSitIVA = " + ALLTRIM(STR(cur_Cliente.idSitIVA))
-loResSitIVA.Cursor_Name = "cur_SitIVA"
-loResSitIVA.ActiveConnection = goConn.ActiveConnection
-loResSitIVA.OpenQuery(lcSql)
-
-m.TipoIVA = cur_SitIVA.descripcio
-
-loResSitIVA.Close_Query()
-loResCli.Close_Query()
-
-
-m.impIVA105 = Thisform.txtImpIVA105.Value 
-m.impIVA21 = Thisform.txtImpIVA21.Value 
-m.impNeto = Thisform.txtSubTotal.Value
-m.impFinal = Thisform.txtTotal.Value
-m.porIIBB = Thisform.txtporIIBB.Value 
-m.impIIBB = Thisform.txtImpIIBB.Value 
-m.observ = Thisform.txtobserv.Value
- 
-IF ALLTRIM(Thisform.Cbte) == "NC"
-	m.Leyenda = "NOTA DE CREDITO"
-	m.Total = Thisform.txtTotal.Value
-ELSE
-	IF ALLTRIM(Thisform.Cbte) == "ND"
-		m.leyenda = "NOTA DE DEBITO"
-		m.Total = Thisform.txtTotal.Value
-	ENDIF
-ENDIF
-
-SET PRINTER TO NAME ALLTRIM(lcPrinterName)
-SELECT vtadcp
-
-FOR i = 1 TO lnCantCpia
-	REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
-	
-*!*		IF INT(VAL(gnDEMO)) = 1 THEN
-*!*			REPORT FORM "repncnd_x.frx" TO PRINTER NOCONSOLE
-*!*		ELSE
-*!*			IF ALLTRIM(m.tipodoc) == "A" THEN 
-*!*				REPORT FORM "repncnd.frx" TO PRINTER NOCONSOLE
-*!*			ELSE 
-*!*				REPORT FORM "repncnd_b.frx" TO PRINTER NOCONSOLE
-*!*			ENDIF
-*!*		ENDIF
-NEXT
-
-
-ENDPROC
-PROCEDURE buscar_cheque
-LOCAL loResult, lcSql
-LOCAL lnIdBanco
-
-loResult = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-IF TYPE('Thisform.sel_Banco.valcpoid') == "C" THEN
-	lnIdBanco = INT(VAL(Thisform.sel_Banco.valcpoid))
-ELSE
-	lnIdBanco = Thisform.sel_Banco.valcpoid
-ENDIF
-
-lcSql = "CALL cheques_buscarND (" ;
-		+ "'" + ALLTRIM(thisform.txtNroCheque.Value) + "', " ;
-		+ ALLTRIM(STR(lnIdBanco)) + ")"
-loResult.Cursor_Name = "cur_Bco"
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.OpenQuery(lcSql)
-
-SELECT cur_Bco
-IF RECCOUNT("cur_Bco") > 0 THEN
-	Thisform.IdCheque = cur_Bco.idCheque
-	Thisform.txtImporteNeto.Value = cur_Bco.importe
-ELSE
-	MESSAGEBOX("Cheque no encontrado, por favor, ingrese bien los datos", 0+48, Thisform.Caption)
-	Thisform.txtNroCheque.Value = ""
-	Thisform.sel_Banco.txtCodigo.Value = ""
-	Thisform.sel_Banco.txtDescripcion.Value = ""
-ENDIF
-
-loResult.Close_Query()
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE calcular_tipodoc
-LOCAL lnSitIVACli
-
-lnSitIvaEmp = 0
-lnSitIvaEmp = VAL(ALLTRIM(getConfig("SITIVAEMP")))
-
-IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 1 THEN
-	RETURN "A"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva= 2 THEN
-	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 3 THEN
-	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 5 THEN
-	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 6 THEN
-	&& Si es INSCRIPTO a Monotributista reemplazo B por A
-	RETURN "A"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 7 THEN
-   	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 6 THEN
-	RETURN "C"
-ENDIF
-
-ENDPROC
-PROCEDURE calcular_ret_iibb
-&& Calculo el importe de percepción de ingresos brutos y lo anexo al total
-IF ALLTRIM(Thisform.cbte) == "NC" THEN
-	Thisform.txtImpIIBB.Value = ROUND(Thisform.txtsubTotal.Value * (Thisform.txtPorIIBB.Value / 100), 2)
-	Thisform.txttotal.Value = Thisform.txttotal.Value + Thisform.txtImpIIBB.Value
-ENDIF 
-
-ENDPROC
-PROCEDURE sumar_items
-LOCAL lnSubtotal, lnIVA21, lnIVA105, lnTotal
-
-lnSubtotal = 0.00
-lnIVA21 = 0.00
-lnIVA105 = 0.00
-lnTotal = 0.00
-
-SELECT vtadcp
-IF RECCOUNT("vtadcp") > 0
-	GO TOP 
-ENDIF 
-
-DO WHILE !EOF()
-	lnSubtotal = lnSubtotal + vtadcp.impNeto
-	
-	IF vtadcp.ivaPor = 21 THEN
-		lnIVA21 = lnIVA21 + vtadcp.ivaImp
-	ELSE
-		lnIVA105 = lnIVA105  + vtadcp.ivaImp
-	ENDIF
-	
-	lnTotal = lnTotal + vtadcp.total
-	
-	SELECT vtadcp
-	SKIP 
-ENDDO 
-
-Thisform.txtsubTotal.Value = lnSubtotal
-Thisform.txtImpIVA21.Value = lnIVA21
-Thisform.txtImpIVA105.Value = lnIVA105
-Thisform.txttotal.Value = lnTotal
-
-SELECT vtadcp
-IF RECCOUNT("vtadcp") > 0
-	GO TOP 
-ENDIF 
-
-
-ENDPROC
-PROCEDURE grabar_ctacte
-PARAMETERS tnIdVentaC
-	
-LOCAL loCommand
-LOCAL loRes
-LOCAL loDateTime
-LOCAL lcSql
-LOCAL lnIdOper
-LOCAL lnPtoVta
-LOCAL lnNroCbte
-LOCAL lnIdCondPago
-LOCAL lnIdSitIVA
-LOCAL lnIdVendedor
-LOCAL lnIdCC_CliOrig
-
-loCommand = CREATEOBJECT("odbc_command")
-loRes = CREATEOBJECT("odbc_result")
-loDateTime = CREATEOBJECT("datetime")
-lnIdOper = 0
-lnPtoVta = 0
-lnNroCbte = 0
-lnIdCondPago = 0
-lnIdSitIVA = 0
-lnIdVendedor = 0
-lnIdCC_CliOrig = thisform.idcc_cli
-
-lcSql = "SELECT ventascab.idVentasC, ventascab.ptoVta, ventascab.numCbte, "
-lcSql = lcSql + "ventascab.idCondPago, ventascab.idSitIVA, ventascab.idVendedor "
-lcSql = lcSql + "FROM ventascab "
-lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(tnIdVentaC))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lnPtoVta = cur_x.ptoVta
-lnNroCbte = cur_x.numCbte
-lnIdCondPago = cur_x.idCondPago
-lnIdSitIVA = cur_x.idSitIVA
-lnIdVendedor = cur_x.idVendedor
-loRes.Close_Query()
-
-IF lnIdCC_CliOrig <> -1 THEN
-	lcSql = "SELECT * FROM cc_cli WHERE idCC_Cli = " + ALLTRIM(STR(lnIdCC_CliOrig))
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_x"
-	IF !loRes.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-
-	lnIdCondPago = cur_x.idCondPago
-	lnIdSitIVA = cur_x.idSitIVA
-	lnIdVendedor = cur_x.idVendedor
-	loRes.Close_Query()
-ENDIF
-
-&& Grabar el registro en CC_CLI vinculado por Id_Oper al cbte seleccionado
-lnIdCC_Cli = goConn.GetNextID("cc_cli", "idCC_Cli")
-
-IF Thisform.idOper = 0 THEN
-	lnIdOper = goConn.GetNextID("cc_cli", "idOper")
-ELSE
-	lnIdOper = Thisform.idOper
-ENDIF 
-
-IF ALLTRIM(Thisform.cbte) == "NC" THEN
-	lcSql = "INSERT INTO cc_cli ("
-	lcSql = lcSql + "idCC_Cli, "
-	lcSql = lcSql + "idCliente, "
-	lcSql = lcSql + "idCC_Orig, "
-	lcSql = lcSql + "idVentasC, "
-	lcSql = lcSql + "cbte, "
-	lcSql = lcSql + "tipoDoc, "
-	lcSql = lcSql + "ptoVta, "
-	lcSql = lcSql + "nroCbte, "
-	lcSql = lcSql + "fecEmis, "
-	lcSql = lcSql + "fecVto, "
-	lcSql = lcSql + "idCondPago, "
-	lcSql = lcSql + "idSitIVA, "
-	lcSql = lcSql + "idVendedor, "
-	lcSql = lcSql + "impDebe, "
-	lcSql = lcSql + "impHaber, "
-	lcSql = lcSql + "idOper, "
-	lcSql = lcSql + "observ, "
-	lcSql = lcSql + "usuAlta, "
-	lcSql = lcSql + "fecAlta, "
-	lcSql = lcSql + "idHostAlta) "
-	lcSql = lcSql + "VALUES ("
-	lcSql = lcSql + ALLTRIM(STR(lnIdCC_Cli)) + ", " + ;
-			ALLTRIM(STR(Thisform.idCliente)) + ", " + ;
-			IIF(lnIdCC_CliOrig <> -1, ALLTRIM(STR(lnIdCC_CliOrig)), "null") + ", " + ;
-			ALLTRIM(STR(tnIdVentaC)) + "," + ;
-			"'" + ALLTRIM(Thisform.cbte) + "', " + ;
-			"'" + ALLTRIM(Thisform.TipoDocRef) + "', " + ;
-			ALLTRIM(STR(lnPtoVta)) + ", " + ;
-			ALLTRIM(STR(lnNroCbte)) + ", " + ;
-			loDateTime.getDateTime() + ", " + ;
-			loDateTime.getDateTime() + ", " + ;
-			ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-			ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-			ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-			"0, " + ;
-			ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", " + ;
-			ALLTRIM(STR(lnIdOPer)) + ", " + ;
-			"'" + ALLTRIM(thisform.txtobserv.Value) + "', " + ;
-			"'" + ALLTRIM(gcCodUsu) + "', " + ;
-			loDateTime.getDateTime() + ", " + ;
-			"'" + ALLTRIM(SYS(0)) + "')"
-ELSE
-	lcSql = "INSERT INTO cc_cli ("
-	lcSql = lcSql + "idCC_Cli, "
-	lcSql = lcSql + "idCliente, "
-	lcSql = lcSql + "idCC_Orig, "
-	lcSql = lcSql + "idVentasC, "
-	lcSql = lcSql + "cbte, "
-	lcSql = lcSql + "tipoDoc, "
-	lcSql = lcSql + "ptoVta, "
-	lcSql = lcSql + "nroCbte, "
-	lcSql = lcSql + "fecEmis, "
-	lcSql = lcSql + "fecVto, "
-	lcSql = lcSql + "idCondPago, "
-	lcSql = lcSql + "idSitIVA, "
-	lcSql = lcSql + "idVendedor, "
-	lcSql = lcSql + "impDebe, "
-	lcSql = lcSql + "impHaber, "
-	lcSql = lcSql + "idOper, "
-	lcSql = lcSql + "observ, "
-	lcSql = lcSql + "usuAlta, "
-	lcSql = lcSql + "fecAlta, "
-	lcSql = lcSql + "idHostAlta) "
-	lcSql = lcSql + "VALUES ("
-	lcSql = lcSql + ALLTRIM(STR(lnIdCC_Cli)) + ", " + ;
-			ALLTRIM(STR(Thisform.idCliente)) + ", " + ;
-			IIF(lnIdCC_CliOrig <> -1, ALLTRIM(STR(lnIdCC_CliOrig)), "null") + ", " + ;
-			ALLTRIM(STR(tnIdVentaC)) + ", " + ;
-			"'" + ALLTRIM(Thisform.cbte) + "', " + ;
-			"'" + ALLTRIM(Thisform.TipoDocRef) + "', " + ;
-			ALLTRIM(STR(lnPtoVta)) + ", " + ;
-			ALLTRIM(STR(lnNroCbte)) + ", " + ;
-			loDateTime.getDateTime() + ", " + ;
-			loDateTime.getDateTime() + ", " + ;
-			ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-			ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-			ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-			ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", " + ;
-			"0, " + ;
-			ALLTRIM(STR(lnIdOper)) + ", " + ;
-			"'" + ALLTRIM(thisform.txtobserv.Value) + "', " + ;
-			"'" + ALLTRIM(gcCodUsu) + "', " + ;
-			loDateTime.getDateTime() + ", " + ;
-			"'" + ALLTRIM(SYS(0)) + "')"
-ENDIF
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE Activate
-LOCAL lo_rsIIBB
-
-lo_rsIIBB = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-&& Levanto el IIBB del cliente
-lcSql = "SELECT * FROM padronib WHERE cuit = '" + ALLTRIM(STRTRAN(thisform.cli_cuit,"-","")) + "'"
-lo_rsIIBB.ActiveConnection = goConn.ActiveConnection
-lo_rsIIBB.Cursor_Name = "cur_PadronIB"
-lo_rsIIBB.OpenQuery(lcSql)
-
-SELECT cur_PadronIB
-IF RECCOUNT("cur_PadronIB") > 0 THEN
-	Thisform.txtPorIIBB.Value = cur_PadronIB.AlicuotaPer
-ELSE 
-	Thisform.txtPorIIBB.Value = 0.00
-ENDIF 
-
-lo_rsIIBB.close_query()
-
-&& Si es cuenta dos no tildo IVA 21%
-IF INT(VAL(ALLTRIM(getconfig("DEMO")))) == 0 THEN
-	Thisform.chkIVA21.Value = 1
-ENDIF
-
-&&Thisform.chkIVA21.Value = 1
-Thisform.txtPtoVta.Value = Thisform.ptovtaref
-Thisform.txtNroCbte.Value = Thisform.numcbteref
-Thisform.txtPorIVA105.Value = 10.50
-Thisform.txtPorIVA21.Value = 21.00
-
-IF ALLTRIM(Thisform.cbte) == "NC" THEN
-	Thisform.txtOperacion.Value = "NOTA DE CREDITO"
-ELSE
-	Thisform.txtOperacion.Value = "NOTA DE DEBITO"
-	Thisform.txtPorIIBB.Value = 0.00
-ENDIF
-ENDPROC
-PROCEDURE Load
-DODEFAULT()
-
-&& Creo el cursor que contendrá el detalle del comprobante
-
-CREATE CURSOR vtadcp (	;
-	id_vtadcp	int	,;
-	idVentasC	int ,;
-	idPlanCta	int ,;
-	idBanco		int ,;
-	codPlanCta	varchar(20),;
-	descPlan	varchar(60),;
-	cheque_nro	varchar(8),;
-	impNeto		float(10, 2),;
-	ivaPor		float(10, 2),;
-	ivaImp		float(10, 2),;
-	total		float(10, 2) ;
-)
-	
-
-
-
-ENDPROC
-PROCEDURE Init
-DODEFAULT()
-
-&& Creo la grilla
-SELECT vtadcp
-Thisform.grdDetalle.RecordSource = "vtadcp"
-Thisform.grdDetalle.list_controlsource = "codPlanCta,descPlan,cheque_nro,impNeto,ivaPor,ivaImp,total"
-Thisform.grdDetalle.lista_ancho_cols = "100,250,100,70,70,70,70"
-Thisform.grdDetalle.titulos_cabeceras = "Código,Descripción,Cheque,Imp. Neto,I.V.A,Imp. IVA,Total"
-Thisform.grdDetalle.generar_grid()
-
-
-IF ALLTRIM(GetConfig("USA_FISCAL")) == "S" THEN
-	Thisform.usa_fiscal = .T.
-ELSE
-	Thisform.usa_fiscal = .F.
-ENDIF
-
-IF ALLTRIM(GetConfig("SQLSRV")) == "1" THEN
-	Thisform.sqlsrv = .T.
-ELSE
-	Thisform.sqlsrv = .F.
-ENDIF
-
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Operación"
-Height = 15
-Left = 12
-Top = 12
-Width = 72
-TabIndex = 15
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta2
-************************************************************
-*** PROPIEDADES ***
-Caption = "Factura de Referencia"
-Height = 15
-Left = 157
-Top = 12
-Width = 132
-TabIndex = 16
-Name = "Clsetiqueta2"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta3
-************************************************************
-*** PROPIEDADES ***
-Caption = "Importe"
-Height = 15
-Left = 346
-Top = 12
-Width = 51
-TabIndex = 17
-Name = "Clsetiqueta3"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtOperacion
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 12
-TabIndex = 18
-Top = 28
-Width = 120
-Name = "txtOperacion"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPtoVta
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 157
-TabIndex = 19
-Top = 28
-Width = 43
-Name = "txtPtoVta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtNroCbte
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 204
-TabIndex = 20
-Top = 28
-Width = 109
-Name = "txtNroCbte"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImporte
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 347
-TabIndex = 21
-Top = 28
-Width = 86
-Name = "txtImporte"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta4
-************************************************************
-*** PROPIEDADES ***
-Caption = "Concepto:"
-Height = 15
-Left = 12
-Top = 71
-Width = 72
-TabIndex = 23
-Name = "Clsetiqueta4"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: sel_Conceptos
-************************************************************
-*** PROPIEDADES ***
-Top = 63
-Left = 91
-Width = 557
-Height = 25
-TabIndex = 1
-cfieldname = 
-nombre_campo_codigo = codPlanCta
-nombre_campo_desc = descripcio
-nombre_tabla = planctas
-pkfield = idPlanCta
-autocompletar_ceros = .F.
-Name = "sel_Conceptos"
-txtCodigo.Height = 21
-txtCodigo.Left = 2
-txtCodigo.Top = 2
-txtCodigo.Width = 172
-txtCodigo.Name = "txtCodigo"
-txtDescripcion.Left = 177
-txtDescripcion.Top = 2
-txtDescripcion.Name = "txtDescripcion"
-
-*** METODOS ***
-PROCEDURE recuperar_datos
-thisform.codabr = planctas.codAbr
-
-&& Si es cheque rechazado, habilito para que carguen el banco y el número
-&& de cheque, en caso contrario, deshabilito los controles de cheques.
-IF ALLTRIM(planctas.codAbr) == "CHR" THEN
-	Thisform.sel_Banco.txtcodigo.Enabled = .T.
-	Thisform.txtNroCheque.Enabled = .T.
-ELSE
-	Thisform.sel_Banco.txtcodigo.Enabled = .F.
-	Thisform.txtNroCheque.Enabled = .F.
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta5
-************************************************************
-*** PROPIEDADES ***
-Caption = "Importe Neto"
-Height = 15
-Left = 87
-Top = 146
-Width = 79
-TabIndex = 25
-Name = "Clsetiqueta5"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: chkIVA21
-************************************************************
-*** PROPIEDADES ***
-Top = 144
-Left = 192
-Height = 18
-Width = 91
-Alignment = 0
-Caption = "I.V.A 21,00%"
-TabIndex = 5
-Name = "chkIVA21"
-
-*** METODOS ***
-PROCEDURE Click
-IF this.Value = 1 THEN
-	Thisform.txtIVA105.Value = 0.00
-	Thisform.txtIVA21.Value = ROUND(Thisform.txtImporteNeto.Value * 0.21, 2)
-	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-	Thisform.chkIVA105.Value = 0
-ELSE
-	Thisform.txtIVA21.Value = 0.00
-	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: chkIVA105
-************************************************************
-*** PROPIEDADES ***
-Top = 144
-Left = 300
-Height = 18
-Width = 92
-Alignment = 0
-Caption = "I.V.A 10,50%"
-TabIndex = 6
-Name = "chkIVA105"
-
-*** METODOS ***
-PROCEDURE Click
-IF this.Value = 1 THEN
-	Thisform.txtIVA21.Value = 0.00
-	Thisform.txtIVA105.Value = ROUND(Thisform.txtImporteNeto.Value * 0.105, 2)
-	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-	Thisform.chkIVA21.Value = 0
-ELSE
-	Thisform.txtIVA105.Value = 0.00
-	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta6
-************************************************************
-*** PROPIEDADES ***
-Caption = "Importe Total"
-Height = 15
-Left = 412
-Top = 146
-Width = 79
-TabIndex = 26
-Name = "Clsetiqueta6"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImporteNeto
-************************************************************
-*** PROPIEDADES ***
-Left = 84
-TabIndex = 4
-Top = 162
-isnumeric = .T.
-Name = "txtImporteNeto"
-
-*** METODOS ***
-PROCEDURE LostFocus
-IF thisform.chkIVA21.Value = 1 THEN
-	Thisform.txtIVA105.Value = 0.00
-	Thisform.txtIVA21.Value = ROUND(Thisform.txtImporteNeto.Value * 0.21, 2)
-	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-ELSE
-	IF thisform.txtIVA105.Value = 1 THEN
-		Thisform.txtIVA21.Value = 0.00
-		Thisform.txtIVA105.Value = ROUND(Thisform.txtImporteNeto.Value * 0.105, 2)
-		Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-	ELSE 
-		Thisform.txtIVA21.Value = 0.00
-		Thisform.txtIVA105.Value = 0.00
-		Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
-	ENDIF 
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: txtIVA21
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 192
-TabIndex = 27
-Top = 162
-Width = 104
-isnumeric = .T.
-Name = "txtIVA21"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtIVA105
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 302
-TabIndex = 28
-Top = 162
-Width = 101
-isnumeric = .T.
-Name = "txtIVA105"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpTotal
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 768
-TabIndex = 29
-Top = 288
-Width = 101
-isnumeric = .T.
-Name = "txtImpTotal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnAgregar
-************************************************************
-*** PROPIEDADES ***
-Top = 143
-Left = 680
-Height = 44
-Width = 45
-TabIndex = 7
-Name = "btnAgregar"
-
-*** METODOS ***
-PROCEDURE Click
-IF Thisform.sel_Conceptos.valcpoid = 0 THEN
-	MESSAGEBOX("Debe selecionar un concepto", 0+48, Thisform.Caption)
-	Thisform.sel_Conceptos.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.txtImporteNeto.Value = 0 THEN
-	MESSAGEBOX("Debe ingresar el importe neto", 0+48, Thisform.Caption)
-	Thisform.txtImporteNeto.SetFocus()
-	RETURN .F.
-ENDIF
-
-&& Si es cheque rechazado entonces valido que el usuario ingrese los datos
-&& del cheque
-IF ALLTRIM(Thisform.codAbr) == "CHR" THEN
-	IF ALLTRIM(Thisform.Sel_Banco.txtCodigo.Value) == "" THEN
-		MESSAGEBOX("Debe ingresar el banco", 0+48, Thisform.Caption)
-		Thisform.sel_Banco.txtCodigo.SetFocus()
-		RETURN .F.
-	ENDIF
-	
-	IF ALLTRIM(Thisform.txtNroCheque.Value) == "" THEN
-		MESSAGEBOX("Debe ingresar el número de cheque", 0+48, Thisform.Caption)
-		Thisform.txtNroCheque.SetFocus()
-		RETURN .F.
-	ENDIF
-	
-	IF !Thisform.buscar_cheque() THEN
-		Thisform.sel_Banco.txtCodigo.SetFocus()
-		RETURN .F.
-	ENDIF
-ENDIF
-
-SELECT vtadcp
-APPEND BLANK
-REPLACE vtadcp.id_vtadcp WITH 0
-REPLACE vtadcp.idVentasC WITH 0 ADDITIVE
-REPLACE vtadcp.idPlanCta WITH Thisform.sel_Conceptos.valcpoid ADDITIVE
-REPLACE vtadcp.idBanco WITH Thisform.sel_Banco.valcpoid ADDITIVE
-REPLACE vtadcp.codPlanCta WITH Thisform.sel_Conceptos.txtCodigo.Value ADDITIVE
-REPLACE vtadcp.descPlan WITH Thisform.sel_Conceptos.txtDescripcion.Value ADDITIVE
-REPLACE vtadcp.cheque_nro WITH Thisform.txtNroCheque.Value ADDITIVE
-REPLACE	vtadcp.impNeto WITH ROUND(Thisform.txtImporteNeto.Value, 2) ADDITIVE
-
-IF Thisform.txtIVA105.Value <> 0 THEN
-	REPLACE vtadcp.ivaPor WITH 10.5 ADDITIVE
-	REPLACE vtadcp.ivaImp WITH Thisform.txtIVA105.Value ADDITIVE
-ELSE 
-	IF Thisform.txtIVA21.Value <> 0 THEN
-		REPLACE vtadcp.ivaPor WITH 21 ADDITIVE
-		REPLACE vtadcp.ivaImp WITH Thisform.txtIVA21.Value ADDITIVE
-	ELSE 
-		REPLACE vtadcp.ivaPor WITH 0 ADDITIVE
-		REPLACE vtadcp.ivaImp WITH 0 ADDITIVE
-	ENDIF
-ENDIF 
-
-REPLACE vtadcp.total WITH Thisform.txtImpTotal.Value ADDITIVE
-
-Thisform.grdDetalle.Refresh()
-
-Thisform.sel_Conceptos.txtCodigo.Value = ""
-Thisform.sel_Conceptos.txtdescripcion.Value = ""
-Thisform.txtImporteNeto.Value = 0.00
-Thisform.txtIVA105.Value = 0.00
-Thisform.txtIVA21.Value = 0.00
-Thisform.txtImpTotal.Value = 0.00
-Thisform.sel_Conceptos.txtCodigo.SetFocus()
-Thisform.chkIVA105.Value = 0
-Thisform.chkIVA21.Value = 1
-
-Thisform.sumar_items()
-Thisform.calcular_ret_iibb()
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: grdDetalle
-************************************************************
-*** PROPIEDADES ***
-Height = 224
-Left = 3
-TabIndex = 30
-Top = 189
-Width = 769
-Name = "grdDetalle"
-COLUMN1.Header1.Name = "Header1"
-COLUMN1.Text1.Name = "Text1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.Header1.Name = "Header1"
-COLUMN2.Text1.Name = "Text1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.Header1.Name = "Header1"
-COLUMN3.Text1.Name = "Text1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.Header1.Name = "Header1"
-COLUMN4.Text1.Name = "Text1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.Header1.Name = "Header1"
-COLUMN5.Text1.Name = "Text1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.Header1.Name = "Header1"
-COLUMN6.Text1.Name = "Text1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.Header1.Name = "Header1"
-COLUMN7.Text1.Name = "Text1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.Header1.Name = "Header1"
-COLUMN8.Text1.Name = "Text1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.Header1.Name = "Header1"
-COLUMN9.Text1.Name = "Text1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.Header1.Name = "Header1"
-COLUMN10.Text1.Name = "Text1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.Header1.Name = "Header1"
-COLUMN11.Text1.Name = "Text1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.Header1.Name = "Header1"
-COLUMN12.Text1.Name = "Text1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.Header1.Name = "Header1"
-COLUMN13.Text1.Name = "Text1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.Header1.Name = "Header1"
-COLUMN14.Text1.Name = "Text1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.Header1.Name = "Header1"
-COLUMN15.Text1.Name = "Text1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.Header1.Name = "Header1"
-COLUMN16.Text1.Name = "Text1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.Header1.Name = "Header1"
-COLUMN17.Text1.Name = "Text1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.Header1.Name = "Header1"
-COLUMN18.Text1.Name = "Text1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.Header1.Name = "Header1"
-COLUMN19.Text1.Name = "Text1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.Header1.Name = "Header1"
-COLUMN20.Text1.Name = "Text1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: SubTotal
-************************************************************
-*** PROPIEDADES ***
-Caption = "SubTotal"
-Height = 15
-Left = 12
-Top = 422
-Width = 60
-TabIndex = 31
-Name = "SubTotal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtSubTotal
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 72
-TabIndex = 9
-Top = 418
-Width = 86
-isnumeric = .T.
-Name = "txtSubTotal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta9
-************************************************************
-*** PROPIEDADES ***
-Caption = "Total:"
-Height = 15
-Left = 464
-Top = 422
-Width = 40
-TabIndex = 34
-Name = "Clsetiqueta9"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtTotal
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 504
-TabIndex = 12
-Top = 418
-Width = 86
-isnumeric = .T.
-Name = "txtTotal"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnGrabar
-************************************************************
-*** PROPIEDADES ***
-Top = 471
-Left = 680
-Height = 44
-Width = 45
-TabIndex = 13
-Name = "btnGrabar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lcSql, loCommand, lnIdVentaC, lnPtoVta, lnIdVtasRel, loResCli
-LOCAL loNumerador, lnPtoVta, lnNroCbte, lnPorIVA21 
-LOCAL lnPorIVA105, lnImpIVA21, lnImpIVA105, lnIdVtaCP, lnIdCC_Cli
-LOCAL lnIdOper, lnSaldo, loDateTime
-LOCAL lnIdCondPago, lnIdSitIVA, lnIdVendedor, lnPorIIBB, lnImpIIBB, lnIdCC_CliOrig 
-
-lcSql = ""
-loDateTime = CREATEOBJECT("datetime")
-loCommand = CREATEOBJECT("odbc_command")
-loResCli = CREATEOBJECT("odbc_result")
-lnIdVentaC = 0
-lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
-lnNroCbte = 0
-lnIdVtaCP = 0
-lnIdCC_Cli = 0
-lnPorIVA21 = 0.00
-lnImpIVA21 = 0.00
-lnPorIVA105 = 0.00
-lnImpIVA105 = 0.00
-lnIdOper = 0
-lnSaldo = 0.00
-lnIdVtasRel = 0
-lnIdCondPago = 0
-lnIdSitIVA = 0
-lnIdVendedor = 0
-lnPorIIBB = 0.00
-lnImpIIBB = 0.00
-lnIdCC_CliOrig = thisform.idcc_cli
-
-
-SELECT vtadcp
-IF RECCOUNT("vtadcp") = 0 THEN
-	MESSAGEBOX("Debe ingresar al menos un ítem del detalle", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
-loResCli.ActiveConnection = goConn.ActiveConnection
-loResCli.Cursor_Name = "cur_cli"
-
-IF !loResCli.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResCli.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_cli
-lnIdCondPago = cur_cli.idCondPago
-lnIdSitIVA = cur_cli.idSitIVA
-lnIdVendedor = cur_cli.idVendedor
-
-loResCli.Close_Query()
-
-SELECT vtadcp
-DO WHILE !EOF("vtadcp") 
-	IF vtadcp.ivaPor = 21 THEN
-		lnPorIVA21 = vtadcp.ivaPor
-		lnImpIVA21 = lnImpIVA21 + vtadcp.ivaImp
-	ELSE
-		lnPorIVA105 = vtadcp.ivaPor
-		lnImpIVA105 = lnImpIVA105 + vtadcp.ivaImp
-	ENDIF	
-
-	SELECT vtadcp
-	SKIP	
-ENDDO
-
-lnPorIIBB = Thisform.txtporIIBB.Value
-lnImpIIBB = Thisform.txtImpIIBB.Value
-
-goConn.BeginTransaction()	&& Inicio la transacción
- 
-&& Calculo el tipo de comprobante
-IF INT(VAL(ALLTRIM(getconfig("DEMO")))) == 0 THEN
-	Thisform.Tipodocref = Thisform.calcular_tipodoc()
-ELSE
-	Thisform.Tipodocref = "X"
-ENDIF
-
-lcSql = "SELECT * FROM numerador WHERE cbte = '" + ALLTRIM(Thisform.cbte) + "' AND tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "' AND ptoVta = " + ALLTRIM(STR(lnPtoVta))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-SELECT cur_num
-
-IF RECCOUNT("cur_num") = 0 THEN
-	MESSAGEBOX("No se encuentra configurado el numerador del comprobante " + ALLTRIM(Thisform.cbte) + " Punto de Venta: " + ALLTRIM(STR(lnPtoVta)) + " Letra: " + ALLTRIM(thisform.tipodocref), 0+48, thisform.Caption)
-	loNumerador.close_query()
-	RETURN .F.
-ENDIF
-
-SELECT cur_num
-lnNroCbte = cur_num.numActual + 1
-Thisform.printerDevice = cur_num.impresora
-
-loNumerador.close_query()
-
-&& Actualizo el numerador
-lcSql = "update numerador set numActual = " + ALLTRIM(STR(lnNroCbte)) + ;
-	" where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "'"
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute()
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-lnIdVentaC = goConn.GetNextId("ventascab", "idVentasC")
-
-lcSql = "INSERT INTO ventascab ( "
-lcSql = lcSql + "idVentasC, idCliente, razSoc, idTipoDoc, nroDoc, fecEmision, fecVto, cbte, tipoDoc, ptoVta, numCbte, anulado, idCondPago, idSitIVA, idVendedor, "
-lcSql = lcSql + "impNeto, impFinal, porIVA21, impIVA21, porIVA105, impIVA105, porDesc1, "
-lcSql = lcSql + "porDesc2, porDesc3, porDesc4, impDesc1, impDesc2, impDesc3, impDesc4, totFact, Saldo, usuAlta, fecAlta, idHostAlta, porIIBB, impIIBB, observ) VALUES ("
-lcSql = lcSql + ALLTRIM(STR(lnIdVentaC)) + ", "
-lcSql = lcSql + ALLTRIM(STR(Thisform.idCliente)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_razsoc) + "', "
-lcSql = lcSql + ALLTRIM(STR(Thisform.cli_idTipodoc)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_cuit) + "', "
-lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
-lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
-lcSql = lcSql + "'" + ALLTRIM(Thisform.cbte) + "', "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.tipodocref) + "', "
-lcSql = lcSql + ALLTRIM(STR(lnPtoVta)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", "
-lcSql = lcSql + "0, "
-lcSql = lcSql + ALLTRIM(STR(lnIdCondPago)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdVendedor)) + ", "
-lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorIVA21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIVA21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorIVA105, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIVA105, 10, 2)) + ", "
-lcSql = lcSql + "0, 0, 0, 0, 0, 0, 0, 0, "
-lcSql = lcSql + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", 0, "
-lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', "
-lcSql = lcSql + loDateTime.getDateTime() + ", "
-lcSql = lcSql + "'" + SYS(0) + "', "
-lcSql = lcSql + ALLTRIM(STR(lnPorIIBB, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIIBB, 10, 2)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(thisform.txtobserv.Value) + "')"
-
-loCommand.commandText = lcSql
-loCommand.ActiveConnection = goConn.ActiveConnection
-
-IF !loCommand.Execute() then
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-&& Grabar el detalle en VTADCP
-SELECT vtadcp
-GO TOP
-DO WHILE !EOF("vtadcp")
-	lnIdVtaCP = goConn.GetNextID("vtadcp", "id_vtadcp")
-	
-	lcSql = "INSERT INTO vtadcp ( "
-	lcSql = lcSql + "id_vtadcp, idVentasC, idPlanCta, impNeto, ivaPor, ivaImp, total) VALUES "
-	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtaCP)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ", " + ALLTRIM(STR(vtadcp.idPlanCta)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(vtadcp.impNeto, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaPor, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaImp, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(vtadcp.total, 10, 2)) + ")"
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		goConn.Rollback()
-		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-	
-	&& Marco el cheque como cheque rechazado
-	IF ALLTRIM(vtadcp.cheque_nro) != "" THEN
-		lcSql = "UPDATE cheques SET estado = 'R' WHERE chq_nro = '" + ALLTRIM(vtadcp.cheque_nro) + "' AND idBanco = " + ALLTRIM(STR(vtadcp.idBanco))
-		loCommand.ActiveConnection = goConn.ActiveConnection
-		loCommand.CommandText = lcSql
-		
-		IF !loCommand.Execute() THEN
-			goConn.Rollback()
-			MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-			RETURN .F.
-		ENDIF
-	ENDIF	
-
-	SELECT vtadcp
-	SKIP
-ENDDO
-
-IF Thisform.idVentascab <> - 1 THEN
-	&& Generar el registro de vinculación de comprobantes
-	lnIdVtasRel = goConn.GetNextId("ventasrel", "idvtarel")
-
-	&& Vinculo el comprobante de venta
-	lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES "
-	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtasRel)) + ", " + ALLTRIM(STR(Thisform.idventascab)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ")"
-
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-
-	IF !loCommand.Execute()
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-ENDIF 
-
-IF !Thisform.grabar_ctacte(lnIdVentaC) THEN
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-&& Actualizar el saldo de la factura seleccionada
-IF ALLTRIM(thisform.cbte) == "NC" THEN
-
-	lcSql = "UPDATE ventascab SET Saldo = Saldo - " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
-	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
-	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
-ELSE 
-	lcSql = "UPDATE ventascab SET Saldo = Saldo + " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
-	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
-	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
-
-ENDIF
-	
-loCommand.CommandText = lcSql
-loCommand.ActiveConnection = goConn.ActiveConnection
-
-IF !loCommand.Execute()
-	goConn.Rollback()
-	RETURN .F.
-ENDIF 
-
-goConn.Commit()
-
-Thisform.ptovta = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta))
-Thisform.nrocbte = REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNroCbte)))) + ALLTRIM(STR(lnNroCbte))
-
-MESSAGEBOX("El comprobante: " + ALLTRIM(Thisform.cbte) + " " + ALLTRIM(Thisform.Tipodocref) + " " + REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-	REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNroCbte)))) + ALLTRIM(STR(lnNroCbte)) + " se ha generado exitosamente...", 0+64, Thisform.Caption)
-
-IF !Thisform.usa_fiscal THEN
-	Thisform.imprimir()
-ENDIF
-
-Thisform.Release()
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: btnCerrar
-************************************************************
-*** PROPIEDADES ***
-Top = 471
-Left = 727
-Height = 44
-Width = 45
-Cancel = .T.
-TabIndex = 14
-Name = "btnCerrar"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta10
-************************************************************
-*** PROPIEDADES ***
-Caption = "Banco:"
-Height = 15
-Left = 12
-Top = 95
-Width = 72
-TabIndex = 22
-Name = "Clsetiqueta10"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Sel_Banco
-************************************************************
-*** PROPIEDADES ***
-Top = 87
-Left = 91
-TabIndex = 2
-esnumerico = .F.
-cfieldname = codbco
-nombre_campo_codigo = codbco
-nombre_campo_desc = descripcio
-nombre_tabla = bancos
-pkfield = idBanco
-autocompletar_ceros = .F.
-Name = "Sel_Banco"
-txtCodigo.Value = 
-txtCodigo.Name = "txtCodigo"
-txtDescripcion.Name = "txtDescripcion"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta11
-************************************************************
-*** PROPIEDADES ***
-Caption = "Cheque Nº:"
-Height = 15
-Left = 576
-Top = 92
-Width = 72
-TabIndex = 24
-Name = "Clsetiqueta11"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtNroCheque
-************************************************************
-*** PROPIEDADES ***
-Height = 21
-Left = 644
-MaxLength = 8
-TabIndex = 3
-Top = 89
-Width = 125
-ischaracter = .T.
-autocompleta = .T.
-Name = "txtNroCheque"
-
-*** METODOS ***
-PROCEDURE LostFocus
-DODEFAULT()
-
-IF !Thisform.buscar_cheque() THEN
-	Thisform.sel_Banco.txtCodigo.SetFocus()
-ENDIF
-
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta12
-************************************************************
-*** PROPIEDADES ***
-Caption = "I.V.A 21:"
-Height = 15
-Left = 226
-Top = 422
-Width = 57
-TabIndex = 33
-Name = "Clsetiqueta12"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta13
-************************************************************
-*** PROPIEDADES ***
-Caption = "I.V.A 10,5:"
-Height = 15
-Left = 226
-Top = 445
-Width = 72
-TabIndex = 35
-Name = "Clsetiqueta13"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPorIVA21
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 297
-ReadOnly = .T.
-TabIndex = 41
-Top = 418
-Width = 44
-isnumeric = .T.
-Name = "txtPorIVA21"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPorIVA105
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 297
-ReadOnly = .T.
-TabIndex = 42
-Top = 441
-Width = 44
-isnumeric = .T.
-Name = "txtPorIVA105"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpIVA21
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 342
-ReadOnly = .T.
-TabIndex = 44
-Top = 418
-Width = 75
-isnumeric = .T.
-Name = "txtImpIVA21"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpIVA105
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 342
-ReadOnly = .T.
-TabIndex = 45
-Top = 441
-Width = 75
-isnumeric = .T.
-Name = "txtImpIVA105"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta18
-************************************************************
-*** PROPIEDADES ***
-Caption = "Perc. IIBB.:"
-Height = 15
-Left = 226
-Top = 467
-Width = 63
-TabIndex = 34
-Name = "Clsetiqueta18"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtPorIIBB
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 297
-ReadOnly = .T.
-TabIndex = 40
-Top = 464
-Width = 44
-isnumeric = .T.
-Name = "txtPorIIBB"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtImpIIBB
-************************************************************
-*** PROPIEDADES ***
-Enabled = .F.
-Height = 21
-Left = 342
-ReadOnly = .T.
-TabIndex = 43
-Top = 464
-Width = 75
-isnumeric = .T.
-Name = "txtImpIIBB"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsdelete
-************************************************************
-*** PROPIEDADES ***
-Top = 143
-Left = 727
-Height = 44
-Width = 45
-Name = "Clsdelete"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp
-
-lnResp = MESSAGEBOX("Está seguro que desea eliminar este ítem?", 0+4, Thisform.Caption)
-
-IF lnResp = 6 THEN
-	SELECT vtadcp 
-	DELETE 
-
-	Thisform.grdDetalle.Refresh()
-
-	Thisform.sumar_items()
-	Thisform.calcular_ret_iibb()
-ENDIF 
-ENDPROC
-
-
-************************************************************
-OBJETO: Clsetiqueta7
-************************************************************
-*** PROPIEDADES ***
-Caption = "Leyenda:"
-Height = 15
-Left = 11
-Top = 118
-Width = 72
-TabIndex = 22
-Name = "Clsetiqueta7"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtobserv
-************************************************************
-*** PROPIEDADES ***
-Enabled = .T.
-Height = 21
-Left = 93
-TabIndex = 18
-Top = 113
-Width = 550
-Name = "txtobserv"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: frm_ncnd_cc_sf
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 8, 5, 14, 11, 29, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
 OBJETO: cls_form_ctacte_fe
 ************************************************************
 *** PROPIEDADES ***
@@ -13581,1281 +11883,6 @@ ENDPROC
 
 ************************************************************
 OBJETO: cls_busca_fcorigen_sf
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 8, 5, 14, 11, 29, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: frm_ncnd_cc_fe
-************************************************************
-*** PROPIEDADES ***
-DoCreate = .T.
-WindowState = 0
-aut_numero = 
-aut_cae = 
-aut_cae_vto = 
-aut_resultado = 
-aut_motivo = 
-id_ventasc = 0
-envcbte = .F.
-mailfc = 
-printcbte = .F.
-qr_image = 
-oticket = 
-cli_idtipodoc = 0
-Name = "frm_ncnd_cc_fe"
-Clsetiqueta1.Name = "Clsetiqueta1"
-Clsetiqueta2.Name = "Clsetiqueta2"
-Clsetiqueta3.Name = "Clsetiqueta3"
-txtOperacion.Name = "txtOperacion"
-txtPtoVta.Name = "txtPtoVta"
-TXTNROCBTE.Name = "TXTNROCBTE"
-txtImporte.Name = "txtImporte"
-Clsetiqueta4.Name = "Clsetiqueta4"
-sel_Conceptos.txtCodigo.Name = "txtCodigo"
-sel_Conceptos.txtDescripcion.Name = "txtDescripcion"
-sel_Conceptos.Name = "sel_Conceptos"
-Clsetiqueta5.Name = "Clsetiqueta5"
-chkIVA21.Alignment = 0
-chkIVA21.Name = "chkIVA21"
-chkIVA105.Alignment = 0
-chkIVA105.Name = "chkIVA105"
-Clsetiqueta6.Name = "Clsetiqueta6"
-txtImporteNeto.Name = "txtImporteNeto"
-txtIVA21.Name = "txtIVA21"
-txtIVA105.Name = "txtIVA105"
-txtImpTotal.Name = "txtImpTotal"
-btnAgregar.Name = "btnAgregar"
-grdDetalle.COLUMN1.Header1.Name = "Header1"
-grdDetalle.COLUMN1.Text1.Name = "Text1"
-grdDetalle.COLUMN1.Name = "COLUMN1"
-grdDetalle.COLUMN2.Header1.Name = "Header1"
-grdDetalle.COLUMN2.Text1.Name = "Text1"
-grdDetalle.COLUMN2.Name = "COLUMN2"
-grdDetalle.COLUMN3.Header1.Name = "Header1"
-grdDetalle.COLUMN3.Text1.Name = "Text1"
-grdDetalle.COLUMN3.Name = "COLUMN3"
-grdDetalle.COLUMN4.Header1.Name = "Header1"
-grdDetalle.COLUMN4.Text1.Name = "Text1"
-grdDetalle.COLUMN4.Name = "COLUMN4"
-grdDetalle.COLUMN5.Header1.Name = "Header1"
-grdDetalle.COLUMN5.Text1.Name = "Text1"
-grdDetalle.COLUMN5.Name = "COLUMN5"
-grdDetalle.COLUMN6.Header1.Name = "Header1"
-grdDetalle.COLUMN6.Text1.Name = "Text1"
-grdDetalle.COLUMN6.Name = "COLUMN6"
-grdDetalle.COLUMN7.Header1.Name = "Header1"
-grdDetalle.COLUMN7.Text1.Name = "Text1"
-grdDetalle.COLUMN7.Name = "COLUMN7"
-grdDetalle.COLUMN8.Header1.Name = "Header1"
-grdDetalle.COLUMN8.Text1.Name = "Text1"
-grdDetalle.COLUMN8.Name = "COLUMN8"
-grdDetalle.COLUMN9.Header1.Name = "Header1"
-grdDetalle.COLUMN9.Text1.Name = "Text1"
-grdDetalle.COLUMN9.Name = "COLUMN9"
-grdDetalle.COLUMN10.Header1.Name = "Header1"
-grdDetalle.COLUMN10.Text1.Name = "Text1"
-grdDetalle.COLUMN10.Name = "COLUMN10"
-grdDetalle.COLUMN11.Header1.Name = "Header1"
-grdDetalle.COLUMN11.Text1.Name = "Text1"
-grdDetalle.COLUMN11.Name = "COLUMN11"
-grdDetalle.COLUMN12.Header1.Name = "Header1"
-grdDetalle.COLUMN12.Text1.Name = "Text1"
-grdDetalle.COLUMN12.Name = "COLUMN12"
-grdDetalle.COLUMN13.Header1.Name = "Header1"
-grdDetalle.COLUMN13.Text1.Name = "Text1"
-grdDetalle.COLUMN13.Name = "COLUMN13"
-grdDetalle.COLUMN14.Header1.Name = "Header1"
-grdDetalle.COLUMN14.Text1.Name = "Text1"
-grdDetalle.COLUMN14.Name = "COLUMN14"
-grdDetalle.COLUMN15.Header1.Name = "Header1"
-grdDetalle.COLUMN15.Text1.Name = "Text1"
-grdDetalle.COLUMN15.Name = "COLUMN15"
-grdDetalle.COLUMN16.Header1.Name = "Header1"
-grdDetalle.COLUMN16.Text1.Name = "Text1"
-grdDetalle.COLUMN16.Name = "COLUMN16"
-grdDetalle.COLUMN17.Header1.Name = "Header1"
-grdDetalle.COLUMN17.Text1.Name = "Text1"
-grdDetalle.COLUMN17.Name = "COLUMN17"
-grdDetalle.COLUMN18.Header1.Name = "Header1"
-grdDetalle.COLUMN18.Text1.Name = "Text1"
-grdDetalle.COLUMN18.Name = "COLUMN18"
-grdDetalle.COLUMN19.Header1.Name = "Header1"
-grdDetalle.COLUMN19.Text1.Name = "Text1"
-grdDetalle.COLUMN19.Name = "COLUMN19"
-grdDetalle.COLUMN20.Header1.Name = "Header1"
-grdDetalle.COLUMN20.Text1.Name = "Text1"
-grdDetalle.COLUMN20.Name = "COLUMN20"
-grdDetalle.Name = "grdDetalle"
-SUBTOTAL.Name = "SUBTOTAL"
-txtSubTotal.Name = "txtSubTotal"
-Clsetiqueta9.Name = "Clsetiqueta9"
-txtTotal.Name = "txtTotal"
-btnGrabar.Name = "btnGrabar"
-BTNCERRAR.Name = "BTNCERRAR"
-Clsetiqueta10.Name = "Clsetiqueta10"
-Sel_Banco.txtCodigo.Name = "txtCodigo"
-Sel_Banco.txtDescripcion.Name = "txtDescripcion"
-Sel_Banco.Name = "Sel_Banco"
-Clsetiqueta11.Name = "Clsetiqueta11"
-txtNroCheque.Name = "txtNroCheque"
-Clsetiqueta12.Name = "Clsetiqueta12"
-Clsetiqueta13.Name = "Clsetiqueta13"
-txtPorIVA21.Height = 21
-txtPorIVA21.Left = 298
-txtPorIVA21.Top = 418
-txtPorIVA21.Width = 55
-txtPorIVA21.Name = "txtPorIVA21"
-txtPorIVA105.Height = 21
-txtPorIVA105.Left = 298
-txtPorIVA105.Top = 441
-txtPorIVA105.Width = 55
-txtPorIVA105.Name = "txtPorIVA105"
-txtImpIVA21.Left = 355
-txtImpIVA21.Top = 418
-txtImpIVA21.Name = "txtImpIVA21"
-txtImpIVA105.Left = 355
-txtImpIVA105.Top = 441
-txtImpIVA105.Name = "txtImpIVA105"
-Clsetiqueta18.Name = "Clsetiqueta18"
-txtPorIIBB.Height = 21
-txtPorIIBB.Left = 298
-txtPorIIBB.Top = 464
-txtPorIIBB.Width = 55
-txtPorIIBB.Name = "txtPorIIBB"
-txtImpIIBB.Left = 355
-txtImpIIBB.Top = 464
-txtImpIIBB.Name = "txtImpIIBB"
-clsdelete.Name = "clsdelete"
-Clsetiqueta7.Name = "Clsetiqueta7"
-txtObserv.Name = "txtObserv"
-
-*** METODOS ***
-PROCEDURE fe_convertir_tipodoc
-PARAMETERS tcTipoDoc
-LOCAL lnResultado
-
-lnResultado = 99 && Código que corresponde a sin identificación en el diccionario
-
-DO CASE
-	CASE ALLTRIM(tcTipoDoc) == "CUIT"
-		lnResultado = 80
-	CASE ALLTRIM(tcTipoDoc) == "CUIL"
-		lnResultado = 86
-	CASE ALLTRIM(tcTipoDoc) == "CI"
-		lnResultado = 87
-	CASE ALLTRIM(tcTipoDoc) == "LE"
-		lnResultado = 89
-	CASE ALLTRIM(tcTipoDoc) == "LC"
-		lnResultado = 90
-	CASE ALLTRIM(tcTipoDoc) == "CIE"
-		lnResultado = 91
-	CASE ALLTRIM(tcTipoDoc) == "PAS"
-		lnResultado = 94
-	CASE ALLTRIM(tcTipoDoc) == "DNI"
-		lnResultado = 96
-ENDCASE
-
-RETURN lnResultado
-ENDPROC
-PROCEDURE fe_get_tipocbte_afip
-PARAMETERS tc_letra
-
-DO CASE
-	CASE ALLTRIM(thisform.cbte) == "FC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 1
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 6
-			CASE ALLTRIM(tc_letra) == "C" 
-				RETURN 11
-		ENDCASE
-	CASE ALLTRIM(thisform.cbte) == "ND"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 2
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 7
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 12
-		ENDCASE
-	CASE ALLTRIM(thisform.cbte) == "NC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 3
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 8
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 13
-		ENDCASE	
-ENDCASE
-
-RETURN -1
-
-ENDPROC
-PROCEDURE fe_set_cae
-LOCAL loCommand, lcSql
-LOCAL loDT, ldFecVto
-LOCAL lcAnio, lcMes, lcDia
-
-loDT = CREATEOBJECT("datetime")
-loCommand = CREATEOBJECT("odbc_command")
-lcSql = ""
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-lcSql = "update ventascab "
-lcSql = lcSql + "set "
-lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
-lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
-lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
-lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
-lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
-lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
-lcSql = lcsql + "	aut_tipoCbte = '" + REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)) + "', "
-lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
-lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
-
-goConn.BeginTransaction()
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "update cc_cli set nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + " "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-goConn.Commit()
-
-RETURN .T.
-
-
-ENDPROC
-PROCEDURE enviar_wsafipfe
-LOCAL llRes
-LOCAL lnPtoVta
-LOCAL lcTipoDoc
-LOCAL lnRetAlva
-LOCAL lnCantIVA 
-LOCAL lnImpBase21
-LOCAL lnImpBase105
-LOCAL lcNumero 
-LOCAL lcMensaje
-LOCAL lnModo
-LOCAL lnTotalIVA
-LOCAL lnImpBaseSIVA
-LOCAL lnIndice
-LOCAL loRes
-LOCAL lcSql
-
-lcTipoDoc = ""
-lnPtoVta = INT(VAL(getConfig("PTOVTA")))
-lnRetAlva = 0
-lnCantIVA = 0
-lnImpBase21 = 0
-lnImpBase105 = 0
-lnImpBaseSIVA = 0
-lcNumero = ""
-lcMensaje = ""
-lnTotalIVA = 0.00
-lnIndice = 0
-loRes = CREATEOBJECT("odbc_result")
-
-lcTipoDoc = Thisform.tipodocref
-
-lnModo = IIF(getGlobalCFG("FEDEBUG"), 0, 1)
-llRes = Thisform.fe.iniciar(lnModo, getGlobalCFG("FECUIT"), SYS(5) + SYS(2003) + "\wsafip\" + getGlobalCFG("FE_FILE"), ALLTRIM(getGlobalCFG("FE_LIC")))
-Thisform.fe.tls = getGlobalCFG("FETLS")
-
-IF !llRes THEN
-	MESSAGEBOX("Falló al iniciar: " + Thisform.fe.ultimoMensajeError, 0+32, Thisform.Caption)
-	RETURN .F.
-EndIf
-
-&& Verifico si el servicio está en línea
-IF !Thisform.fe.dummy() THEN 
-	MESSAGEBOX("Los Web Services de AFIP no se encuentran disponibles.",0+16,Thisform.Caption)
-	Return .F.
-ENDIF 
-
-Thisform.fe.ArchivoCertificadoPassWord = ALLTRIM(getGlobalCFG("FE_PWD"))
-IF !Thisform.ticket_valido() THEN
-	MESSAGEBOX("No se pudo generar Ticket de Acceso", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-Thisform.fe.ArchivoXMLRecibido = SYS(5) + SYS(2003) + "\wsafip\xml\rec_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.fe.archivoXMLEnviado = SYS(5) + SYS(2003) + "\wsafip\xml\env_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.qr_image = getGlobalCFG("QRPATH") + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".jpg"
-
-lnRetAlva = Thisform.fe.f1CompUltimoAutorizado(lnPtoVta, Thisform.fe_get_tipocbte_afip(ALLTRIM(lcTipoDoc)))
-
-Thisform.fe.F1CabeceraCantReg = 1
-Thisform.fe.F1CabeceraPtoVta = lnPtoVta
-Thisform.fe.F1CabeceraCbteTipo = Thisform.fe_get_tipocbte_afip(ALLTRIM(lcTipoDoc))
-Thisform.fe.F1DetalleDocTipo = Thisform.fe_convertir_tipodoc(Thisform.cli_tipodoc)
-Thisform.fe.F1DetalleDocNro = Thisform.cli_cuit
-Thisform.fe.F1DetalleCbteDesde = lnRetAlva + 1
-Thisform.fe.F1DetalleCbteHasta = lnRetAlva + 1
-
-* Condición IVA Receptor ID
-If getGlobalCFG("FE_IVAREC") THEN
-	Thisform.fe.F1DetalleCondicionIvaReceptor = Thisform.condicion_iva_receptor_id
-EndIf
-
-Thisform.fe.F1DetalleCbteFch = ALLTRIM(STR(YEAR(DATE()))) ;
-	+ IIF(LEN(ALLTRIM(STR(MONTH(DATE())))) < 2, "0" + ALLTRIM(STR(MONTH(DATE()))), ALLTRIM(STR(MONTH(DATE())))) ;
-	+ IIF(LEN(ALLTRIM(STR(DAY(DATE())))) < 2, "0" + ALLTRIM(STR(DAY(DATE()))), ALLTRIM(STR(DAY(DATE()))))
-
-&& Busco los datos del comprobante asociado
-lcSql = "CALL ventascab_getById (?idVentaC)"
-lcSql = loRes.AddParameter(lcSql, "idVentaC", ALLTRIM(STR(This.idVentasCab)), .f., .f.)
-loRes.Cursor_Name = "cur_vrel"
-loRes.ActiveConnection = goConn.ActiveConnection
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-Thisform.fe.F1DetalleCbtesAsocItemCantidad = 1
-Thisform.fe.F1DetalleCbtesAsocFecha = ALLTRIM(STR(YEAR(cur_vrel.fecEmision))) ;
-	+ IIF(LEN(ALLTRIM(STR(MONTH(cur_vrel.fecEmision)))) < 2, "0" + ALLTRIM(STR(MONTH(cur_vrel.fecEmision))), ALLTRIM(STR(MONTH(cur_vrel.fecEmision)))) ;
-	+ IIF(LEN(ALLTRIM(STR(DAY(cur_vrel.fecEmision)))) < 2, "0" + ALLTRIM(STR(DAY(cur_vrel.fecEmision))), ALLTRIM(STR(DAY(cur_vrel.fecEmision))))
-Thisform.fe.F1DetalleCbtesAsocTipo = cur_vrel.aut_tipoCbte
-*Thisform.fe.F1DetalleCbtesAsocCUIT = INT(VAL(cur_vrel.nroDoc))
-Thisform.fe.F1DetalleCbtesAsocPtoVta = cur_vrel.ptoVta
-Thisform.fe.F1DetalleCbtesAsocNro = cur_vrel.numCbte
-
-loRes.Close_Query()
-
-&& Tengo que calcular la suma del neto de los articulos con 21 de IVA y con el 10.5 de IVA por separado
-
-SELECT vtadcp
-GO TOP
-DO WHILE !EOF("vtadcp")
-	IF vtadcp.ivaPor = 21 THEN
-		lnImpBase21 = lnImpBase21 + vtadcp.impNeto		
-	ENDIF
-	
-	IF vtadcp.ivaPor = 10.5 THEN
-		lnImpBase105 = lnImpBase105 + vtadcp.impNeto
-	ENDIF
-	
-	IF vtadcp.ivaPor = 0 THEN
-		lnImpBaseSIVA = lnImpBaseSIVA + vtadcp.impNeto
-	ENDIF
-
-	SELECT vtadcp
-	SKIP
-ENDDO
-
-IF Thisform.fe.F1CabeceraCbteTipo <> 11 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 12 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 13 THEN
-
-	lnIndice = 0
-	lnTotalIVA = 0.00
-	IF lnImpBase21 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 5
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase21, 2)
-		Thisform.fe.F1DetalleIvaImporte = Thisform.txtImpIVA21.Value
-		lnTotalIVA = lnTotalIVA + Thisform.txtImpIVA21.Value
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBase105 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 4
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase105, 2)
-		Thisform.fe.F1DetalleIvaImporte = Thisform.txtImpIVA105.Value
-		lnTotalIVA = lnTotalIVA + Thisform.txtImpIVA105.Value
-		lnIndice = lnIndice + 1	
-	ENDIF
-
-	IF lnImpBaseSIVA <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 3
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBaseSIVA, 2)
-	ENDIF
-ENDIF
-
-&& Agrego los conceptos de IIBB
-
-IF Thisform.txtPorIIBB.Value <> 0 THEN
-	Thisform.FE.F1DetalleTributoItemCantidad = 1
-	Thisform.FE.f1IndiceItem   = 0
-	Thisform.FE.F1DetalleTributoId  = 2
-	Thisform.FE.F1DetalleTributoDesc = "IIBB Pcia Bs AS"
-	Thisform.FE.F1DetalleTributoBaseImp = Thisform.txtsubTotal.Value 
-	Thisform.FE.F1DetalleTributoAlic = Thisform.txtPorIIBB.Value
-	Thisform.FE.F1DetalleTributoImporte = Thisform.txtimpIIBB.Value 
-ENDIF
-
-Thisform.fe.F1DetalleConcepto = 1
-Thisform.fe.F1DetalleImpNeto = ROUND(Thisform.txtSubTotal.Value, 2)
-Thisform.fe.F1DetalleImpTotalConc = 0
-Thisform.fe.F1DetalleImpIva = lnTotalIVA
-Thisform.fe.F1DetalleImpOpEx = 0
-Thisform.fe.F1DetalleImpTrib = Thisform.FE.F1DetalleTributoImporte
-Thisform.fe.F1DetalleMonId = "PES"
-Thisform.fe.F1DetalleMonCotiz = 1
-Thisform.fe.F1DetalleImpTotal = Thisform.txtTotal.Value
-
-* Agrego la generación del QR
-Thisform.fe.f1DEtalleQrArchivo = Thisform.qr_image
-Thisform.fe.f1DEtalleQrFormato = 1
-Thisform.fe.f1DetalleQrResolucion = 5
-Thisform.fe.f1DetalleQrTolerancia = 0
-
-llRes = Thisform.fe.f1CAESolicitar()
-
-IF llRes THEN
-	lcNumero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-		REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde)))) + ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde))
-	
-	Thisform.ptovta = lnPtoVta
-	Thisform.nrocbte = INT(VAL(Thisform.fe.F1RespuestaDetalleCbteDesdeS))
-	
-	lcMensaje = "CAE: " + Thisform.fe.F1RespuestaDetalleCae + CHR(13)+ CHR(10)
-	lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaDetalleCaeFchVto + CHR(13) + CHR(10)
-	lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-	lcMensaje = lcMensaje + "PROCESO: " + Thisform.fe.F1RespuestaReProceso
-	MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-	
-	Thisform.aut_numero = lcNumero
-	Thisform.aut_cae = Thisform.fe.F1RespuestaDetalleCae
-	Thisform.aut_cae_vto = Thisform.fe.F1RespuestaDetalleCaeFchVto
-	Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-	Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-ELSE
-	IF !(ISNULL(Thisform.fe.F1RespuestaReProceso) .OR. Thisform.fe.F1RespuestaReProceso == "R") THEN
-		lcNumero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-			REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde)))) + ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde))
-		
-		&& lcMensaje = "CAE: " + Thisform.fe.F1RespuestaDetalleCae + CHR(13)+ CHR(10)
-		lcMensaje = "ATENCION: Factura rechazada por el AFIP" + CHR(13) + CHR(10)
-		&&lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaDetalleCaeFchVto + CHR(13) + CHR(10)		
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		&&lcMensaje = lcMensaje + "PROCESO: " + Thisform.fe.F1RespuestaReProceso
-		MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-		MESSAGEBOX("Recomendación: Elimine este comprobante y vuelva a generarlo por favor.", 0+48, Thisform.Caption)
-		
-		Thisform.aut_numero = lcNumero
-		Thisform.aut_cae = Thisform.fe.F1RespuestaDetalleCae
-		Thisform.aut_cae_vto = Thisform.fe.F1RespuestaDetalleCaeFchVto
-		Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-		Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-		RETURN .F.
-	ELSE
-		lcMensaje = "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ERROR: " + Thisform.fe.f1ErrorMsg1 + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ULTIMO: " + Thisform.fe.UltimoMensajeError
-		MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-		
-		Thisform.aut_numero = lcNumero
-		Thisform.aut_cae = ""
-		Thisform.aut_cae_vto = ""
-		Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-		Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-		RETURN .F.
-	ENDIF
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE calc_digito_verificador
-&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
-
-PARAMETERS tcCodigo
-
-LOCAL lnDigito
-LOCAL lnSumaE1
-LOCAL lnSumaE3
-LOCAL lnProductoE2
-LOCAL lnSumaE4
-LOCAL lnMin
-LOCAL lnPos
-
-lnDigito = 0
-lnSumaE1 = 0
-lnSumaE3 = 0
-lnSumaE4 = 0
-lnMin = 0
-
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(i, 2) <> 0 THEN
-		&& Etapa 1 (posiciones impares)
-		lnSumaE1 = lnSumaE1 + lnDigito
-	ELSE
-		&& Etapa 3 (posiciones pares)
-		lnSumaE3 = lnSumaE3 + lnDigito
-	ENDIF
-NEXT i
-
-lnProductoE2 = lnSumaE1 * 3 && Etapa 2
-lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
-
-&& Etapa 5
-lnPos = 0
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
-		IF lnPos = 0 THEN
-			lnMin = lnDigito
-		ELSE
-			IF lnDigito < lnMin THEN
-				lnMin = lnDigito
-			ENDIF
-		ENDIF
-		
-		lnPos = lnPos + 1
-	ENDIF
-NEXT i
-
-RETURN lnMin
-ENDPROC
-PROCEDURE ticket_valido
-LOCAL llTkValido
-LOCAL lcTicket
-LOCAL lcFileTicket
-LOCAL lcTK
-LOCAL hndFile
-LOCAL llModoLocal
-
-llTkValido = .F.
-lcTicket = ""
-lcTK = ""
-lcFileTicket = getGlobalCFG("FE_TICKACC")
-llModoLocal = getGlobalCFG("FELOCAL")
-
-IF !llModoLocal THEN
-	** Si el ticket se está transfiriendo al cloud server, entonces,
-	** Descargo el último ticket que está en el server para validar luego
-	** si es válido o no.
-	IF DATE() > FDATE(lcFileTicket) THEN
-		* Si la fecha del archivo no coincide entonces descargo del FTP
-		descargar_ticket_acceso(lcFileTicket)
-	ENDIF
-ENDIF
-
-IF FILE(ALLTRIM(lcFileTicket)) THEN
-	hndFile = FOPEN(lcFileTicket, 12)
-	IF hndFile < 0 THEN
-		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
-		=FCLOSE(hndFile)
-	ELSE
-		=FCLOSE(hndFile)
-		
-		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
-		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
-		
-		IF Thisform.fe.f1TicketEsValido THEN
-			llTkValido = .T.
-		ELSE
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-	
-	IF !llTkValido THEN
-		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
-		** generar con los nuevos datos.
-		DELETE FILE ALLTRIM(lcFileTicket)
-		
-		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-			lcTK = Thisform.fe.f1GuardarTicketAcceso()
-			hndFile = FCREATE(lcFileTicket)
-			
-			IF hndFile < 0 THEN
-				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
-			ELSE
-				=FWRITE(hndFile, lcTK)
-				llTkValido = .T.
-			ENDIF
-			
-			=FCLOSE(hndFile)
-			
-			IF !llModoLocal THEN
-				* Envío el ticket de acceso al FTP
-				enviar_ticket_acceso(lcFileTicket)
-			ENDIF
-		ELSE
-			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-ELSE
-	** Si no existe el archivo entonces lo creo y lo envío al servidor.
-	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-		lcTK = Thisform.fe.f1GuardarTicketAcceso()
-		hndFile = FCREATE(lcFileTicket)
-		
-		IF hndFile < 0 THEN
-			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
-		ELSE
-			=FWRITE(hndFile, lcTK)
-			llTkValido = .T.
-		ENDIF
-		
-		=FCLOSE(hndFile)
-
-		IF !llModoLocal THEN
-			* Envío el ticket de acceso al FTP
-			enviar_ticket_acceso(lcFileTicket)
-		ENDIF
-	ELSE
-		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-		llTkValido = .F.			
-	ENDIF	
-ENDIF
-
-RETURN llTkValido
-ENDPROC
-PROCEDURE imprimir
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.impIVA105, m.impIVA21, m.impNeto, m.impFinal, m.porIIBB, m.impIIBB, m.observ, m.qr
-LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
-LOCAL loResCli, loResLoc, loResPcia
-LOCAL m.cae, m.caevto, lcAnio, lcMes, lcDia
-LOCAL m.codigoCbte, m.barcode, m.code
-LOCAL lnIdNum, loPDF, lcFileName
-LOCAL lcNomEmp, m.vendedor, llUsaTicket
-LOCAL m.motivo, lcRepNameCP
-
-lcNomEmp = getconfig("NOMEMP")
-loNumerador = CREATEOBJECT("odbc_result")
-loResCli = CREATEOBJECT("odbc_result")
-loResLoc = CREATEOBJECT("odbc_result")
-loResPcia = CREATEOBJECT("odbc_result")
-loResSitIVA = CREATEOBJECT("odbc_result")
-lcSql = ""
-lnIdNum = 0
-m.vendedor = ""
-
-m.Total = 0.00
-m.tipoDoc = ""
-m.NroCbte = ""
-m.leyenda = ""
-m.Fecha = DATETIME()
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.tipoDoc = Thisform.tipodocref
-m.ptoVta = Thisform.ptovta
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-m.observ = ""
-m.codigoCbte = REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo))
-m.barcode = ""
-m.code = ""
-m.qr = Thisform.qr_image
-lcRepNameCP = ""
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-&& Me fijo cuantas copias tengo que imprimir
-lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-lnIdNum = cur_num.idNum
-lcRepNameCP = cur_num.repnamecp
-loNumerador.close_query()
-
-lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' "
-lcSql = lcSql + " AND idNum = " + ALLTRIM(STR(lnIdNum))
-
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-IF RECCOUNT("cur_num") = 0 THEN
-	MESSAGEBOX("La impresora no está instalada para este puesto de trabajo", 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-lcPrinterName = ALLTRIM(cur_num.impresora)
-lnCantCpia = cur_num.copias
-llUsaTicket = cur_num.usa_ticket
-
-loNumerador.Close_Query()
-
-&& Recupero los datos del cliente
-lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
-loResCli.cursor_name = "cur_Cliente"
-loResCli.ActiveConnection = goConn.ActiveConnection
-loResCli.OpenQuery(lcSql)
-
-m.NroCli = cur_Cliente.idCliente
-m.RazSoc = cur_Cliente.razSoc
-m.Telefono = cur_Cliente.telefono
-m.direccion = cur_Cliente.direccion
-
-&& Levanto los datos de la localidad que tiene asignada el cliente
-lcSql = "SELECT * FROM localidad WHERE idLocalid = " + ALLTRIM(STR(cur_Cliente.idLocalid))
-loResLoc.Cursor_Name = "cur_Loc"
-loResLoc.ActiveConnection = goConn.ActiveConnection
-loResLoc.OpenQuery(lcSql)
-
-m.localidad = ALLTRIM(cur_Loc.descripcio)
-m.codPostal = ALLTRIM(cur_Loc.codPostal)
-
-&& Levanto los datos de la provincia que tiene asignada la localidad
-lcSql = "SELECT * FROM provincias WHERE idProvin = " + ALLTRIM(STR(cur_Loc.idProvin))
-loResPcia.Cursor_Name = "cur_Pcia"
-loResPcia.ActiveConnection = goConn.ActiveConnection
-loResPcia.OpenQuery(lcSql)
-
-m.pcia = ALLTRIM(cur_Pcia.descripcio)
-
-loResPcia.Close_Query()
-loResLoc.Close_Query()
-
-m.nroCUIT = cur_Cliente.nroCUIT
-
-&& Levanto los datos de la situación de IVA que tiene el cliente
-lcSql = "SELECT * FROM sitiva WHERE idSitIVA = " + ALLTRIM(STR(cur_Cliente.idSitIVA))
-loResSitIVA.Cursor_Name = "cur_SitIVA"
-loResSitIVA.ActiveConnection = goConn.ActiveConnection
-loResSitIVA.OpenQuery(lcSql)
-
-m.TipoIVA = cur_SitIVA.descripcio
-
-&& Si es monotributista levanto la leyenda
-IF cur_SitIVA.idSitIVA = 6 THEN
-	IF !llUsaTicket THEN
-		m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
-			+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
-	ELSE
-		m.motivo =   "El crédito fiscal discriminado en el presente" + CHR(13) + CHR(10) ;
-				   + "comprobante, sólo podrá ser computado a " + CHR(13) + CHR(10) ;
-				   + "efectos del Régimen de Sostenimiento e " + CHR(13) + CHR(10) ;
-				   + "Inclusión Fiscal para Pequeños Contri-" + CHR(13) + CHR(10) ;
-				   + "buyentes de la Ley Nº 27.618"
-	ENDIF
-ELSE
-	m.motivo = ""
-ENDIF
-
-loResSitIVA.Close_Query()
-loResCli.Close_Query()
-
-&& Incorporo los datos devueltos por la facturación electrónica
-m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
-m.cae = Thisform.aut_cae
-m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
-
-&& Generación del código de barra
-m.barcode = ALLTRIM(Thisform.cli_cuit)
-m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
-m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
-m.barcode = m.barcode + ALLTRIM(m.cae)
-m.barcode = m.barcode + ALLTRIM(lcAnio)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
-m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
-m.code = m.barcode
-m.barcode = getcodbarras(m.barcode)
-
-m.impIVA105 = Thisform.txtImpIVA105.Value 
-m.impIVA21 = Thisform.txtImpIVA21.Value 
-m.impNeto = Thisform.txtSubTotal.Value
-m.impFinal = Thisform.txtTotal.Value
-m.porIIBB = Thisform.txtporIIBB.Value 
-m.impIIBB = Thisform.txtImpIIBB.Value
-m.observ = Thisform.txtobserv.Value
- 
-IF ALLTRIM(Thisform.Cbte) == "NC"
-	m.Leyenda = "NOTA DE CREDITO"
-	m.Total = Thisform.txtTotal.Value
-ELSE
-	IF ALLTRIM(Thisform.Cbte) == "ND"
-		m.leyenda = "NOTA DE DEBITO"
-		m.Total = Thisform.txtTotal.Value
-	ENDIF
-ENDIF
-
-IF thisform.printcbte THEN
-	SET PRINTER TO NAME ALLTRIM(lcPrinterName)
-	SELECT vtadcp
-
-	FOR i = 1 TO lnCantCpia
-		IF ALLTRIM(m.tipodoc) == "A" THEN
-			SELECT vtadcp
-			IF llUsaTicket THEN
-				****************************************************************************
-				* Envío a imprimir el ticket
-				****************************************************************************
-				Thisform.oticket.limpiar_datos()
-				Thisform.oticket.codigo_cbte = m.codigoCbte
-				Thisform.oticket.leyenda = m.leyenda
-				Thisform.oticket.letra = m.tipoDoc
-				Thisform.oticket.nro_cbte = m.nroCbte
-				Thisform.oticket.fecha_cbte = m.fecha
-				Thisform.oticket.fecha_vencimiento = m.fecha
-				Thisform.oticket.numero_cliente = m.NroCli
-				Thisform.oticket.razon_social = m.razSoc
-				Thisform.oticket.direccion = m.direccion
-				Thisform.oticket.codigo_postal = m.codPostal 
-				Thisform.oticket.localidad = m.localidad
-				Thisform.oticket.provincia = m.pcia
-				Thisform.oticket.tipo_iva = m.TipoIVA
-				SELECT vtadcp
-				GO TOP
-				DO WHILE !EOF("vtadcp")
-					Thisform.oticket.add_item(vtadcp.codPlanCta, SUBSTR(vtadcp.descPlan, 1, 60), 0,;
-							vtadcp.ivaPor, vtadcp.impNeto, vtadcp.total)
-					SELECT vtadcp
-					SKIP
-				ENDDO
-				Thisform.oticket.total_neto = m.impNeto
-				Thisform.oticket.total_imp_iva21 = m.impIVA21
-				Thisform.oticket.total_imp_iva105 = m.impIVA105
-				Thisform.oticket.total = m.Total
-				Thisform.oticket.qr_image = Thisform.qr_image
-				Thisform.oticket.nro_cae = m.cae
-				THisform.oticket.vto_cae = m.caevto
-				Thisform.oticket.motivo = m.motivo
-				Thisform.oticket.imprimir()			
-			ELSE
-				REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
-			ENDIF
-		ELSE 
-			SELECT vtadcp
-			IF llUsaTicket THEN
-				****************************************************************************
-				* Envío a imprimir el ticket
-				****************************************************************************
-				Thisform.oticket.limpiar_datos()
-				Thisform.oticket.codigo_cbte = m.codigoCbte
-				Thisform.oticket.leyenda = m.leyenda
-				Thisform.oticket.letra = m.tipoDoc
-				Thisform.oticket.nro_cbte = m.nroCbte
-				Thisform.oticket.fecha_cbte = m.fecha
-				Thisform.oticket.fecha_vencimiento = m.fecha
-				Thisform.oticket.numero_cliente = m.NroCli
-				Thisform.oticket.razon_social = m.razSoc
-				Thisform.oticket.direccion = m.direccion
-				Thisform.oticket.codigo_postal = m.codPostal 
-				Thisform.oticket.localidad = m.localidad
-				Thisform.oticket.provincia = m.pcia
-				Thisform.oticket.tipo_iva = m.TipoIVA
-				SELECT vtadcp
-				GO TOP
-				DO WHILE !EOF("vtadcp")
-					Thisform.oticket.add_item(vtadcp.codPlanCta, SUBSTR(vtadcp.descPlan, 1, 60), 0,;
-							vtadcp.ivaPor, vtadcp.impNeto, vtadcp.total)
-					SELECT vtadcp
-					SKIP
-				ENDDO
-				Thisform.oticket.total_neto = m.impNeto
-				Thisform.oticket.total_imp_iva21 = m.impIVA21
-				Thisform.oticket.total_imp_iva105 = m.impIVA105
-				Thisform.oticket.total = m.Total
-				Thisform.oticket.qr_image = Thisform.qr_image
-				Thisform.oticket.nro_cae = m.cae
-				THisform.oticket.vto_cae = m.caevto
-				Thisform.oticket.motivo = m.motivo
-				Thisform.oticket.imprimir()						
-			ELSE
-				REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
-			ENDIF
-		ENDIF
-	NEXT
-ENDIF
-
-&& Envío de mail automático
-IF thisform.envcbte THEN
-	lcFileName = SYS(5) + SYS(2003) + "\wsafip\ComprobantesPDF\" + this.cbte + "_" + m.NroCbte + ".pdf"
-	
-	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
-		loPDF.SetValue('output', lcFileName)
-		loPDF.SetValue('DisableOptionDialog', 'no') 
-		loPDF.SetValue('ConfirmOverwrite', 'no')
-		loPDF.SetValue('Showsettings', 'never') 
-		loPDF.SetValue('ShowSaveAS', 'nofile') 
-		loPDF.SetValue('ShowPdf', 'no') 
-		loPDF.WriteSettings(.t.)
-	
-	SET CONSOLE OFF
-	SET PRINTER TO NAME("Bullzip PDF Printer")
-	IF ALLTRIM(m.tipodoc) == "A" THEN
-		&& Imprime el comprobante de tipo "A"
-		SELECT vtadcp
-		REPORT FORM &lcRepNameCP NOCONSOLE TO PRINTER
-	ELSE
-		&& Imprime el comprobante de tipo "B"
-		SELECT vtadcp
-		REPORT FORM &lcRepNameCP NOCONSOLE TO PRINTER
-	ENDIF
-	SET PRINTER TO DEFAULT
-	SET CONSOLE ON
-	
-	WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
-	DO WHILE !FILE(lcFileName)
-		
-	ENDDO
-	
-	&&MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, thisform.Caption)
-	
-	TEXT TO lcMailMsg NOSHOW
-	Estimado cliente,
-	
-	Le adjuntamos el comprobante electrónico de su compra en formato PDF.
-	
-	Muchas gracias!
-	
-	Saludos cordiales,
-	
-	ENDTEXT
-	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILFIRMA") + CHR(13) + CHR(10)
-	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILEMP")
-	
-	&& Procedo a hacer el envío de mail
-	DO LOCFILE("FoxyPreviewer.App")
-	WITH _screen.oFoxyPreviewer	
-		.cEmailType = "PDF"
-		.nEmailMode = 2
-		.cEMailTo = thisform.mailfc
-		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
-		.cSMTPServer = getGlobalCFG("EMAILSMTP")
-		.cEmailFrom = getGlobalCFG("EMAILEMP") + " <" + getGlobalCFG("EMAILADDR") + ">"
-		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
-		.nSMTPPort = getGlobalCFG("EMAILPORT")
-		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
-		.cSMTPUserName = getGlobalCFG("EMAILUSR")
-		.cSMTPPassword = getGlobalCFG("EMAILPWD")
-		.lReadReceipt  = .F.
-		.lPriority = .F.
-		.cEmailBody = lcMailMsg
-		.SendEmailUsingCDO(lcFileName)
-	ENDWITH	
-ENDIF
-
-DO FoxyPreviewer.App WITH "Release"
-
-ENDPROC
-PROCEDURE Init
-DODEFAULT()
-Thisform.oTicket = CREATEOBJECT("cls_tickets")
-Thisform.oTicket.crear_cursor()
-ENDPROC
-PROCEDURE btnGrabar.Click
-LOCAL lcSql, loCommand, lnIdVentaC, lnPtoVta, lnIdVtasRel, loResCli
-LOCAL loNumerador, lnPtoVta, lnNroCbte, lnPorIVA21 
-LOCAL lnPorIVA105, lnImpIVA21, lnImpIVA105, lnIdVtaCP, lnIdCC_Cli
-LOCAL lnIdOper, lnSaldo, loDateTime
-LOCAL lnIdCondPago, lnIdSitIVA, lnIdVendedor, lnPorIIBB, lnImpIIBB, lnIdCC_CliOrig
-
-lcSql = ""
-loDateTime = CREATEOBJECT("datetime")
-loCommand = CREATEOBJECT("odbc_command")
-loResCli = CREATEOBJECT("odbc_result")
-lnIdVentaC = 0
-lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
-lnNroCbte = 0
-lnIdVtaCP = 0
-lnIdCC_Cli = 0
-lnPorIVA21 = 0.00
-lnImpIVA21 = 0.00
-lnPorIVA105 = 0.00
-lnImpIVA105 = 0.00
-lnIdOper = 0
-lnSaldo = 0.00
-lnIdVtasRel = 0
-lnIdCondPago = 0
-lnIdSitIVA = 0
-lnIdVendedor = 0
-lnPorIIBB = 0.00
-lnImpIIBB = 0.00
-lnIdCC_CliOrig = thisform.idcc_cli
-
-SELECT vtadcp
-IF RECCOUNT("vtadcp") = 0 THEN
-	MESSAGEBOX("Debe ingresar al menos un ítem del detalle", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
-loResCli.ActiveConnection = goConn.ActiveConnection
-loResCli.Cursor_Name = "cur_cli"
-
-IF !loResCli.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResCli.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_cli
-lnIdCondPago = cur_cli.idCondPago
-lnIdSitIVA = cur_cli.idSitIVA
-lnIdVendedor = cur_cli.idVendedor
-
-loResCli.Close_Query()
-
-SELECT vtadcp
-DO WHILE !EOF("vtadcp") 
-	IF vtadcp.ivaPor = 21 THEN
-		lnPorIVA21 = vtadcp.ivaPor
-		lnImpIVA21 = lnImpIVA21 + vtadcp.ivaImp
-	ELSE
-		lnPorIVA105 = vtadcp.ivaPor
-		lnImpIVA105 = lnImpIVA105 + vtadcp.ivaImp
-	ENDIF	
-
-	SELECT vtadcp
-	SKIP	
-ENDDO
-
-lnPorIIBB = Thisform.txtporIIBB.Value
-lnImpIIBB = Thisform.txtImpIIBB.Value
-
-goConn.BeginTransaction()	&& Inicio la transacción
- 
-&& Calculo el tipo de comprobante
-IF INT(VAL(ALLTRIM(getconfig("DEMO")))) == 0 THEN
-	Thisform.Tipodocref = Thisform.calcular_tipodoc()
-ELSE
-	Thisform.Tipodocref = "X"
-ENDIF
-
-lcSql = "SELECT * FROM numerador WHERE cbte = '" + ALLTRIM(Thisform.cbte) + "' AND tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "' AND ptoVta = " + ALLTRIM(STR(lnPtoVta))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-SELECT cur_num
-
-IF RECCOUNT("cur_num") = 0 THEN
-	MESSAGEBOX("No se encuentra configurado el numerador del comprobante " + ALLTRIM(Thisform.cbte) + " Punto de Venta: " + ALLTRIM(STR(lnPtoVta)) + " Letra: " + ALLTRIM(thisform.tipodocref), 0+48, thisform.Caption)
-	loNumerador.close_query()
-	RETURN .F.
-ENDIF
-
-SELECT cur_num
-lnNroCbte = 0
-THisform.ptovta = lnPtoVta
-Thisform.nrocbte = lnNroCbte
-Thisform.printerDevice = cur_num.impresora
-
-loNumerador.close_query()
-
-&& Actualizo el numerador
-lcSql = "update numerador set numActual = " + ALLTRIM(STR(lnNroCbte)) + ;
-	" where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "'"
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute()
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-lnIdVentaC = goConn.GetNextId("ventascab", "idVentasC")
-Thisform.id_ventasc = lnIdVentaC
-
-lcSql = "INSERT INTO ventascab ( "
-lcSql = lcSql + "idVentasC, idCliente, razSoc, idTipoDoc, nroDoc, fecEmision, fecVto, cbte, tipoDoc, ptoVta, numCbte, anulado, idCondPago, idSitIVA, idVendedor, "
-lcSql = lcSql + "impNeto, impFinal, porIVA21, impIVA21, porIVA105, impIVA105, porDesc1, "
-lcSql = lcSql + "porDesc2, porDesc3, porDesc4, impDesc1, impDesc2, impDesc3, impDesc4, totFact, Saldo, usuAlta, fecAlta, idHostAlta, porIIBB, impIIBB, observ) VALUES ("
-lcSql = lcSql + ALLTRIM(STR(lnIdVentaC)) + ", "
-lcSql = lcSql + ALLTRIM(STR(Thisform.idCliente)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_razsoc) + "', "
-lcSql = lcSql + ALLTRIM(STR(Thisform.cli_idTipoDoc)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_cuit) + "', "
-lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
-lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
-lcSql = lcSql + "'" + ALLTRIM(Thisform.cbte) + "', "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.tipodocref) + "', "
-lcSql = lcSql + ALLTRIM(STR(lnPtoVta)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", "
-lcSql = lcSql + "0, "
-lcSql = lcSql + ALLTRIM(STR(lnIdCondPago)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdVendedor)) + ", "
-lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorIVA21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIVA21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorIVA105, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIVA105, 10, 2)) + ", "
-lcSql = lcSql + "0, 0, 0, 0, 0, 0, 0, 0, "
-lcSql = lcSql + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", 0, "
-lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', "
-lcSql = lcSql + loDateTime.getDateTime() + ", "
-lcSql = lcSql + "'" + SYS(0) + "', "
-lcSql = lcSql + ALLTRIM(STR(lnPorIIBB, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIIBB, 10, 2)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(thisform.txtobserv.Value) + "') "
-*lcSql = lcSql + ALLTRIM(STR(lnIdCC_CliOrig)) + ")"
-
-loCommand.commandText = lcSql
-loCommand.ActiveConnection = goConn.ActiveConnection
-
-IF !loCommand.Execute() then
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-&& Grabar el detalle en VTADCP
-SELECT vtadcp
-GO TOP
-DO WHILE !EOF("vtadcp")
-	lnIdVtaCP = goConn.GetNextID("vtadcp", "id_vtadcp")
-	
-	lcSql = "INSERT INTO vtadcp ( "
-	lcSql = lcSql + "id_vtadcp, idVentasC, idPlanCta, impNeto, ivaPor, ivaImp, total) VALUES "
-	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtaCP)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ", " + ALLTRIM(STR(vtadcp.idPlanCta)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(vtadcp.impNeto, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaPor, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaImp, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(vtadcp.total, 10, 2)) + ")"
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		goConn.Rollback()
-		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-	
-	&& Marco el cheque como cheque rechazado
-	IF ALLTRIM(vtadcp.cheque_nro) != "" THEN
-		lcSql = "UPDATE cheques SET estado = 'R' WHERE chq_nro = '" + ALLTRIM(vtadcp.cheque_nro) + "' AND idBanco = " + ALLTRIM(STR(vtadcp.idBanco))
-		loCommand.ActiveConnection = goConn.ActiveConnection
-		loCommand.CommandText = lcSql
-		
-		IF !loCommand.Execute() THEN
-			goConn.Rollback()
-			MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-			RETURN .F.
-		ENDIF
-	ENDIF	
-
-	SELECT vtadcp
-	SKIP
-ENDDO
-
-IF Thisform.idVentascab <> - 1 THEN
-	&& Generar el registro de vinculación de comprobantes
-	lnIdVtasRel = goConn.GetNextId("ventasrel", "idvtarel")
-
-	&& Vinculo el comprobante de venta
-	lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES "
-	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtasRel)) + ", " + ALLTRIM(STR(Thisform.idventascab)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ")"
-
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-
-	IF !loCommand.Execute()
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-ENDIF 
-
-&& Actualizar el saldo de la factura seleccionada
-IF ALLTRIM(thisform.cbte) == "NC" THEN
-	lcSql = "UPDATE ventascab SET Saldo = Saldo - " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
-	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
-	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
-ELSE 
-	lcSql = "UPDATE ventascab SET Saldo = Saldo + " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
-	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
-	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
-ENDIF
-	
-loCommand.CommandText = lcSql
-loCommand.ActiveConnection = goConn.ActiveConnection
-
-IF !loCommand.Execute()
-	goConn.Rollback()
-	RETURN .F.
-ENDIF 
-
-goConn.Commit()
-
-Thisform.ptovta = lnPtoVta
-
-IF !thisform.enviar_wsafipfe() THEN
-	MESSAGEBOX("Este comprobante no ha sido autorizado, por favor, vuelva a intentarlo desde la autorización diferida", 0+48, Thisform.Caption)
-	RETURN .F.
-ELSE
-	IF thisform.fe_set_cae() THEN
-		IF thisform.grabar_ctacte(Thisform.id_ventasc) THEN
-			Thisform.imprimir()
-		ENDIF
-	ENDIF
-ENDIF
-
-Thisform.Release()
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: fe
-************************************************************
-*** PROPIEDADES ***
-Top = 468
-Left = 612
-Height = 24
-Width = 36
-Name = "fe"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: frm_ncnd_cc_fe
 ************************************************************
 *** PROPIEDADES ***
 Arial, 0, 8, 5, 14, 11, 29, 3, 0
@@ -16806,4631 +13833,6 @@ Arial, 0, 9, 5, 15, 12, 32, 3, 0
 Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 *** METODOS ***
-
-
-************************************************************
-OBJETO: cls_form_wsafip_autoriza
-************************************************************
-*** PROPIEDADES ***
-Height = 571
-Width = 946
-DoCreate = .T.
-BorderStyle = 2
-Caption = "Autorización diferida de comprobantes"
-aut_cae = 
-aut_cae_vto = 
-aut_motivo = 
-aut_numero = 
-aut_resultado = 
-cbte = 
-ptovta = 
-nrocbte = 
-saldodeudor = 0.00
-cbte_por_cpto = .F.
-idventasc = 0
-rto_numero = 0
-rto_printer = 
-rto_cantcpias = 0
-qr_image = 
-mailfc = 
-saldodeudor_c2 = 0.00
-oticket = 
-Name = "cls_form_wsafip_autoriza"
-contenido.TabIndex = 1
-contenido.Name = "contenido"
-
-*** METODOS ***
-PROCEDURE calc_digito_verificador
-&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
-
-PARAMETERS tcCodigo
-
-LOCAL lnDigito
-LOCAL lnSumaE1
-LOCAL lnSumaE3
-LOCAL lnProductoE2
-LOCAL lnSumaE4
-LOCAL lnMin
-LOCAL lnPos
-
-lnDigito = 0
-lnSumaE1 = 0
-lnSumaE3 = 0
-lnSumaE4 = 0
-lnMin = 0
-
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(i, 2) <> 0 THEN
-		&& Etapa 1 (posiciones impares)
-		lnSumaE1 = lnSumaE1 + lnDigito
-	ELSE
-		&& Etapa 3 (posiciones pares)
-		lnSumaE3 = lnSumaE3 + lnDigito
-	ENDIF
-NEXT i
-
-lnProductoE2 = lnSumaE1 * 3 && Etapa 2
-lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
-
-&& Etapa 5
-lnPos = 0
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
-		IF lnPos = 0 THEN
-			lnMin = lnDigito
-		ELSE
-			IF lnDigito < lnMin THEN
-				lnMin = lnDigito
-			ENDIF
-		ENDIF
-		
-		lnPos = lnPos + 1
-	ENDIF
-NEXT i
-
-RETURN lnMin
-ENDPROC
-PROCEDURE fe_convertir_tipodoc
-PARAMETERS tcTipoDoc
-LOCAL lnResultado
-
-lnResultado = 99 && Código que corresponde a sin identificación en el diccionario
-
-DO CASE
-	CASE ALLTRIM(tcTipoDoc) == "CUIT"
-		lnResultado = 80
-	CASE ALLTRIM(tcTipoDoc) == "CUIL"
-		lnResultado = 86
-	CASE ALLTRIM(tcTipoDoc) == "CI"
-		lnResultado = 87
-	CASE ALLTRIM(tcTipoDoc) == "LE"
-		lnResultado = 89
-	CASE ALLTRIM(tcTipoDoc) == "LC"
-		lnResultado = 90
-	CASE ALLTRIM(tcTipoDoc) == "CIE"
-		lnResultado = 91
-	CASE ALLTRIM(tcTipoDoc) == "PAS"
-		lnResultado = 94
-	CASE ALLTRIM(tcTipoDoc) == "DNI"
-		lnResultado = 96
-ENDCASE
-
-RETURN lnResultado
-ENDPROC
-PROCEDURE fe_get_tipocbte_afip
-PARAMETERS tc_letra
-
-DO CASE
-	CASE ALLTRIM(thisform.cbte) == "FC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 1
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 6
-			CASE ALLTRIM(tc_letra) == "C" 
-				RETURN 11
-		ENDCASE
-	CASE ALLTRIM(thisform.cbte) == "ND"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 2
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 7
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 12
-		ENDCASE
-	CASE ALLTRIM(thisform.cbte) == "NC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 3
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 8
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 13
-		ENDCASE	
-ENDCASE
-
-RETURN -1
-ENDPROC
-PROCEDURE fe_set_cae
-LOCAL loCommand, lcSql
-LOCAL loDT, ldFecVto
-LOCAL lcAnio, lcMes, lcDia
-
-loDT = CREATEOBJECT("datetime")
-loCommand = CREATEOBJECT("odbc_command")
-lcSql = ""
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-lcSql = "UPDATE ventascab "
-lcSql = lcSql + "SET "
-lcSql = lcSql + "	fecEmision = CAST(" + loDT.getDateTime() + " AS DATE), "
-
-* Verifico si es pago al contado para que incluya la fecha de vencimiento
-* igual a la fecha de emisión debido a los errores de iva digital que están
-* surgiendo en el autoservicio.
-IF cur_CbtePendi.cntDias = 0 THEN
-	lcSql = lcSql + "fecVto = CAST(" + loDT.getDateTime() + " AS DATE), "
-ENDIF
-
-lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
-lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
-lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
-lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
-lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
-lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
-lcSql = lcsql + "	aut_tipoCbte = '" + REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)) + "', "
-lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-
-goConn.BeginTransaction()
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "UPDATE cc_cli SET nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
-lcSql = lcSql + "	fecEmis = CAST(" + loDT.getDateTime() + " AS DATE) "
-
-IF cur_CbtePendi.cntDias = 0 THEN
-	lcSql = lcSql + ", fecVto = CAST(" + loDT.getDateTime() + " AS DATE) "
-ENDIF
-
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-goConn.Commit()
-
-Thisform.imprimir()
-
-RETURN .T.
-ENDPROC
-PROCEDURE imprimir
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4, m.porRec
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.porIIBB, m.impIIBB, m.observ, m.vendedor
-LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
-LOCAL m.condPago
-LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
-LOCAL m.cae, m.caevto, lcDia, lcMes, lcAnio
-LOCAL m.codigoCbte, m.barcode, m.code
-LOCAL m.saldoDeudor, m.saldodeudor_total
-LOCAL loRsCab, loRsDet, lcSql
-LOCAL lnIdNum, lnResp, m.NroRto, m.nroOC
-LOCAL lcFileName
-LOCAL lcNomEmp, lcRepName, lcRepNameCP
-LOCAL m.qr, m.motivo, m.totanograv, llUsaTicket
-
-lcNomEmp = getconfig("NOMEMP")
-loRsCab = CREATEOBJECT("odbc_result")
-loRsDet = CREATEOBJECT("odbc_result")
-loNumerador = CREATEOBJECT("odbc_result")
-lcSql = ""
-lnIdNum = 0
-lcRepName = ""
-lcRepNameCP = ""
-lcFileName = ""
-m.qr = thisform.qr_image
-
-* Recupero la cabecera del comprobante a autorizar que se encuentra
-* seleccionado.
-TEXT TO lcSql NOSHOW
-	SELECT ventascab.*,
-	tipodoc.TipoDoc,
-	clientes.telefono,
-	clientes.direccion,
-	clientes.envCbte,
-	clientes.mailFC,
-	clientes.printCbte,
-	localidad.codPostal,
-	localidad.descripcio AS descLoc,
-	provincias.descripcio AS descPcia,
-	sitiva.descripcio AS descSIVA,
-	condpagos.cntDias,
-	vendedores.nombre,
-	ventascab.idCondPago
-	FROM ventascab 
-		INNER JOIN clientes ON clientes.idCliente = ventascab.idCliente
-		INNER JOIN tipodoc ON tipodoc.idTipoDoc = clientes.idTipoDoc
-		INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid
-		INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
-		INNER JOIN sitiva ON sitiva.idSitIVA = clientes.idSitIVA
-		INNER JOIN condpagos ON condpagos.idCondPago = clientes.idCondPago
-		INNER JOIN vendedores ON vendedores.idVendedor = ventascab.idVendedor
-	WHERE idVentasC = ?idVentaCab
-ENDTEXT
-lcSql = loRsCab.AddParameter(lcSql, "idVentaCab", ALLTRIM(STR(cur_CbtePendi.idVentasC)), .F., .F.)
-loRsCab.ActiveConnection = goConn.ActiveConnection
-loRsCab.Cursor_Name = "cur_cabecera"
-
-IF !loRsCab.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRsCab.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-&& Calculo los saldos para imprimir. Solo lo calculo si la condición de pago
-&& no es contado
-IF cur_cabecera.idCondPago <> 1 THEN
-	thisform.calcular_saldo_deudor_c1()
-	thisform.calcular_saldo_deudor_c2()
-ELSE
-	thisform.saldodeudor = 0.00
-	thisform.saldodeudor_c2 = 0.00
-ENDIF
-
-m.saldodeudor_total = thisform.saldodeudor + thisform.saldodeudor_c2
-
-IF !Thisform.cbte_por_cpto THEN
-	&& Entra por acá si el comprobante es por detalle
-	
-	lcSql = "SELECT	"
-	IF ALLTRIM(thisform.cbte) == "NC" THEN 
-		lcSql = lcSql + "ventasdet.cantidad AS cantNC, "
-	ELSE 
-		lcSql = lcSql + "ventasdet.cantidad, "
-	ENDIF 
-	
-	lcSql = lcSql + "articulos.codArt, "
-	lcSql = lcSql + "ventasdet.descripcio, "
-	lcSql = lcSql + "ventasdet.cantidad, "
-	lcSql = lcSql + "ventasdet.prArtic, "
-	lcSql = lcSql + "ventasdet.alicIVA, "
-	lcSql = lcSql + "ventasdet.pDtoVta1, "
-	lcSql = lcSql + "ventasdet.pDtoVta2, "
-	lcSql = lcSql + "ventasdet.pDtoVta3, "
-	lcSql = lcSql + "ventasdet.pDtoVta4, "
-	lcSql = lcSql + "ventasdet.subTotal, "
-	lcSql = lcSql + "ventasdet.impNeto, "
-	lcSql = lcSql + "ventasdet.totNeto "
-	lcSql = lcSql + "FROM ventasdet "
-	lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "
-	lcSql = lcSql + "WHERE ventasdet.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-
-	loRsDet.ActiveConnection = goConn.ActiveConnection
-	loRsDet.Cursor_Name = "cur_aux"
-
-	IF !loRsDet.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loRsDet.Error_Message, 0+48, Thisform.Caption)
-		RETURN
-	ENDIF
-	
-	&& Thisform.calc_saldo_deudor(cur_cabecera.idCliente)
-ELSE
-	&& Entra por aca si el comprobante es por concepto.
-	lcSql = "SELECT vtadcp.*, "
-	lcSql = lcSql + " planctas.codPlanCta, "
-	lcSql = lcSql + " planctas.descripcio AS descPlan "
-	lcSql = lcSql + "FROM	vtadcp "
-	lcSql = lcSql + "	INNER JOIN planctas ON planctas.idPlanCta = vtadcp.idPlanCta "
-	lcSql = lcSql + "WHERE	idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-	
-	loRsDet.ActiveConnection = goConn.ActiveConnection
-	loRsDet.Cursor_Name = "vtadcp"
-	
-	IF !loRsDet.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loRsDet.Error_Message, 0+48, Thisform.Caption)
-		RETURN
-	ENDIF	
-ENDIF
-
-m.NroCli = cur_cabecera.idCliente
-m.RazSoc = ALLTRIM(cur_cabecera.razSoc)
-m.Telefono = ALLTRIM(cur_cabecera.telefono)
-m.direccion = ALLTRIM(cur_cabecera.direccion)
-m.localidad = ALLTRIM(cur_cabecera.descLoc)
-m.codPostal = ALLTRIM(cur_cabecera.codPostal)
-m.pcia = ALLTRIM(cur_cabecera.descPcia)
-m.nroCUIT = ALLTRIM(cur_cabecera.nroDoc)
-m.TipoIVA = ALLTRIM(cur_cabecera.descSIVA)
-m.totanograv = 0.00
-m.Total = 0.00
-m.ptoVta = ""
-m.NroCbte = ""
-m.leyenda = ""
-m.Fecha = DATETIME()
-m.porIVA105 = 0.00
-m.porIVA21 = 0.00
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.fecVto = DATE() + cur_cabecera.cntDias
-m.tipoDoc = cur_cabecera.tipoDoc
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-lnCantCpia = 0
-m.observ = ""
-m.vendedor = cur_cabecera.usualta
-m.cae = thisform.aut_cae
-m.codigoCbte = REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo))
-m.barcode = ""
-m.saldoDeudor = Thisform.saldodeudor
-m.code = "" 
-m.NroRto = ""
-m.nroOC = ALLTRIM(STR(cur_cabecera.nroOC))
-m.condPago = IIF(cur_cabecera.cntDias = 0, "CONTADO", "CUENTAS CORRIENTES")
-Thisform.mailfc = ALLTRIM(IIF(ISNULL(cur_cabecera.mailFC), "", cur_cabecera.mailFC))
-
-&& Si es monotributo extraigo la leyenda.
-IF cur_cabecera.idSitIVA = 6 THEN
-	m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
-		+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
-ELSE
-	m.motivo = ""
-ENDIF
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
-m.ptovta = cur_cabecera.ptoVta
-
-&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
-lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-lnIdNum = cur_num.idNum
-lcRepName = IIF(ISNULL(cur_num.repname), "", cur_num.repname)
-lcRepNameCP = IIF(ISNULL(cur_num.repnamecp), "", cur_num.repnamecp)
-loNumerador.close_query()
-
-
-&& Levanto la impresora configurada en el puesto de trabajo actual.
-lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND idNum = " + ALLTRIM(STR(lnIdNum))
-
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_x"
-
-IF !loNumerador.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loNumerador.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_x
-IF RECCOUNT("cur_x") = 0 THEN
-	MESSAGEBOX("La impresora no se encuentra configurada en este puesto de trabajo.", 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-lcPrinterName = ALLTRIM(cur_x.impresora)
-lnCantCpia = cur_x.copias
-llUsaTicket = cur_x.usa_ticket
-
-loNumerador.Close_Query()
-
-m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
-
-IF ALLTRIM(Thisform.cbte) == "COT"
-	m.leyenda = "COTIZACION"
-	m.tipoDoc = "X"
-	m.Total = cur_cabecera.totFact
-ELSE 
-	IF ALLTRIM(Thisform.cbte) == "PTO"
-		m.leyenda = "PRESUPUESTO"
-		m.tipoDoc = "X"
-		m.Total = cur_cabecera.impFinal
-	ELSE
-		IF ALLTRIM(Thisform.cbte) == "PED"
-			m.leyenda = "NOTA DE PEDIDO"
-			m.tipoDoc = "P"
-			m.Total = cur_cabecera.totFact
-		ELSE
-			IF ALLTRIM(Thisform.Cbte) == "FC"
-				m.leyenda = "FACTURA"
-				m.Total = cur_cabecera.totFact
-			ELSE
-				IF ALLTRIM(Thisform.Cbte) == "NC"
-					m.Leyenda = "NOTA DE CREDITO"
-					m.Total = cur_cabecera.totFact
-				ELSE
-					IF ALLTRIM(Thisform.Cbte) == "ND"
-						m.leyenda = "NOTA DE DEBITO"
-						m.Total = cur_cabecera.totFact
-					ENDIF
-				ENDIF
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-m.porDesc1 = cur_cabecera.porDesc1
-m.porDesc2 = cur_cabecera.porDesc2
-m.porDesc3 = cur_cabecera.porDesc3
-m.porDesc4 = cur_cabecera.porDesc4
-m.impDesc1 = cur_cabecera.impDesc1
-m.impDesc2 = cur_cabecera.impDesc2
-m.impDesc3 = cur_cabecera.impDesc3
-m.impDesc4 = cur_cabecera.impDesc4
-m.porRec = cur_cabecera.porRec
-m.porIVA105 = cur_cabecera.porIVA105
-m.poIVA21 = cur_cabecera.porIVA21
-m.impIVA105 = cur_cabecera.impIVA105
-m.impIVA21 = cur_cabecera.impIVA21
-m.impNeto = cur_cabecera.impFinal
-m.impFinal = cur_cabecera.impFinal
-m.porIIBB = cur_cabecera.porIIBB
-m.impIIBB = cur_cabecera.impIIBB
-m.totanograv = cur_cabecera.totaNoGrav
-
-m.observ = cur_cabecera.observ
-
-&& Mando a imprimir los remitos
-IF getglobalcfg("PRINT_RTO") THEN
-	IF This.cbte <> "COT" THEN
-		lnResp = MESSAGEBOX("¿Desea emitir remito?", 32+4, Thisform.Caption)
-		IF lnResp = 6 THEN
-			IF Thisform.getprinterrto() THEN
-				m.NroRto = Thisform.rto_numero
-				SET PRINTER TO NAME ALLTRIM(Thisform.rto_printer)
-				SELECT cur_aux
-			
-				FOR i = 1 TO This.rto_cantcpias
-					REPORT FORM "rep_rtos.frx" TO PRINTER NOCONSOLE
-				NEXT i
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-&& Generación del código de barra
-m.barcode = ALLTRIM(cur_cabecera.nroDoc)
-m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
-m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
-m.barcode = m.barcode + ALLTRIM(m.cae)
-m.barcode = m.barcode + ALLTRIM(lcAnio)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
-m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
-m.code = m.barcode
-m.barcode = getcodbarras(m.barcode)
-
-IF cur_cabecera.printCbte THEN
-	
-	FOR i = 1 TO lnCantCpia
-		IF !llUsaTicket THEN
-			***** Paso por acá si la impresión es en A4
-			SET PRINTER TO NAME ALLTRIM(lcPrinterName)
-			
-			* Agrego nueva modalidad de impresión de comprobante por parámetro
-			IF Thisform.cbte_por_cpto THEN
-				* Paso por acá si el comprobante es por concepto
-				SELECT vtadcp
-				REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
-			ELSE
-				* Paso por acá si el comprobante tiene detalle de artículos
-				SELECT cur_aux
-				IF RECCOUNT("cur_aux") = 0 THEN
-					SELECT cur_detalle
-				ENDIF
-				m.observ = cur_cabecera.observ
-				REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-			ENDIF
-		ELSE
-			****************************************************************************
-			* Envío a imprimir el ticket
-			****************************************************************************
-			SET PRINTER TO NAME ALLTRIM(lcPrinterName)
-			
-			Thisform.oticket = CREATEOBJECT("cls_tickets")
-			Thisform.oticket.crear_cursor()
-			Thisform.oticket.limpiar_datos()
-			Thisform.oticket.codigo_cbte = m.codigoCbte
-			Thisform.oticket.leyenda = m.leyenda
-			Thisform.oticket.letra = m.tipoDoc
-			Thisform.oticket.nro_cbte = m.nroCbte
-			Thisform.oticket.fecha_cbte = m.fecha
-			Thisform.oticket.fecha_vencimiento = m.fecVto
-			Thisform.oticket.numero_cliente = m.NroCli
-			Thisform.oticket.razon_social = m.razSoc
-			Thisform.oticket.direccion = m.direccion
-			Thisform.oticket.codigo_postal = m.codPostal 
-			Thisform.oticket.localidad = m.localidad
-			Thisform.oticket.provincia = m.pcia
-			Thisform.oticket.tipo_iva = m.TipoIVA
-			Thisform.oticket.condicion_pago = m.condPago
-			SELECT cur_aux
-			GO TOP
-			DO WHILE !EOF("cur_aux")
-				Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-						cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-				SELECT cur_aux
-				SKIP
-			ENDDO
-			Thisform.oticket.total_neto = m.impNeto
-			Thisform.oticket.total_imp_iva21 = m.impIVA21
-			Thisform.oticket.total_imp_iva105 = m.impIVA105
-			Thisform.oticket.total_nograv = m.totanograv
-			Thisform.oticket.total = m.Total
-			Thisform.oticket.qr_image = Thisform.qr_image
-			Thisform.oticket.nro_cae = m.cae
-			Thisform.oticket.vto_cae = m.caevto
-			Thisform.oticket.motivo = m.motivo
-			Thisform.oticket.imprimir()						
-		ENDIF
-	NEXT
-ENDIF
-
-IF cur_cabecera.envCbte THEN
-	lcFileName = SYS(5) + SYS(2003) + "\wsafip\ComprobantesPDF\" + this.cbte + "_" + m.NroCbte + ".pdf"
-	
-	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
-		loPDF.SetValue('output', lcFileName)
-		loPDF.SetValue('DisableOptionDialog', 'no') 
-		loPDF.SetValue('ConfirmOverwrite', 'no')
-		loPDF.SetValue('Showsettings', 'never') 
-		loPDF.SetValue('ShowSaveAS', 'nofile') 
-		loPDF.SetValue('ShowPdf', 'no') 
-		loPDF.WriteSettings(.t.)
-	
-	SET CONSOLE OFF
-	SET PRINTER TO NAME("Bullzip PDF Printer")
-	
-	** Agrego nueva modalidad de generar PDF por parámetro.
-	IF !Thisform.cbte_por_cpto THEN
-		SELECT cur_aux
-		REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-	ELSE
-		SELECT vtadcp
-		REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
-	ENDIF	
-	
-	SET PRINTER TO DEFAULT
-	SET CONSOLE ON
-	
-	DO WHILE !FILE(lcFileName)
-		WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
-	ENDDO
-	
-	MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, Thisform.Caption)
-	
-	TEXT TO lcMailMsg NOSHOW
-	Estimado cliente,
-	Le adjuntamos el comprobante electrónico emitido en formato PDF.
-	
-	Desde ya muchas gracias por la compra!!!
-	
-	Saludos cordiales,
-	
-	ENDTEXT
-	lcMailMsg = lcMailMsg + lcNomEmp
-		
-	&& Procedo a hacer el envío de mail
-	DO LOCFILE("FoxyPreviewer.App")
-	WITH _screen.oFoxyPreviewer	
-		.cEmailType = "PDF"
-		.nEmailMode = 2
-		.cEMailTo = thisform.mailfc
-		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
-		.cSMTPServer = getGlobalCFG("EMAILSMTP")
-		.cEmailFrom = getGlobalCFG("EMAILEMP") + "<" + getGlobalCFG("EMAILADDR") + ">"
-		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
-		.nSMTPPort = getGlobalCFG("EMAILPORT")
-		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
-		.cSMTPUserName = getGlobalCFG("EMAILUSR")
-		.cSMTPPassword = getGlobalCFG("EMAILPWD")
-		.lReadReceipt  = .F.
-		.lPriority = .F.
-		.cEmailBody = lcMailMsg
-		.SendEmailUsingCDO(lcFileName)
-	ENDWITH
-	DO FoxyPreviewer.App WITH "Release"
-ENDIF
-
-loRsCab.Close_Query()
-loRsDet.Close_Query()
-
-ENDPROC
-PROCEDURE enviar_wsafipfe
-LOCAL llRes
-LOCAL lnPtoVta
-LOCAL lnTipoDoc, lcTipoDoc
-LOCAL lnRetAlva
-LOCAL lnCantIVA
-LOCAL lnImpBase21
-LOCAL lnImpBase105
-LOCAL lcNumero
-LOCAL lcMensaje
-LOCAL lnImpBaseSIVA
-LOCAL lnIndice
-LOCAL lnTotalIVA
-LOCAL lnModo
-LOCAL lcCUIT
-LOCAL lcCertif
-LOCAL lcLicencia
-LOCAL lcPassword
-LOCAL loRsCab
-LOCAL loRsDet
-LOCAL loRsVtaRel
-LOCAL lcSql
-
-lnTipoDoc = 0
-lcTipoDoc = ""
-lnPtoVta = ""
-lnRetAlva = 0
-lnCantIVA = 0
-lnImpBase21 = 0
-lnImpBase105 = 0
-lnImpBaseSIVA = 0
-lcNumero = ""
-lcMensaje = ""
-lnIndice = 0
-lnTotalIVA = 0.00
-loRsCab = CREATEOBJECT("odbc_result")
-loRsDet = CREATEOBJECT("odbc_result")
-loResVtaRel = CREATEOBJECT("odbc_result")
-
-&& Parametros para la conexión con WSFEv1
-lnModo = IIF(getGlobalCFG("FEDEBUG"), 0, 1)
-lcCUIT = ALLTRIM(getGlobalCFG("FECUIT"))
-lcCertif = ALLTRIM(getGlobalCFG("FE_FILE"))
-lcLicencia = ALLTRIM(getGlobalCFG("FE_LIC"))
-lcPassword = ALLTRIM(getGlobalCFG("FE_PWD"))
-
-&& Acá tengo que levantar el comprobante a actualizar actual
-*!*	lcSql = "SELECT *, tipodoc.tipoDoc as tdoc "
-*!*	lcSql = lcSql + "FROM ventascab "
-*!*	lcSql = lcSql + "	INNER JOIN tipodoc ON tipodoc.idTipoDoc = ventascab.idTipoDoc "
-*!*	lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-
-lcSql = "CALL ventascab_GetById(?idVentasC)"
-lcSql = loRsCab.AddParameter(lcSql, "idVentasC", ALLTRIM(STR(cur_CbtePendi.idVentasC)), .f., .f.)
-loRsCab.ActiveConnection = goConn.ActiveConnection
-loRsCab.Cursor_Name = "cur_cabecera"
-
-IF !loRsCab.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRsCab.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lnPtoVta = cur_cabecera.ptoVta
-lcTipoDoc = cur_cabecera.tipoDoc
-Thisform.cbte = cur_cabecera.cbte
-
-&& Tengo que acordarme que en el tercer parámetro tengo que pasar
-&& la ruta y el nombre de archivo del certificado.
-
-llRes = Thisform.fe.iniciar(lnModo, lcCUIT, SYS(5) + SYS(2003) + "\wsafip\" + lcCertif, lcLicencia)
-Thisform.fe.tls = getGlobalCFG("FETLS")
-
-IF !llRes THEN
-	MESSAGEBOX("Falló al iniciar: " + Thisform.fe.ultimoMensajeError, 0+32, Thisform.Caption)
-	RETURN .F.
-EndIf
-
-&& Verifico si el servicio está en línea
-IF !Thisform.fe.dummy() THEN 
-	MESSAGEBOX("Los Web Services de AFIP no se encuentran disponibles.",0+16,Thisform.Caption)
-	Return .F.
-ENDIF 
-
-Thisform.fe.ArchivoCertificadoPassWord = lcPassword
-IF !Thisform.ticket_valido() THEN
-	MESSAGEBOX("No se pudo generar Ticket de Acceso", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-Thisform.fe.ArchivoXMLRecibido = SYS(5) + SYS(2003) + "\wsafip\xml\" + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + "_rec_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.fe.archivoXMLEnviado = SYS(5) + SYS(2003) + "\wsafip\xml\" + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + "_env_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.qr_image = getGlobalCFG("QRPATH") + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + "_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-lnRetAlva = Thisform.fe.f1CompUltimoAutorizado(lnPtoVta, Thisform.fe_get_tipocbte_afip(ALLTRIM(cur_cabecera.tipoDoc)))
-
-Thisform.fe.F1CabeceraCantReg = 1
-Thisform.fe.F1CabeceraPtoVta = lnPtoVta
-Thisform.fe.F1CabeceraCbteTipo = Thisform.fe_get_tipocbte_afip(ALLTRIM(cur_cabecera.tipoDoc))
-Thisform.fe.F1DetalleDocTipo = cur_cabecera.codAfip
-Thisform.fe.F1DetalleDocNro = cur_cabecera.nroDoc
-Thisform.fe.F1DetalleCbteDesde = lnRetAlva + 1
-Thisform.fe.F1DetalleCbteHasta = lnRetAlva + 1
-
-If getGlobalCFG("FE_IVAREC") THEN
-	Thisform.fe.F1DetalleCondicionIvaReceptor = cur_cabecera.conivareid
-EndIF
-
-Thisform.fe.F1DetalleCbteFch = ALLTRIM(STR(YEAR(DATE()))) ;
-	+ IIF(LEN(ALLTRIM(STR(MONTH(DATE())))) < 2, "0" + ALLTRIM(STR(MONTH(DATE()))), ALLTRIM(STR(MONTH(DATE())))) + ;
-	IIF(LEN(ALLTRIM(STR(DAY(DATE())))) < 2, "0" + ALLTRIM(STR(DAY(DATE()))), ALLTRIM(STR(DAY(DATE()))))
-	
-&& Si es una nota de crédito y/o una nota de débito, entonces, tengo que levantar
-&& el comprobante asociado.
-IF ALLTRIM(cur_cabecera.cbte) == "NC" .OR. ALLTRIM(cur_cabecera.cbte) == "ND" THEN
-	lcSql = "CALL ventascab_getCbteRel (?idVentaC)"
-	lcSql = loResVtaRel.AddParameter(lcSql, "idVentaC", ALLTRIM(STR(cur_cabecera.idVentasC)), .f., .f.)
-	loResVtaRel.Cursor_Name = "cur_vrel"
-	loResVtaRel.ActiveConnection = goConn.ActiveConnection
-	IF !loResVtaRel.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loResVtaRel.Error_Message, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-	IF RECCOUNT("cur_vrel") = 0 THEN
-		MESSAGEBOX("No hay comprobantes relacionados", 0+48, Thisform.Caption)
-		loResVtaRel.Close_Query()
-		RETURN .F.
-	ELSE
-		Thisform.fe.F1DetalleCbtesAsocItemCantidad = 1
-		Thisform.fe.F1DetalleCbtesAsocTipo = cur_vrel.aut_tipoCbte
-		Thisform.fe.F1DetalleCbtesAsocFecha = ALLTRIM(STR(YEAR(cur_vrel.fecEmision))) ;
-			+ IIF(LEN(ALLTRIM(STR(MONTH(cur_vrel.fecEmision)))) < 2, "0" + ALLTRIM(STR(MONTH(cur_vrel.fecEmision))), ALLTRIM(STR(MONTH(cur_vrel.fecEmision)))) ;
-			+ IIF(LEN(ALLTRIM(STR(DAY(cur_vrel.fecEmision)))) < 2, "0" + ALLTRIM(STR(DAY(cur_vrel.fecEmision))), ALLTRIM(STR(DAY(cur_vrel.fecEmision))))
-		*Thisform.fe.F1DetalleCbtesAsocCUIT = INT(VAL(cur_vrel.nroDoc))
-		Thisform.fe.F1DetalleCbtesAsocPtoVta = cur_vrel.ptoVta
-		Thisform.fe.F1DetalleCbtesAsocNro = cur_vrel.numCbte
-	ENDIF
-	
-	loResVtaRel.Close_Query()
-ENDIF
-	
-&& Tengo que calcular la suma del neto de los articulos con 21 de IVA y con el 10.5 de IVA
-&& por separado.
-
-lcSql = "SELECT * FROM ventasdet "
-lcSql = lcSql + "WHERE ventasdet.idVentasC = " + ALLTRIM(STR(cur_cabecera.idVentasC))
-
-loRsDet.ActiveConnection = goConn.ActiveConnection
-loRsDet.Cursor_Name = "cur_detalle"
-
-IF !loRsDet.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRsDet.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_detalle
-IF RECCOUNT("cur_detalle") <> 0 THEN
-	&& Entra por acá en caso de que el comprobante sea normal
-	
-	* Limpio el objeto Mov_Stock por las dudas que manden a autorizar varios
-	* comprobantes sin cerrar la pantalla.
-	This.Mov_Stock.limpiar_cursor()
-	This.Mov_Stock.Limpiar()
-	
-	GO TOP
-	DO WHILE !EOF("cur_detalle")
-		IF cur_detalle.alicIVA = 21 THEN
-			lnImpBase21 = lnImpBase21 + cur_detalle.totNeto
-		ENDIF
-		
-		IF cur_detalle.alicIVA = 10.5 THEN
-			lnImpBase105 = lnImpBase105 + cur_detalle.totNeto
-		ENDIF
-		
-		IF cur_detalle.alicIVA = 0 THEN
-			lnImpBaseSIVA = lnImpBaseSIVA + cur_detalle.totNeto
-		ENDIF
-		
-		* Agrego los artículos en Stock
-		IF ALLTRIM(cur_CbtePendi.cbte) == "NC" THEN
-			Thisform.mov_stock.tipomov = "ENT"
-		ELSE
-			Thisform.mov_stock.tipomov = "SAL"
-		ENDIF		
-		
-		This.Mov_Stock.agregar_articulo(cur_detalle.idArticulo, cur_detalle.cantidad, cur_detalle.nroPart)
-		
-		SELECT cur_detalle
-		SKIP
-	ENDDO
-	
-	loRsDet.Close_Query()
-	Thisform.cbte_por_cpto = .F.
-ELSE
-	&& entra por acá en caso de que el comprobante sea por concepto
-	loRsDet.Close_Query()
-	
-	lcSql = "select * from vtadcp where idVentasC = " + ALLTRIM(STR(cur_cabecera.idVentasC))
-	loRsDet.ActiveConnection = goConn.ActiveConnection
-	loRsDet.Cursor_Name = "cur_detalle"
-
-	IF !loRsDet.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loRsDet.Error_Message, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-	
-	SELECT cur_detalle
-	GO TOP
-	
-	DO WHILE !EOF("cur_detalle")
-		IF cur_detalle.ivaPor = 21 THEN
-			lnImpBase21 = lnImpBase21 + cur_detalle.impNeto
-		ENDIF
-		
-		IF cur_detalle.ivaPor = 10.5 THEN
-			lnImpBase105 = lnImpBase105 + cur_detalle.impNeto
-		ENDIF
-		
-		IF cur_detalle.ivaPor = 0 THEN
-			lnImpBaseSIVA = lnImpBaseSIVA + cur_detalle.impNeto
-		ENDIF
-		
-		SELECT cur_detalle
-		SKIP
-	ENDDO
-	
-	loRsDet.Close_Query()
-	Thisform.cbte_por_cpto = .T.
-ENDIF
-
-IF Thisform.fe.F1CabeceraCbteTipo <> 11 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 12 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 13 THEN
-		
-	lnIndice = 0
-	lnTotalIVA = 0.00
-	IF lnImpBase21 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 5
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase21, 2)
-		Thisform.fe.F1DetalleIvaImporte = ROUND(lnImpBase21 * 0.21, 2)
-		lnTotalIVA = lnTotalIVA + (ROUND(lnImpBase21 * 0.21, 2))
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBase105 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 4
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase105, 2)
-		Thisform.fe.F1DetalleIvaImporte = ROUND(lnImpBase105 * 0.105, 2)
-		lnTotalIVA = lnTotalIVA + (ROUND(lnImpBase105 * 0.105, 2))
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBaseSIVA <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 3
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBaseSIVA, 2)
-	ENDIF
-ENDIF
-
-&& Agrego los conceptos de IIBB
-
-IF cur_cabecera.porIIBB <> 0 THEN
-	Thisform.FE.F1DetalleTributoItemCantidad = 1
-	Thisform.FE.f1IndiceItem = 0
-	Thisform.FE.F1DetalleTributoId = 2
-	Thisform.FE.F1DetalleTributoDesc = "IIBB Pcia Bs AS"
-	Thisform.FE.F1DetalleTributoBaseImp = cur_cabecera.impFinal
-	Thisform.FE.F1DetalleTributoAlic = cur_cabecera.porIIBB
-	Thisform.FE.F1DetalleTributoImporte = cur_cabecera.impIIBB
-ENDIF
-
-Thisform.fe.F1DetalleConcepto = 1
-Thisform.fe.F1DetalleImpNeto = ROUND(cur_cabecera.impFinal, 2)			&& Total facturado
-Thisform.fe.F1DetalleImpTotalConc = ROUND(cur_cabecera.totaNoGrav, 2)	&& Total no gravado
-Thisform.fe.F1DetalleImpIva = ROUND(lnTotalIVA, 2)
-Thisform.fe.F1DetalleImpOpEx = 0
-Thisform.fe.F1DetalleImpTrib = Thisform.FE.F1DetalleTributoImporte
-Thisform.fe.F1DetalleMonId = "PES"
-Thisform.fe.F1DetalleMonCotiz = 1
-Thisform.fe.F1DetalleImpTotal = ROUND(cur_cabecera.totFact, 2)
-
-* Agrego la generación del QR
-Thisform.fe.f1DEtalleQrArchivo = Thisform.qr_image
-Thisform.fe.f1DEtalleQrFormato = 1
-Thisform.fe.f1DetalleQrResolucion = 5
-Thisform.fe.f1DetalleQrTolerancia = 0
-
-llRes = Thisform.fe.f1CAESolicitar()
-
-&& llRes = Thisform.fe.registrar(lnPtoVta, Thisform.fe_get_tipocbte_afip(ALLTRIM(lcTipoDoc)), "1") 
-loRsCab.Close_Query()
-
-IF llRes THEN
-	IF ALLTRIM(Thisform.fe.F1RespuestaResultado) == "A" THEN
-		lcNumero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-			REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde)))) + ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde))
-		
-		Thisform.ptovta = lnPtoVta
-		Thisform.nrocbte = INT(VAL(Thisform.fe.F1RespuestaDetalleCbteDesdeS))
-		
-		lcMensaje = "CAE: " + Thisform.fe.F1RespuestaDetalleCae + CHR(13)+ CHR(10)
-		lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaDetalleCaeFchVto + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "RESULTADO: " + Thisform.fe.F1RespuestaResultado + CHR(13) + CHR(10)		
-		lcMensaje = lcMensaje + "PROCESO: " + Thisform.fe.F1RespuestaReProceso + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "El comprobante fué aprobado con éxito"
-		MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-		
-		Thisform.aut_numero = lcNumero
-		Thisform.aut_cae = Thisform.fe.F1RespuestaDetalleCae
-		Thisform.aut_cae_vto = Thisform.fe.F1RespuestaDetalleCaeFchVto
-		Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-		Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-	ELSE
-		lcMensaje = "ATENCION: Factura rechazada por el AFIP" + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaResultado+ CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		MESSAGEBOX(lcMensaje, 0+48, Thisform.Caption)
-		RETURN .F.		
-	ENDIF
-ELSE
-	IF !(ISNULL(Thisform.fe.F1RespuestaReProceso) .OR. Thisform.fe.F1RespuestaReProceso == "R") THEN
-		lcMensaje = "ATENCION: Falló la solicitud de CAE" + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "RESULTADO: " + Thisform.fe.F1RespuestaResultado + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.UltimoMensajeError + CHR(13) + CHR(10)
-		MESSAGEBOX(lcMensaje, 0+48, Thisform.Caption)
-		RETURN .F.
-	ELSE
-		lcMensaje = "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ERROR: " + Thisform.fe.f1ErrorMsg1 + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ULTIMO: " + Thisform.fe.UltimoMensajeError
-		MESSAGEBOX(lcMensaje, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-ENDIF
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE calc_saldo_deudor
-PARAMETERS lnIdCliente
-LOCAL loRes, lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-lcSql = "SELECT		ventascab.idVentasC, "
-lcSql = lcSql + "	ventascab.cbte, "
-lcSql = lcSql + "	ventascab.tipoDoc, "
-lcSql = lcSql + "	ventascab.ptoVta, "
-lcSql = lcSql + "	ventascab.numCbte, "
-lcSql = lcSql + "	ventascab.fecEmision, "
-lcSql = lcSql + "	ventascab.fecVto,  "
-lcSql = lcSql + "	ventascab.saldo "
-lcSql = lcSql + "FROM	ventascab "
-lcSql = lcSql + "WHERE ventascab.idCliente = " + ALLTRIM(STR(lnIdCliente))
-lcSql = lcSql + "	AND ventascab.idVentasC IN ( "
-lcSql = lcSql + "			SELECT	MAX(idVentasC) "
-lcSql = lcSql + "			FROM	cc_cli  "
-lcSql = lcSql + "			WHERE	idCliente = " + ALLTRIM(STR(lnIdCliente)) + " "
-lcSql = lcSql + "			GROUP BY idOper "
-lcSql = lcSql + "			HAVING (SUM(impDebe) - SUM(impHaber)) <> 0) "
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_moro"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-
-thisform.saldodeudor = 0.00
-
-SELECT cur_moro
-IF RECCOUNT("cur_moro") > 0 THEN
-	GO TOP
-ENDIF
-
-DO WHILE !EOF("cur_moro")
-	
-	thisform.saldodeudor = thisform.saldodeudor + cur_moro.saldo
-
-	SELECT cur_moro
-	SKIP
-ENDDO
-
-loRes.Close_Query()
-
-RETURN .T.
-ENDPROC
-PROCEDURE leer_cbtes_pendi
-LOCAL loResult, lcSql
-
-SELECT cur_CbtePendi
-ZAP
-
-*!*	lcSql = "SELECT idVentasC, fecEmision, cbte, tipoDoc, ptoVta, numCbte, totFact, "
-*!*	lcSql = lcSql + "idCliente, razSoc "
-*!*	lcSql = lcSql + "FROM ventascab "
-*!*	lcSql = lcSql + "WHERE (ventascab.aut_cae IS NULL OR ventascab.aut_Resultado = 'R') "
-*!*	lcSql = lcSql + "	AND ventascab.cbte IN ('FC', 'NC', 'ND') "
-*!*	lcSql = lcSql + "	AND ventascab.idHostAlta = '" + ALLTRIM(SYS(0)) + "' "
-*!*	lcSql = lcSql + "	AND ventascab.fecBaja IS NULL "
-*!*	lcSql = lcSql + "ORDER BY fecEmision DESC "
-
-loResult = CREATEOBJECT("odbc_result")
-TEXT TO lcSql NOSHOW
-	SELECT 
-		idVentasC, fecEmision, cbte, tipoDoc, 
-		ptoVta, numCbte, totFact, idCliente, 
-		razSoc, ventascab.idCondPago, cp.cntDias 
-	 FROM ventascab 
-		INNER JOIN condpagos cp ON cp.idCondPago = ventascab.idCondPago
-	 WHERE (ventascab.aut_cae IS NULL OR ventascab.aut_Resultado = 'R')
-	 	AND ventascab.cbte IN ('FC', 'NC', 'ND') 
-	 	AND ventascab.idHostAlta = ?xHost
-	 	AND ventascab.fecBaja IS NULL
-	 ORDER BY ventascab.fecEmision DESC
-ENDTEXT
-lcSql = loResult.AddParameter(lcSql, "xHost", ALLTRIM(SYS(0)), .t., .f.)
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_x"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_x
-DO WHILE !EOF("cur_x")
-	SELECT cur_CbtePendi
-	APPEND BLANK
-	REPLACE cur_CbtePendi.idVentasC WITH cur_x.idVentasC
-	REPLACE cur_CbtePendi.idCondPago WITH cur_x.idCondPago ADDITIVE
-	REPLACE cur_CbtePendi.cntDias WITH cur_x.cntDias ADDITIVE
-	REPLACE cur_CbtePendi.fecEmision WITH cur_x.fecEmision ADDITIVE
-	REPLACE cur_CbtePendi.cbte WITH cur_x.cbte ADDITIVE
-	REPLACE cur_CbtePendi.tipoDoc WITH cur_x.tipoDoc ADDITIVE
-	REPLACE cur_CbtePendi.ptoVta WITH REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_x.ptoVta)))) + ALLTRIM(STR(cur_x.ptoVta)) ADDITIVE
-	REPLACE cur_CbtePendi.numCbte WITH REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_x.numCbte)))) + ALLTRIM(STR(cur_x.numCbte)) ADDITIVE
-	REPLACE cur_CbtePendi.totFact WITH cur_x.totFact ADDITIVE
-	REPLACE cur_CbtePendi.idCliente WITH cur_x.idCliente ADDITIVE
-	REPLACE cur_CbtePendi.razSoc WITH cur_x.razSoc ADDITIVE
-	
-	SELECT cur_x
-	SKIP
-ENDDO
-
-loResult.Close_Query()
-
-SELECT cur_CbtePendi
-GO TOP
-Thisform.Contenido.grdCbtes.Refresh()
-
-ENDPROC
-PROCEDURE ticket_valido
-LOCAL llTkValido
-LOCAL lcTicket
-LOCAL lcFileTicket
-LOCAL lcTK
-LOCAL hndFile
-LOCAL llModoLocal
-
-llTkValido = .F.
-lcTicket = ""
-lcTK = ""
-lcFileTicket = getGlobalCFG("FE_TICKACC")
-llModoLocal = getGlobalCFG("FELOCAL")
-
-IF !llModoLocal THEN
-	** Si el ticket se está transfiriendo al cloud server, entonces,
-	** Descargo el último ticket que está en el server para validar luego
-	** si es válido o no.
-	IF DATE() > FDATE(lcFileTicket) THEN
-		* Si la fecha del archivo no coincide entonces descargo del FTP
-		descargar_ticket_acceso(lcFileTicket)
-	ENDIF
-ENDIF
-
-IF FILE(ALLTRIM(lcFileTicket)) THEN
-	hndFile = FOPEN(lcFileTicket, 12)
-	IF hndFile < 0 THEN
-		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
-		=FCLOSE(hndFile)
-	ELSE
-		=FCLOSE(hndFile)
-		
-		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
-		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
-		
-		IF Thisform.fe.f1TicketEsValido THEN
-			llTkValido = .T.
-		ELSE
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-	
-	IF !llTkValido THEN
-		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
-		** generar con los nuevos datos.
-		DELETE FILE ALLTRIM(lcFileTicket)
-		
-		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-			lcTK = Thisform.fe.f1GuardarTicketAcceso()
-			hndFile = FCREATE(lcFileTicket)
-			
-			IF hndFile < 0 THEN
-				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
-			ELSE
-				=FWRITE(hndFile, lcTK)
-				llTkValido = .T.
-			ENDIF
-			
-			=FCLOSE(hndFile)
-			
-			IF !llModoLocal THEN
-				* Envío el ticket de acceso al FTP
-				enviar_ticket_acceso(lcFileTicket)
-			ENDIF
-		ELSE
-			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-ELSE
-	** Si no existe el archivo entonces lo creo y lo envío al servidor.
-	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-		lcTK = Thisform.fe.f1GuardarTicketAcceso()
-		hndFile = FCREATE(lcFileTicket)
-		
-		IF hndFile < 0 THEN
-			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
-		ELSE
-			=FWRITE(hndFile, lcTK)
-			llTkValido = .T.
-		ENDIF
-		
-		=FCLOSE(hndFile)
-
-		IF !llModoLocal THEN
-			* Envío el ticket de acceso al FTP
-			enviar_ticket_acceso(lcFileTicket)
-		ENDIF
-	ELSE
-		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-		llTkValido = .F.			
-	ENDIF	
-ENDIF
-
-RETURN llTkValido
-ENDPROC
-PROCEDURE corregir_iva
-LOCAL loCommand
-LOCAL loRes
-LOCAL lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-loCommand = CREATEOBJECT("odbc_command")
-lcSql = ""
-
-goConn.BeginTransaction()
-
-&& Paso 1: Corrijo las diferencias de centavos de IVA
-&& en el detalle.
-
-lcSql = "UPDATE ventasdet SET impIVA = (totNeto * (alicIVA / 100)) "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "SELECT idVentasC, "
-lcSql = lcSql + " totNeto, "
-lcSql = lcSql + " alicIVA, "
-lcSql = lcSql + " SUM(totNeto) AS totNeto, "
-lcSql = lcSql + " SUM(totNeto * (alicIVA / 100)) AS impIVA "
-lcSql = lcSql + "FROM	ventasdet "
-lcSql = lcSql + "WHERE	ventasdet.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + " "
-lcSql = lcSql + " 	AND ventasdet.alicIVA = 21 "
-lcSql = lcSql + "GROUP BY idVentasC "
-lcSql = lcSql + "UNION "
-lcSql = lcSql + "	SELECT 	idVentasC, "
-lcSql = lcSql + "			totNeto, "
-lcSql = lcSql + "			alicIVA, "
-lcSql = lcSql + "			SUM(totNeto) AS totNeto, "
-lcSql = lcSql + "			SUM(totNeto * (alicIVA / 100)) AS impIVA "
-lcSql = lcSql + "	FROM ventasdet "
-lcSql = lcSql + "	WHERE ventasdet.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + " "
-lcSql = lcSql + "		AND ventasdet.alicIVA = 10.5 "
-lcSql = lcSql + "	GROUP BY idVentasC "
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tempo"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	goConn.Rollback()
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_tempo
-GO TOP
-DO WHILE !EOF("cur_tempo")
-	IF cur_tempo.alicIVA = 21 THEN
-		lcSql = "UPDATE ventascab "
-		lcSql = lcSql + "SET ventascab.impIVA21 = " + ALLTRIM(STR(cur_tempo.impIVA, 10, 2)) + " "
-		lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_tempo.idVentasC))
-	ELSE
-		lcSql = "UPDATE ventascab "
-		lcSql = lcSql + "SET ventascab.impIVA105 = " + ALLTRIM(STR(cur_tempo.impIVA, 10, 2)) + " "
-		lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_tempo.idVentasC))	
-	ENDIF
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		goConn.Rollback()
-		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-
-	SELECT cur_tempo
-	SKIP
-ENDDO
-
-loRes.Close_Query()
-
-RETURN .T.
-ENDPROC
-PROCEDURE getprinterrto
-LOCAL loRes
-LOCAL loCommand
-LOCAL lcSql
-LOCAL lnPtoVta
-LOCAL lnIdNum
-LOCAL lnNro
-
-loRes = CREATEOBJECT("odbc_result")
-loCommand = CREATEOBJECT("odbc_command")
-lcSql = ""
-lnPtoVta = INT(VAL(getConfig("PTOVTA")))
-lnIdNum = 0
-
-lcSql = "SELECT * FROM numerador "
-lcSql = lcSql + "WHERE cbte = 'RTO' "
-lcSql = lcSql + "	AND ptoVta = " + ALLTRIM(STR(lnPtoVta))
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_num"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-IF RECCOUNT("cur_num") > 0 THEN
-	lnNro = cur_num.numActual + 1
-	Thisform.rto_numero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) ;
-			+ "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNro)))) + ALLTRIM(STR(lnNro))
-	
-	lnIdNum = cur_num.idNum
-ELSE
-	MESSAGEBOX("El numerador no se encuentra configurado", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-loRes.Close_Query()
-
-lcSql = "SELECT * FROM impresoras "
-lcSql = lcSql + "WHERE hostName = '" + ALLTRIM(SYS(0)) + "' "
-lcSql = lcSql + "	AND impresoras.idNum = " + ALLTRIM(STR(lnIdNum))
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_printer"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_printer
-IF RECCOUNT("cur_printer") > 0 THEN
-	Thisform.rto_printer = ALLTRIM(cur_printer.impresora)
-	Thisform.rto_cantcpias = cur_printer.copias
-ELSE
-	MESSAGEBOX("El remito no tiene impresora configurada", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-loRes.Close_Query()
-
-&& Actualizo el numero de remito
-goConn.BeginTransaction()
-lcSql = "UPDATE numerador "
-lcSql = lcSql + "SET numActual = " + ALLTRIM(STR(lnNro)) + " "
-lcSql = lcSql + "WHERE idNum = " + ALLTRIM(STR(lnIdNum))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-goConn.Commit()
-
-RETURN .T.
-ENDPROC
-PROCEDURE validar_cbte
-LOCAL loRes
-LOCAL lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = "SELECT aut_Resultado "
-lcSql = lcSql + "FROM ventascab "
-lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_x
-IF ALLTRIM(cur_x.aut_Resultado) == "A" THEN
-	loRes.Close_Query()
-	RETURN .F.
-ENDIF
-
-loRes.Close_Query()
-RETURN .T.
-ENDPROC
-PROCEDURE grabar_ctacte
-PARAMETERS tnIdVentasC
-
-LOCAL loCommand
-LOCAL loRes
-LOCAL oDT
-LOCAL lcSql
-LOCAL lnIdCliente, lcCbte, lnNroCbte, lcTipoDoc, lnPtoVta, lnIdCondPago
-LOCAL lnIdSitIVA, lnIdVendedor, ldFecVto, lnTotFact, lnIdOper
-LOCAL lcObserv, lnIdCC_CliOrig
-LOCAL lnIdOper
-
-loCommand = CREATEOBJECT("odbc_command")
-loRes = CREATEOBJECT("odbc_result")
-oDT = CREATEOBJECT("datetime")
-lcSql = ""
-lnIdCliente = 0
-lcCbte = ""
-lnNroCbte = 0
-lcTipoDoc = ""
-lnPtoVta = 0
-lnIdCondPago = 0
-lnIdSitIVA = 0
-lnIdVendedor = 0
-ldFecVto = {}
-lnTotFact = 0.00
-lnIdOper = 0
-lcObserv = ""
-lnIdCC_CliOrig = 0
-lnIdOper = 0
-
-lcSql = "SELECT * "
-lcSql = lcSql + "FROM ventascab "
-lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(tnIdVentasC))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_vtas"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_vtas
-IF RECCOUNT("cur_vtas") > 0 THEN
-	lnIdCliente = cur_vtas.idCliente
-	lcCbte = cur_vtas.cbte
-	lnNroCbte = cur_vtas.numCbte
-	lcTipoDoc = cur_vtas.tipoDoc
-	lnPtoVta = cur_vtas.ptoVta
-	lnIdCondPago = cur_vtas.idCondPago
-	lnIdSitIVA = cur_vtas.idSitIVA
-	lnIdVendedor = cur_vtas.idVendedor
-	ldFecVto = cur_vtas.fecVto
-	lnTotFact = cur_vtas.totFact
-	*lnIdCC_CliOrig = cur_vtas.idCC_CliO
-ENDIF
-
-loRes.Close_Query()
-
-lnProxID = goConn.GetNextId("cc_cli", "idCC_Cli")
-
-DO CASE
-	CASE ALLTRIM(lcCbte) == "FC"
-		lnIdOper = goConn.GetNextID("cc_cli", "idOper")
-		
-		lcSql = "INSERT INTO cc_cli ("
-		lcSql = lcSql + "idCC_Cli, "
-		lcSql = lcSql + "idCliente, "
-		lcSql = lcSql + "idCC_Orig, "
-		lcSql = lcSql + "idVentasC, "
-		lcSql = lcSql + "cbte, "
-		lcSql = lcSql + "tipoDoc, "
-		lcSql = lcSql + "ptoVta, "
-		lcSql = lcSql + "nroCbte, "
-		lcSql = lcSql + "fecEmis, "
-		lcSql = lcSql + "fecVto, "
-		lcSql = lcSql + "idCondPago, "
-		lcSql = lcSql + "idSitIVA, "
-		lcSql = lcSql + "idVendedor, "
-		lcSql = lcSql + "impDebe, "
-		lcSql = lcSql + "impHaber, "
-		lcSql = lcSql + "idOper, "
-		lcSql = lcSql + "observ, "
-		lcSql = lcSql + "usuAlta, "
-		lcSql = lcSql + "fecAlta, "
-		lcSql = lcSql + "idHostAlta) "
-		lcSql = lcSql + "VALUES ("
-		lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
-				ALLTRIM(STR(lnIdCliente)) + ;
-				", null, " + ;
-				ALLTRIM(STR(tnIdVentasC)) + ", " + ;
-				"'" + ALLTRIM(lcCbte) + "', " + ;
-				"'" + ALLTRIM(lcTipoDoc) + "', " + ;
-				ALLTRIM(STR(lnPtoVta)) + ", " + ;
-				ALLTRIM(STR(lnNroCbte)) + ", " + ;
-				oDT.getDateTime() + ", " + ;
-				oDT.toMySql(ldFecVto) + ", " + ; 
-				ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-				ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-				ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-				ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
-				"0, " + ;
-				ALLTRIM(STR(lnIdOper)) + ", " + ;
-				"'" + ALLTRIM(lcObserv) + "', " + ;
-				"'" + ALLTRIM(gcCodUsu) + "', " + ;
-				oDT.getDateTime() + ", '" + ;
-				ALLTRIM(SYS(0)) + "')"
-	CASE ALLTRIM(lcCbte) == "NC"
-		IF lnIdCC_CliOrig = 0 THEN
-			lnIdOper = goConn.GetNextID("cc_cli", "idOper")
-
-			lcSql = "SELECT ventascab.cbte, ventascab.tipoDoc, ventascab.ptoVta, ventascab.numCbte "
-			lcSql = lcSql + "FROM ventascab "
-			lcSql = lcSql + " INNER JOIN ventasrel ON ventasrel.idVtaCO = ventascab.idVentasC "
-			lcSql = lcSql + "WHERE ventasrel.idVtaCD = " + ALLTRIM(STR(tnIdVentasC))
-			loRes.ActiveConnection = goConn.ActiveConnection
-			loRes.Cursor_Name = "cur_x"
-			IF !loRes.OpenQuery(lcSql) THEN
-				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-				RETURN .F.
-			ENDIF
-			lcObserv = "Devolución de " + ALLTRIM(cur_x.cbte) + " " + ;
-				ALLTRIM(cur_x.tipoDoc) + " " + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_x.ptoVta)))) + ALLTRIM(STR(cur_x.ptovta)) + ;
-				"-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_x.numCbte)))) + ALLTRIM(STR(cur_x.numCbte))
-			loRes.Close_Query()
-			
-			lcSql = "INSERT INTO cc_cli ("
-			lcSql = lcSql + "idCC_Cli, "
-			lcSql = lcSql + "idCliente, "
-			lcSql = lcSql + "idCC_Orig, "
-			lcSql = lcSql + "idVentasC, "
-			lcSql = lcSql + "cbte, "
-			lcSql = lcSql + "tipoDoc, "
-			lcSql = lcSql + "ptoVta, "
-			lcSql = lcSql + "nroCbte, "
-			lcSql = lcSql + "fecEmis, "
-			lcSql = lcSql + "fecVto, "
-			lcSql = lcSql + "idCondPago, "
-			lcSql = lcSql + "idSitIVA, "
-			lcSql = lcSql + "idVendedor, "
-			lcSql = lcSql + "impDebe, "
-			lcSql = lcSql + "impHaber, "
-			lcSql = lcSql + "idOper, "
-			lcSql = lcSql + "observ, "
-			lcSql = lcSql + "usuAlta, "
-			lcSql = lcSql + "fecAlta, "
-			lcSql = lcSql + "idHostAlta) "
-			lcSql = lcSql + "VALUES ("
-			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
-					ALLTRIM(STR(lnIdCliente)) + ;
-					", null, " + ;
-					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
-					"'" + ALLTRIM(lcCbte) + "', " + ;
-					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
-					ALLTRIM(STR(lnPtoVta)) + ", " + ;
-					ALLTRIM(STR(lnNroCbte)) + ", " + ;
-					oDT.getDateTime() + ", " + ;
-					oDT.toMySql(ldFecVto) + ", " + ; 
-					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-					"0, " + ;
-					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
-					ALLTRIM(STR(lnIdOper)) + ", " + ;
-					"'" + ALLTRIM(lcObserv) + "', " + ;
-					"'" + ALLTRIM(gcCodUsu) + "', " + ;
-					oDT.getDateTime() + ", '" + ;
-					ALLTRIM(SYS(0)) + "')"
-		ELSE
-			lcSql = "SELECT idOper "
-			lcSql = lcSql + "FROM cc_cli "
-			lcSql = lcSql + "WHERE cc_cli.idCC_Cli = " + ALLTRIM(STR(lnIdCC_CliOrig))
-			loRes.ActiveConnection = goConn.ActiveConnection
-			loRes.Cursor_Name = "cur_x"
-			IF !loRes.OpenQuery(lcSql) THEN
-				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-				RETURN .F.
-			ENDIF
-			SELECT cur_x
-			lnIDOper = cur_x.idOper
-			loRes.Close_Query()
-			
-			lcSql = "INSERT INTO cc_cli ("
-			lcSql = lcSql + "idCC_Cli, "
-			lcSql = lcSql + "idCliente, "
-			lcSql = lcSql + "idCC_Orig, "
-			lcSql = lcSql + "idVentasC, "
-			lcSql = lcSql + "cbte, "
-			lcSql = lcSql + "tipoDoc, "
-			lcSql = lcSql + "ptoVta, "
-			lcSql = lcSql + "nroCbte, "
-			lcSql = lcSql + "fecEmis, "
-			lcSql = lcSql + "fecVto, "
-			lcSql = lcSql + "idCondPago, "
-			lcSql = lcSql + "idSitIVA, "
-			lcSql = lcSql + "idVendedor, "
-			lcSql = lcSql + "impDebe, "
-			lcSql = lcSql + "impHaber, "
-			lcSql = lcSql + "idOper, "
-			lcSql = lcSql + "observ, "
-			lcSql = lcSql + "usuAlta, "
-			lcSql = lcSql + "fecAlta, "
-			lcSql = lcSql + "idHostAlta) "
-			lcSql = lcSql + "VALUES ("
-			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
-					ALLTRIM(STR(lnIdCliente)) + ;
-					", null, " + ;
-					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
-					"'" + ALLTRIM(lcCbte) + "', " + ;
-					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
-					ALLTRIM(STR(lnPtoVta)) + ", " + ;
-					ALLTRIM(STR(lnNroCbte)) + ", " + ;
-					oDT.getDateTime() + ", " + ;
-					oDT.toMySql(ldFecVto) + ", " + ; 
-					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-					"0, " + ;
-					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
-					ALLTRIM(STR(lnIdOper)) + ", " + ;
-					"'" + ALLTRIM(lcObserv) + "', " + ;
-					"'" + ALLTRIM(gcCodUsu) + "', " + ;
-					oDT.getDateTime() + ", '" + ;
-					ALLTRIM(SYS(0)) + "')"
-		ENDIF
-	CASE ALLTRIM(lcCbte) == "ND"
-		IF lnIdCC_CliOrig = 0 THEN
-			lnIdOper = goConn.GetNextID("cc_cli", "idOper")
-
-			lcSql = "SELECT ventascab.cbte, ventascab.tipoDoc, ventascab.ptoVta, ventascab.numCbte "
-			lcSql = lcSql + "FROM ventascab "
-			lcSql = lcSql + " INNER JOIN ventasrel ON ventasrel.idVtaCO = ventascab.idVentasC "
-			lcSql = lcSql + "WHERE ventasrel.idVtaCD = " + ALLTRIM(STR(tnIdVentasC))
-			loRes.ActiveConnection = goConn.ActiveConnection
-			loRes.Cursor_Name = "cur_x"
-			IF !loRes.OpenQuery(lcSql) THEN
-				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-				RETURN .F.
-			ENDIF
-			lcObserv = "Devolución de " + ALLTRIM(cur_x.cbte) + " " + ;
-				ALLTRIM(cur_x.tipoDoc) + " " + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_x.ptoVta)))) + ALLTRIM(STR(cur_x.ptovta)) + ;
-				"-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_x.numCbte)))) + ALLTRIM(STR(cur_x.numCbte))
-			loRes.Close_Query()
-		
-			lcSql = "INSERT INTO cc_cli ("
-			lcSql = lcSql + "idCC_Cli, "
-			lcSql = lcSql + "idCliente, "
-			lcSql = lcSql + "idCC_Orig, "
-			lcSql = lcSql + "idVentasC, "
-			lcSql = lcSql + "cbte, "
-			lcSql = lcSql + "tipoDoc, "
-			lcSql = lcSql + "ptoVta, "
-			lcSql = lcSql + "nroCbte, "
-			lcSql = lcSql + "fecEmis, "
-			lcSql = lcSql + "fecVto, "
-			lcSql = lcSql + "idCondPago, "
-			lcSql = lcSql + "idSitIVA, "
-			lcSql = lcSql + "idVendedor, "
-			lcSql = lcSql + "impDebe, "
-			lcSql = lcSql + "impHaber, "
-			lcSql = lcSql + "idOper, "
-			lcSql = lcSql + "observ, "
-			lcSql = lcSql + "usuAlta, "
-			lcSql = lcSql + "fecAlta, "
-			lcSql = lcSql + "idHostAlta) "
-			lcSql = lcSql + "VALUES ("
-			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
-					ALLTRIM(STR(lnIdCliente)) + ;
-					", null, " + ;
-					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
-					"'" + ALLTRIM(lcCbte) + "', " + ;
-					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
-					ALLTRIM(STR(lnPtoVta)) + ", " + ;
-					ALLTRIM(STR(lnNroCbte)) + ", " + ;
-					oDT.getDateTime() + ", " + ;
-					oDT.toMySql(ldFecVto) + ", " + ; 
-					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
-					"0, " + ;
-					ALLTRIM(STR(lnIdOper)) + ", " + ;
-					"'" + ALLTRIM(lcObserv) + "', " + ;
-					"'" + ALLTRIM(gcCodUsu) + "', " + ;
-					oDT.getDateTime() + ", '" + ;
-					ALLTRIM(SYS(0)) + "')"
-		ELSE
-			lcSql = "SELECT idOper "
-			lcSql = lcSql + "FROM cc_cli "
-			lcSql = lcSql + "WHERE cc_cli.idCC_Cli = " + ALLTRIM(STR(lnIdCC_CliOrig))
-			loRes.ActiveConnection = goConn.ActiveConnection
-			loRes.Cursor_Name = "cur_x"
-			IF !loRes.OpenQuery(lcSql) THEN
-				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-				RETURN .F.
-			ENDIF
-			SELECT cur_x
-			lnIDOper = cur_x.idOper
-			loRes.Close_Query()
-		
-			lcSql = "INSERT INTO cc_cli ("
-			lcSql = lcSql + "idCC_Cli, "
-			lcSql = lcSql + "idCliente, "
-			lcSql = lcSql + "idCC_Orig, "
-			lcSql = lcSql + "idVentasC, "
-			lcSql = lcSql + "cbte, "
-			lcSql = lcSql + "tipoDoc, "
-			lcSql = lcSql + "ptoVta, "
-			lcSql = lcSql + "nroCbte, "
-			lcSql = lcSql + "fecEmis, "
-			lcSql = lcSql + "fecVto, "
-			lcSql = lcSql + "idCondPago, "
-			lcSql = lcSql + "idSitIVA, "
-			lcSql = lcSql + "idVendedor, "
-			lcSql = lcSql + "impDebe, "
-			lcSql = lcSql + "impHaber, "
-			lcSql = lcSql + "idOper, "
-			lcSql = lcSql + "observ, "
-			lcSql = lcSql + "usuAlta, "
-			lcSql = lcSql + "fecAlta, "
-			lcSql = lcSql + "idHostAlta) "
-			lcSql = lcSql + "VALUES ("
-			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
-					ALLTRIM(STR(lnIdCliente)) + ;
-					", null, " + ;
-					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
-					"'" + ALLTRIM(lcCbte) + "', " + ;
-					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
-					ALLTRIM(STR(lnPtoVta)) + ", " + ;
-					ALLTRIM(STR(lnNroCbte)) + ", " + ;
-					oDT.getDateTime() + ", " + ;
-					oDT.toMySql(ldFecVto) + ", " + ; 
-					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
-					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
-					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
-					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
-					"0, " + ;
-					ALLTRIM(STR(lnIdOper)) + ", " + ;
-					"'" + ALLTRIM(lcObserv) + "', " + ;
-					"'" + ALLTRIM(gcCodUsu) + "', " + ;
-					oDT.getDateTime() + ", '" + ;
-					ALLTRIM(SYS(0)) + "')"
-		ENDIF
-ENDCASE
-
-IF ALLTRIM(lcCbte) == "FC" .OR. ALLTRIM(lcCbte) == "ND" THEN
-ELSE
-ENDIF
-
-goConn.BeginTransaction()
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute()
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-goConn.Commit()
-RETURN .T.
-ENDPROC
-PROCEDURE calcular_saldo_deudor_c1
-* ***********************************************************************
-* Calculo el saldo deudor desde la tabla de cuentas corrientes para
-* lograr mayor exactitud.
-* ***********************************************************************
-
-LOCAL loRes, lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-TEXT TO lcSql NOSHOW
-	SELECT
-		ROUND(SUM(cc_cli.impDebe) - SUM(cc_cli.impHaber), 2) AS saldo
-	FROM
-		cc_cli
-	WHERE
-		idCliente = ?idCliente;
-ENDTEXT
-lcSql = loRes.AddParameter(lcSql, "idCliente", ALLTRIM(STR(cur_CbtePendi.idCliente)), .f., .f.)
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-
-thisform.saldodeudor = 0.00
-
-SELECT cur_x
-IF RECCOUNT("cur_x") > 0 THEN
-	GO TOP
-ENDIF
-thisform.saldodeudor = cur_x.saldo
-
-loRes.Close_Query()
-
-RETURN .T.
-ENDPROC
-PROCEDURE calcular_saldo_deudor_c2
-LOCAL loRes, lcSql, loConDMO
-
-loConDMO = CREATEOBJECT("odbc_connect")
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-loConDMO.ConnectionString = ALLTRIM(getConfig("DMO_CC"))
-
-IF !loConDMO.Open() THEN
-	MESSAGEBOX(loConDMO.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-TEXT TO lcSql NOSHOW
-	SELECT
-		ROUND(SUM(cc_cli.impDebe) - SUM(cc_cli.impHaber), 2) AS saldo
-	FROM
-		cc_cli
-	WHERE
-		idCliente = ?idCliente;
-ENDTEXT
-lcSql = loRes.AddParameter(lcSql, "idCliente", ALLTRIM(STR(cur_CbtePendi.idCliente)), .f., .f.)
-
-loRes.ActiveConnection = loConDMO.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-thisform.saldodeudor_c2 = 0.00
-
-SELECT cur_x
-IF RECCOUNT("cur_x") > 0 THEN
-	GO TOP
-ENDIF
-thisform.saldodeudor_c2 = cur_x.saldo
-
-loRes.Close_Query()
-loConDMO.close()
-
-RETURN .T.
-ENDPROC
-PROCEDURE validar_saldo_a_compensar
-* **********************************************
-* Valido si hay saldos a compensar para 
-* notificar al usuario de que ni bien termine
-* la factura acomode la cuenta corriente.
-* Fecha: 06/07/2021
-* **********************************************
-
-LOCAL loRes
-LOCAL lcSql
-LOCAL llResult
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = "CALL cccli_validar_saldos_a_favor (?idCliente)"
-lcSql = loRes.AddParameter(lcSql, "idCliente", ALLTRIM(STR(cur_CbtePendi.idCliente)), .f., .f.)
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-loRes.OpenQuery(lcSql)
-SELECT cur_x
-IF !(TYPE("cur_x.hay_cbte") == "N") THEN
-	llResult = IIF(INT(VAL(cur_x.hay_cbte)) = 1, .T., .F.)
-ELSE
-	llResult = IIF(cur_x.hay_cbte = 1, .T., .F.)
-ENDIF
-loRes.Close_Query()
-RETURN llResult
-ENDPROC
-PROCEDURE grabar_stock
-*************************************************
-* Permite grabar el movimiento de stock
-*************************************************
-SELECT cur_CbtePendi
-
-Thisform.mov_stock.circuito = "V"
-Thisform.mov_stock.idcliente = cur_CbtePendi.idCliente
-Thisform.mov_stock.idprov = 0
-Thisform.mov_stock.tipodoc = cur_CbtePendi.tipodoc
-Thisform.mov_stock.cbte = cur_CbtePendi.cbte
-
-Thisform.mov_stock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ;
-		ALLTRIM(STR(Thisform.Ptovta)) + "-" + ;
-		REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))		
-IF !Thisform.mov_stock.grabar2() THEN
-	MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-ENDPROC
-PROCEDURE anular_cantnc_factura
-*****************************************************************
-* Método para anular cantNC de una factura
-*****************************************************************
-local lcSql, loRes
-local loCommand
-LOCAL idArticulo, idNotaCredito, idFacturaOrigen, cantidadArticulo
-
-idArticulo = 0
-cantidadArticulo = 0
-idNotaCredito = 0
-idFacturaOrigen = 0
-lcSql = ""
-loRes = createobject("odbc_result")
-loCommand = createobject("odbc_command")
-
-&& Busco la factura de origen de la NC.
-select cur_cbtePendi
-idNotaCredito = cur_cbtePendi.idVentasC
-lcSql = "select * from ventasrel where idvtacd = " + alltrim(STR(idNotaCredito))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_name = "cur_vr"
-
-if !loRes.OpenQuery(lcSql) then
-	messagebox(loRes.Error_message, 0+48, thisform.caption)
-	goConn.rollback()
-	return .f.
-ENDIF
-
-idFacturaOrigen = cur_vr.idvtaco
-
-SELECT cur_cbtePendi
-lcSql = "select idArticulo, cantidad from ventasdet where idVentasC = " + ALLTRIM(STR(idNotaCredito))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_name = "cur_x"
-loRes.close_query()
-
-if !loRes.OpenQuery(lcSql) then
-	messagebox(loRes.Error_message, 0+48, thisform.caption)
-	goConn.rollback()
-	return .f.
-endif
-
-&& Actualizo cantNC a 0
-goConn.beginTransaction()
-SELECT cur_x	
-DO WHILE !EOF("cur_x")
-	idArticulo = cur_x.idArticulo
-	cantidadArticulo = cur_x.cantidad
-	
-	lcSql = "UPDATE ventasdet "
-	lcSql = lcSql + "SET cantNC = cantNC - " + ALLTRIM(STR(cantidadArticulo))
-	lcSql = lcSql + " WHERE idventasc = " + alltrim(STR(idFacturaOrigen))
-	lcSql = lcSql + " and ventasdet.idArticulo = " + ALLTRIM(STR(idArticulo))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	if !loCommand.execute()
-		MessageBox("No se ha podido actualizar la cantidad de la factura", 0+48, thisform.caption)
-		goConn.rollback()
-		return .f.
-	endif
-	
-	SELECT cur_x
-	SKIP 
-ENDDO
-
-
-
-ENDPROC
-PROCEDURE validardetalle
-LOCAL loRes
-LOCAL lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-
-SELECT cur_CbtePendi
-lcSql = "SELECT * "
-lcSql = lcSql + "FROM ventascab "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-IF ALLTRIM(cur_x.aut_Resultado) == 'A' THEN
-	MESSAGEBOX("El comprobante ya se encuentra autorizado.", 0+48, thisform.Caption)
-	RETURN .F.
-ENDIF
-
-loRes.Close_Query()
-
-RETURN .T.
-ENDPROC
-PROCEDURE Init
-Thisform.Contenido.grdCbtes.RecordSource = "cur_CbtePendi"
-Thisform.Contenido.grdCbtes.Alias_name = "cur_CbtePendi"
-Thisform.Contenido.grdCbtes.list_controlsource = "fecEmision,cbte,tipoDoc,ptoVta,numCbte,totFact,idCliente,razSoc"
-Thisform.Contenido.grdCbtes.lista_ancho_cols = "100,70,70,70,100,70,70,250"
-Thisform.Contenido.grdCbtes.titulos_cabeceras = "Fecha,Cbte,Letra,Pto Vta,Número,Total,Cliente,Raz. Social"
-Thisform.Contenido.grdCbtes.generar_grid()
-
-Thisform.leer_cbtes_pendi()
-Thisform.Mov_stock.crear_cursor()
-ENDPROC
-PROCEDURE Load
-DODEFAULT()
-
-CREATE CURSOR cur_CbtePendi (;
-	idVentasC	int,;
-	idCondPago  int,;
-	cntDias		int,;
-	fecEmision 	date,;
-	cbte		varchar(3),;
-	tipoDoc		varchar(1),;
-	ptoVta		varchar(4),;
-	numCbte		varchar(8),;
-	totFact		float(10,2),;
-	idCliente	int,;
-	razSoc		varchar(60))
-	
-
-ENDPROC
-PROCEDURE eliminar
-LOCAL loCommand, lcSql, lnResp
-LOCAL loRes, llTieneCC
-
-loCommand = CREATEOBJECT("odbc_command")
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-lnResp = 0
-llTieneCC = .F.
-
-lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el comprobante?", 4+32, Thisform.Caption)
-IF lnResp = 6 THEN
-	goConn.BeginTransaction()
-	
-	&& Rastreo a ver si tiene algún registro vinculado en
-	&& cuentas corrientes.
-	SELECT cur_CbtePendi
-	lcSql = "SELECT * FROM cc_cli WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-	loRes.ActiveConnection = goConn.ActiveConnection
-	loRes.Cursor_Name = "cur_ctacte"
-	
-	IF !loRes.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-		RETURN
-	ENDIF
-	
-	IF RECCOUNT("cur_ctacte") > 0 THEN
-		llTieneCC = .T.
-	ENDIF
-	
-	loRes.Close_Query()
-	
-	IF llTieneCC THEN
-		&& Procedo a la eliminación del comprobante
-		lcSql = "UPDATE cc_cli "
-		lcSql = lcSql + "SET cc_cli.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
-		lcSql = lcSql + "	cc_cli.fecBaja = current_timestamp, "
-		lcSql = lcSql + "	cc_cli.idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
-		lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-		
-		loCommand.ActiveConnection = goConn.ActiveConnection
-		loCommand.CommandText = lcSql
-		
-		IF !loCommand.Execute() THEN
-			goConn.Rollback()
-			MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-			RETURN
-		ENDIF
-	ENDIF
-	
-	lcSql = "UPDATE ventascab "
-	lcSql = lcSql + "SET ventascab.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "	ventascab.fecBaja = current_timestamp, "
-	lcSql = lcSql + "	ventascab.idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		goConn.Rollback()
-		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-		RETURN
-	ENDIF
-	
-	&& Verifico que sea una Nota de crédito a eliminar y 
-	&& seteo cantNC en 0 al eliminar la nota de crédito, antes de limpiar el cursor_cbtes.
-	IF SUBSTR(cur_CbtePendi.cbte, 1, 2) == "NC" then
-		thisform.anular_cantnc_factura()
-	ENDIF 
-	&& Valido si el módulo de stock está o no habilitado
-	IF getGlobalCFG("STK_MODULE") THEN
-		Thisform.mov_stock.idVentasC = cur_CbtePendi.idVentasC
-		IF !Thisform.mov_stock.dar_baja_byvta() THEN
-			goConn.Rollback()
-			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
-			RETURN
-		ENDIF
-	ENDIF
-	
-	goConn.Commit()
-	
-	Thisform.leer_cbtes_pendi()
-	SELECT cur_CbtePendi
-	Thisform.Contenido.grdCbtes.Refresh()	
-ENDIF
-
-
-ENDPROC
-
-
-************************************************************
-OBJETO: mov_stock
-************************************************************
-*** PROPIEDADES ***
-Top = 540
-Left = 111
-Height = 17
-Width = 29
-Name = "mov_stock"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: fe
-************************************************************
-*** PROPIEDADES ***
-Top = 528
-Left = 648
-Height = 24
-Width = 36
-Name = "fe"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: grdCbtes
-************************************************************
-*** PROPIEDADES ***
-Height = 496
-Left = 18
-TabIndex = 1
-Top = 21
-Width = 922
-permitir_busqueda = .F.
-permitir_ordenamiento = .F.
-Name = "grdCbtes"
-COLUMN1.Header1.Name = "Header1"
-COLUMN1.Text1.Name = "Text1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.Header1.Name = "Header1"
-COLUMN2.Text1.Name = "Text1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.Header1.Name = "Header1"
-COLUMN3.Text1.Name = "Text1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.Header1.Name = "Header1"
-COLUMN4.Text1.Name = "Text1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.Header1.Name = "Header1"
-COLUMN5.Text1.Name = "Text1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.Header1.Name = "Header1"
-COLUMN6.Text1.Name = "Text1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.Header1.Name = "Header1"
-COLUMN7.Text1.Name = "Text1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.Header1.Name = "Header1"
-COLUMN8.Text1.Name = "Text1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.Header1.Name = "Header1"
-COLUMN9.Text1.Name = "Text1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.Header1.Name = "Header1"
-COLUMN10.Text1.Name = "Text1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.Header1.Name = "Header1"
-COLUMN11.Text1.Name = "Text1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.Header1.Name = "Header1"
-COLUMN12.Text1.Name = "Text1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.Header1.Name = "Header1"
-COLUMN13.Text1.Name = "Text1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.Header1.Name = "Header1"
-COLUMN14.Text1.Name = "Text1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.Header1.Name = "Header1"
-COLUMN15.Text1.Name = "Text1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.Header1.Name = "Header1"
-COLUMN16.Text1.Name = "Text1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.Header1.Name = "Header1"
-COLUMN17.Text1.Name = "Text1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.Header1.Name = "Header1"
-COLUMN18.Text1.Name = "Text1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.Header1.Name = "Header1"
-COLUMN19.Text1.Name = "Text1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.Header1.Name = "Header1"
-COLUMN20.Text1.Name = "Text1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnAutorizar
-************************************************************
-*** PROPIEDADES ***
-Top = 522
-Left = 850
-TabIndex = 2
-Name = "btnAutorizar"
-
-*** METODOS ***
-PROCEDURE Click
-IF thisform.validar_cbte() THEN
-	SELECT cur_CbtePendi
-
-	IF !thisform.corregir_iva() THEN
-		RETURN
-	ENDIF
-
-	SELECT cur_CbtePendi
-
-	WAIT WINDOW "Esperando respuesta de AFIP..." NOWAIT
-	IF !Thisform.enviar_wsafipfe() THEN
-		MESSAGEBOX("El comprobante no pudo ser autorizado, por favor intente mas tarde", 0+48, Thisform.Caption)
-	ELSE
-		IF Thisform.fe_set_cae() THEN
-			* Hago los movimientos de stock
-			IF getGlobalCfg("stk_module") then
-				Thisform.grabar_stock()
-			ENDIF 
-			* Grabo el movimiento de cuentas corrientes
-			IF !Thisform.grabar_ctacte(cur_CbtePendi.idVentasC) THEN
-				MESSAGEBOX("Atención, por algún motivo no se ha generado el registro en la tabla de cuentas corrientes.", 0+48, Thisform.Caption)
-				RETURN .F.
-			ENDIF
-		ENDIF
-		Thisform.saldodeudor = 0.00
-		Thisform.leer_cbtes_pendi()
-	ENDIF
-	
-	&& Verifico si hay saldo a favor en la cuenta corriente y si lo hay
-	&& lanzo una notificación.
-	IF thisform.validar_saldo_a_compensar() THEN
-		MESSAGEBOX("La cuenta corriente de este cliente tiene comprobantes para compensar. " ;
-				+ "Se recomienda entrar a la misma y dejar ordenada la cuenta", 0+64, Thisform.Caption)
-	ENDIF	
-ELSE
-	MESSAGEBOX("El comprobante ya se encuentra autorizado", 0+64, thisform.Caption)
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: btnCerrar
-************************************************************
-*** PROPIEDADES ***
-Top = 522
-Left = 897
-TabIndex = 3
-Name = "btnCerrar"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: Clsetiqueta1
-************************************************************
-*** PROPIEDADES ***
-Caption = "Los siguientes comprobnates se encuentran pendientes de autorizar. Seleccione el que desee autorizar:"
-Height = 15
-Left = 20
-Top = 7
-Width = 593
-TabIndex = 6
-Name = "Clsetiqueta1"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnRefrescar
-************************************************************
-*** PROPIEDADES ***
-Top = 522
-Left = 803
-TabIndex = 4
-Name = "btnRefrescar"
-
-*** METODOS ***
-PROCEDURE Click
-Thisform.leer_cbtes_pendi()
-ENDPROC
-
-
-************************************************************
-OBJETO: btnEliminar
-************************************************************
-*** PROPIEDADES ***
-Top = 522
-Left = 723
-TabIndex = 5
-Name = "btnEliminar"
-
-*** METODOS ***
-PROCEDURE Click
-IF !thisform.validar_cbte() THEN
-	MESSAGEBOX("El comprobante no se puede eliminar por ya se encuentra autorizado", 0+64, thisform.Caption)
-ELSE
-	Thisform.eliminar()
-ENDIF
-ENDPROC
-
-
-************************************************************
-OBJETO: cls_form_wsafip_autoriza
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cls_ncdev_fe
-************************************************************
-*** PROPIEDADES ***
-DoCreate = .T.
-WindowState = 0
-nrocbte = 0
-aut_cae = 
-aut_cae_vto = 
-aut_resultado = 
-aut_motivo = 
-aut_numero = 
-ptovta = 
-qr_image = 
-oticket = 
-Name = "cls_ncdev_fe"
-contenido.Clsetiqueta1.Name = "Clsetiqueta1"
-contenido.sel_Cliente.txtCodigo.Name = "txtCodigo"
-contenido.sel_Cliente.txtDescripcion.Name = "txtDescripcion"
-contenido.sel_Cliente.Name = "sel_Cliente"
-contenido.BTNBUSCARFC.Name = "BTNBUSCARFC"
-contenido.PAGINAS.ErasePage = .T.
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN1.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN1.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN1.Name = "COLUMN1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN2.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN2.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN2.Name = "COLUMN2"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN3.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN3.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN3.Name = "COLUMN3"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN4.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN4.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN4.Name = "COLUMN4"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN5.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN5.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN5.Name = "COLUMN5"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN6.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN6.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN6.Name = "COLUMN6"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN7.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN7.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN7.Name = "COLUMN7"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN8.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN8.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN8.Name = "COLUMN8"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN9.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN9.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN9.Name = "COLUMN9"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN10.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN10.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN10.Name = "COLUMN10"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN11.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN11.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN11.Name = "COLUMN11"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN12.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN12.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN12.Name = "COLUMN12"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN13.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN13.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN13.Name = "COLUMN13"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN14.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN14.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN14.Name = "COLUMN14"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN15.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN15.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN15.Name = "COLUMN15"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN16.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN16.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN16.Name = "COLUMN16"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN17.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN17.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN17.Name = "COLUMN17"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN18.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN18.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN18.Name = "COLUMN18"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN19.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN19.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN19.Name = "COLUMN19"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN20.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN20.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMS.COLUMN20.Name = "COLUMN20"
-contenido.PAGINAS.Page1.GRDITEMS.Name = "GRDITEMS"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN1.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN1.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN1.Name = "COLUMN1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN2.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN2.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN2.Name = "COLUMN2"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN3.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN3.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN3.Name = "COLUMN3"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN4.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN4.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN4.Name = "COLUMN4"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN5.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN5.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN5.Name = "COLUMN5"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN6.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN6.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN6.Name = "COLUMN6"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN7.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN7.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN7.Name = "COLUMN7"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN8.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN8.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN8.Name = "COLUMN8"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN9.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN9.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN9.Name = "COLUMN9"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN10.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN10.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN10.Name = "COLUMN10"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN11.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN11.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN11.Name = "COLUMN11"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN12.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN12.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN12.Name = "COLUMN12"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN13.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN13.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN13.Name = "COLUMN13"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN14.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN14.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN14.Name = "COLUMN14"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN15.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN15.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN15.Name = "COLUMN15"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN16.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN16.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN16.Name = "COLUMN16"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN17.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN17.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN17.Name = "COLUMN17"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN18.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN18.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN18.Name = "COLUMN18"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN19.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN19.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN19.Name = "COLUMN19"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN20.Header1.Name = "Header1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN20.Text1.Name = "Text1"
-contenido.PAGINAS.Page1.GRDITEMNC.COLUMN20.Name = "COLUMN20"
-contenido.PAGINAS.Page1.GRDITEMNC.Name = "GRDITEMNC"
-contenido.PAGINAS.Page1.Clsetiqueta1.Name = "Clsetiqueta1"
-contenido.PAGINAS.Page1.Clsetiqueta2.Name = "Clsetiqueta2"
-contenido.PAGINAS.Page1.BTNACEPTAR.Name = "BTNACEPTAR"
-contenido.PAGINAS.Page1.btnCancelar.Name = "btnCancelar"
-contenido.PAGINAS.Page1.Name = "Page1"
-contenido.PAGINAS.Page2.Clsetiqueta1.Name = "Clsetiqueta1"
-contenido.PAGINAS.Page2.Clsetiqueta2.Name = "Clsetiqueta2"
-contenido.PAGINAS.Page2.Clsetiqueta3.Name = "Clsetiqueta3"
-contenido.PAGINAS.Page2.Clsetiqueta4.Name = "Clsetiqueta4"
-contenido.PAGINAS.Page2.Clsetiqueta5.Name = "Clsetiqueta5"
-contenido.PAGINAS.Page2.Clsetiqueta6.Name = "Clsetiqueta6"
-contenido.PAGINAS.Page2.Clsetiqueta7.Name = "Clsetiqueta7"
-contenido.PAGINAS.Page2.Clsetiqueta8.Name = "Clsetiqueta8"
-contenido.PAGINAS.Page2.Clsetiqueta9.Name = "Clsetiqueta9"
-contenido.PAGINAS.Page2.Clslinea1.Name = "Clslinea1"
-contenido.PAGINAS.Page2.CLSLINEA2.Name = "CLSLINEA2"
-contenido.PAGINAS.Page2.Clsetiqueta10.Name = "Clsetiqueta10"
-contenido.PAGINAS.Page2.Clsetiqueta11.Name = "Clsetiqueta11"
-contenido.PAGINAS.Page2.TXTFCIMPNETO.Name = "TXTFCIMPNETO"
-contenido.PAGINAS.Page2.TXTFCPORDTO1.Name = "TXTFCPORDTO1"
-contenido.PAGINAS.Page2.TXTFCPORDTO2.Name = "TXTFCPORDTO2"
-contenido.PAGINAS.Page2.TXTFCPORDTO3.Name = "TXTFCPORDTO3"
-contenido.PAGINAS.Page2.TXTFCPORDTO4.Name = "TXTFCPORDTO4"
-contenido.PAGINAS.Page2.TXTFCIMPFINAL.Name = "TXTFCIMPFINAL"
-contenido.PAGINAS.Page2.TXTFCIMPIVA21.Name = "TXTFCIMPIVA21"
-contenido.PAGINAS.Page2.TXTFCIMPIVA105.Name = "TXTFCIMPIVA105"
-contenido.PAGINAS.Page2.TXTFCTOTFACT.Name = "TXTFCTOTFACT"
-contenido.PAGINAS.Page2.TXTFCIMPDTO1.Name = "TXTFCIMPDTO1"
-contenido.PAGINAS.Page2.TXTFCIMPDTO2.Name = "TXTFCIMPDTO2"
-contenido.PAGINAS.Page2.TXTFCIMPDTO3.Name = "TXTFCIMPDTO3"
-contenido.PAGINAS.Page2.TXTFCIMPDTO4.Name = "TXTFCIMPDTO4"
-contenido.PAGINAS.Page2.TXTNCIMPNETO.Name = "TXTNCIMPNETO"
-contenido.PAGINAS.Page2.TXTNCPORDTO1.Name = "TXTNCPORDTO1"
-contenido.PAGINAS.Page2.TXTNCPORDTO2.Name = "TXTNCPORDTO2"
-contenido.PAGINAS.Page2.TXTNCPORDTO3.Name = "TXTNCPORDTO3"
-contenido.PAGINAS.Page2.TXTNCPORDTO4.Name = "TXTNCPORDTO4"
-contenido.PAGINAS.Page2.TXTNCIMPFINAL.Name = "TXTNCIMPFINAL"
-contenido.PAGINAS.Page2.TXTNCIMPIVA21.Name = "TXTNCIMPIVA21"
-contenido.PAGINAS.Page2.TXTNCIMPIVA105.Name = "TXTNCIMPIVA105"
-contenido.PAGINAS.Page2.TXTNCTOTFACT.Name = "TXTNCTOTFACT"
-contenido.PAGINAS.Page2.TXTNCIMPDTO1.Name = "TXTNCIMPDTO1"
-contenido.PAGINAS.Page2.TXTNCIMPDTO2.Name = "TXTNCIMPDTO2"
-contenido.PAGINAS.Page2.TXTNCIMPDTO3.Name = "TXTNCIMPDTO3"
-contenido.PAGINAS.Page2.TXTNCIMPDTO4.Name = "TXTNCIMPDTO4"
-contenido.PAGINAS.Page2.CLSLINEA3.Name = "CLSLINEA3"
-contenido.PAGINAS.Page2.CLSLINEA4.Name = "CLSLINEA4"
-contenido.PAGINAS.Page2.Clsetiqueta12.Name = "Clsetiqueta12"
-contenido.PAGINAS.Page2.TXTFCPORIIBB.Name = "TXTFCPORIIBB"
-contenido.PAGINAS.Page2.TXTFCIMPIIBB.Name = "TXTFCIMPIIBB"
-contenido.PAGINAS.Page2.TXTNCPORIIBB.Name = "TXTNCPORIIBB"
-contenido.PAGINAS.Page2.TXTNCIMPIIBB.Name = "TXTNCIMPIIBB"
-contenido.PAGINAS.Page2.TXTNCPORREC.Name = "TXTNCPORREC"
-contenido.PAGINAS.Page2.TXTNCIMPREC.Name = "TXTNCIMPREC"
-contenido.PAGINAS.Page2.TXTFCPORREC.Name = "TXTFCPORREC"
-contenido.PAGINAS.Page2.TXTFCIMPREC.Name = "TXTFCIMPREC"
-contenido.PAGINAS.Page2.Clsetiqueta13.Name = "Clsetiqueta13"
-contenido.PAGINAS.Page2.Clsetiqueta14.Name = "Clsetiqueta14"
-contenido.PAGINAS.Page2.txtFCTotalNoGrav.Name = "txtFCTotalNoGrav"
-contenido.PAGINAS.Page2.txtNCTotalNoGrav.Name = "txtNCTotalNoGrav"
-contenido.PAGINAS.Page2.Name = "Page2"
-contenido.PAGINAS.Name = "PAGINAS"
-contenido.BTNCERRAR.Name = "BTNCERRAR"
-contenido.btnGrabar.Name = "btnGrabar"
-contenido.BTNNUEVO.Name = "BTNNUEVO"
-contenido.Clsetiqueta2.Name = "Clsetiqueta2"
-contenido.TXTCBTE.Name = "TXTCBTE"
-contenido.TXTTIPO.Name = "TXTTIPO"
-contenido.TXTNROCBTE.Name = "TXTNROCBTE"
-contenido.Clsetiqueta3.Name = "Clsetiqueta3"
-contenido.txtFecEmis.Name = "txtFecEmis"
-contenido.lblEstadoCbte.Name = "lblEstadoCbte"
-contenido.Name = "contenido"
-DATOS_CBTES.Name = "DATOS_CBTES"
-
-*** METODOS ***
-PROCEDURE fe_convertir_tipodoc
-PARAMETERS tcTipoDoc
-LOCAL lnResultado
-
-lnResultado = 99 && Código que corresponde a sin identificación en el diccionario
-
-DO CASE
-	CASE ALLTRIM(tcTipoDoc) == "CUIT"
-		lnResultado = 80
-	CASE ALLTRIM(tcTipoDoc) == "CUIL"
-		lnResultado = 86
-	CASE ALLTRIM(tcTipoDoc) == "CI"
-		lnResultado = 87
-	CASE ALLTRIM(tcTipoDoc) == "LE"
-		lnResultado = 89
-	CASE ALLTRIM(tcTipoDoc) == "LC"
-		lnResultado = 90
-	CASE ALLTRIM(tcTipoDoc) == "CIE"
-		lnResultado = 91
-	CASE ALLTRIM(tcTipoDoc) == "PAS"
-		lnResultado = 94
-	CASE ALLTRIM(tcTipoDoc) == "DNI"
-		lnResultado = 96
-ENDCASE
-
-RETURN lnResultado
-ENDPROC
-PROCEDURE fe_get_tipocbte_afip
-PARAMETERS tc_letra
-
-DO CASE
-	CASE ALLTRIM(Thisform.datos_cbtes.cbte) == "FC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 1
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 6
-			CASE ALLTRIM(tc_letra) == "C" 
-				RETURN 11
-		ENDCASE
-	CASE ALLTRIM(Thisform.datos_cbtes.cbte) == "ND"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 2
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 7
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 12
-		ENDCASE
-	CASE ALLTRIM(Thisform.datos_cbtes.cbte) == "NC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 3
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 8
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 13
-		ENDCASE	
-ENDCASE
-
-RETURN -1
-ENDPROC
-PROCEDURE fe_set_cae
-LOCAL loCommand, loMovStock, lcSql
-LOCAL loDT, ldFecVto
-LOCAL lcAnio, lcMes, lcDia
-
-loDT = CREATEOBJECT("datetime")
-loCommand = CREATEOBJECT("odbc_command")
-loMovStock = CREATEOBJECT("cl_mov_stock")
-lcSql = ""
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-lcSql = "update ventascab "
-lcSql = lcSql + "set "
-lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
-lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
-lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
-lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
-lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
-lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
-lcSql = lcsql + "	aut_tipoCbte = '" + REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)) + "', "
-lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
-lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(Thisform.datos_cbtes.idventasc))
-
-goConn.BeginTransaction()
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "update cc_cli set nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + " "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.datos_cbtes.idventasc))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-IF getGlobalCFG("stk_module") THEN
-	thisform.datos_cbtes.grabar_Stock()
-ENDIF
-goConn.Commit()
-
-Thisform.datos_cbtes.ptovta = Thisform.ptovta
-Thisform.datos_cbtes.numcbte = Thisform.nrocbte
-
-RETURN .T.
-
-
-ENDPROC
-PROCEDURE enviar_wsafipfe
-LOCAL llRes
-LOCAL lnPtoVta
-LOCAL lnTipoDoc, lcTipoDoc
-LOCAL lnRetAlva
-LOCAL lnCantIVA
-LOCAL lnImpBase21
-LOCAL lnImpBase105
-LOCAL lcNumero
-LOCAL lcMensaje
-LOCAL lnModo
-LOCAL lnTotalIVA
-LOCAL lnImpBaseSIVA
-LOCAL lnIndice
-
-lnTipoDoc = 0
-lcTipoDoc = ""
-lnPtoVta = INT(VAL(getConfig("PTOVTA")))
-lnRetAlva = 0
-lnCantIVA = 0
-lnImpBase21 = 0
-lnImpBase105 = 0
-lnImpBaseSIVA = 0
-lcNumero = ""
-lcMensaje = ""
-lnTotalIVA = 0.00
-lnIndice = 0
-
-lcTipoDoc = Thisform.datos_cbtes.tipodoc
-
-&& Tengo que acordarme que en el tercer parámetro tengo que pasar
-&& la ruta y el nombre de archivo del certificado.
-
-lnModo = IIF(getGlobalCFG("FEDEBUG"), 0, 1)
-llRes = Thisform.fe.iniciar(lnModo, getGlobalCFG("FECUIT"), SYS(5) + SYS(2003) + "\wsafip\" + getGlobalCFG("FE_FILE"), ALLTRIM(getGlobalCFG("FE_LIC")))
-Thisform.fe.tls = getGlobalCFG("FETLS")
-
-IF !llRes THEN
-	MESSAGEBOX("Falló al iniciar: " + Thisform.fe.ultimoMensajeError, 0+32, Thisform.Caption)
-	RETURN .F.
-EndIf
-
-&& Verifico si el servicio está en línea
-IF !Thisform.fe.dummy() THEN 
-	MESSAGEBOX("Los Web Services de AFIP no se encuentran disponibles.",0+16,Thisform.Caption)
-	Return .F.
-ENDIF 
-
-Thisform.fe.ArchivoCertificadoPassWord = ALLTRIM(getGlobalCFG("FE_PWD"))
-IF !Thisform.ticket_valido() THEN
-	MESSAGEBOX("No se pudo generar Ticket de Acceso", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-Thisform.fe.ArchivoXMLRecibido = SYS(5) + SYS(2003) + "\wsafip\xml\rec_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.fe.archivoXMLEnviado = SYS(5) + SYS(2003) + "\wsafip\xml\env_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.qr_image = getGlobalCFG("QRPATH") + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".jpg"
-	
-lnRetAlva = Thisform.fe.f1CompUltimoAutorizado(lnPtoVta, Thisform.fe_get_tipocbte_afip(ALLTRIM(lcTipoDoc)))
-
-Thisform.fe.F1CabeceraCantReg = 1
-Thisform.fe.F1CabeceraPtoVta = lnPtoVta
-Thisform.fe.F1CabeceraCbteTipo = Thisform.fe_get_tipocbte_afip(Thisform.datos_cbtes.tipodoc)
-Thisform.fe.F1DetalleDocTipo = This.datos_cbtes.tipodoc_codafip
-Thisform.fe.F1DetalleDocNro = INT(VAL(Thisform.datos_cbtes.cli_nrodoc))
-Thisform.fe.F1DetalleCbteDesde = lnRetAlva + 1
-Thisform.fe.F1DetalleCbteHasta = lnretAlva + 1
-
-* Condición IVA Receptor ID
-If getGlobalCFG("FE_IVAREC") THEN
-	Thisform.fe.F1DetalleCondicionIvaReceptor = Thisform.condicion_iva_receptor_id
-Endif
-
-* Asocio el comprobante de origen
-Thisform.fe.F1DetalleCbtesASocItemCantidad = 1
-Thisform.fe.F1DetalleCbtesAsocTipo = Thisform.datos_cbtes.aut_tipocbteorigen
-Thisform.fe.F1DetalleCbtesAsocFecha = ALLTRIM(STR(YEAR(Thisform.datos_cbtes.fecemision))) ;
-	+ IIF(LEN(ALLTRIM(STR(MONTH(Thisform.datos_cbtes.fecemision)))) < 2, "0" + ALLTRIM(STR(MONTH(this.datos_cbtes.fecemision))), ALLTRIM(STR(MONTH(this.datos_cbtes.fecemision)))) ;
-	+ IIF(LEN(ALLTRIM(STR(DAY(This.datos_cbtes.fecemision)))) < 2, "0" + ALLTRIM(STR(DAY(This.datos_cbtes.fecemision))), ALLTRIM(STR(DAY(This.datos_cbtes.fecemision))))
-* Thisform.fe.F1DetalleCbtesAsocCUIT = INT(VAL(This.datos_cbtes.cli_nrodoc))
-Thisform.fe.F1DetalleCbtesAsocPtoVta = This.datos_cbtes.ptovta
-Thisform.fe.F1DetalleCbtesAsocNro = This.datos_cbtes.nro_origen
-
-Thisform.fe.F1DetalleCbteFch = ALLTRIM(STR(YEAR(DATE()))) ;
-	+ IIF(LEN(ALLTRIM(STR(MONTH(DATE())))) < 2, "0" + ALLTRIM(STR(MONTH(DATE()))), ALLTRIM(STR(MONTH(DATE())))) ;
-	+ IIF(LEN(ALLTRIM(STR(DAY(DATE())))) < 2, "0" + ALLTRIM(STR(DAY(DATE()))), ALLTRIM(STR(DAY(DATE()))))
-
-&& Tengo que calcular la suma del neto de los articulos con 21 de IVA y con el 10.5 de IVA por separado
-
-SELECT cur_detalle
-GO TOP
-DO WHILE !EOF("cur_detalle")
-	IF cur_detalle.alicIVA = 21 THEN
-		lnImpBase21 = lnImpBase21 + cur_detalle.TotNeto
-	ENDIF
-	
-	IF cur_detalle.alicIVA = 10.5 THEN
-		lnImpBase105 = lnImpBase105 + cur_detalle.TotNeto
-	ENDIF
-	
-	IF cur_detalle.alicIVA = 0 THEN
-		lnImpBaseSIVA = lnImpBaseSIVA + cur_detalle.TotNeto
-	ENDIF
-
-	SELECT cur_detalle
-	SKIP
-ENDDO
-
-IF Thisform.fe.F1CabeceraCbteTipo <> 11 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 12 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 13 THEN
-	lnIndice = 0
-	lnTotalIVA = 0.00
-	IF lnImpBase21 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = 1
-		Thisform.fe.f1IndiceItem = lnIndice 
-		Thisform.fe.F1DetalleIvaId = 5
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase21, 2)
-		Thisform.fe.F1DetalleIvaImporte = Thisform.datos_cbtes.lnncimpiva21
-		lnTotalIVA = lnTotalIVA + Thisform.datos_cbtes.lnncimpiva21
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBase105 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 4
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase105, 2)
-		Thisform.fe.F1DetalleIvaImporte = Thisform.datos_cbtes.lnncimpiva105
-		lnTotalIVA = lnTotalIVA + Thisform.datos_cbtes.lnncimpiva105
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBaseSIVA <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 3
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBaseSIVA, 2)
-	ENDIF
-ENDIF
-&& Agrego los conceptos de IIBB
-
-IF Thisform.Contenido.paginas.page2.txtNCPorIIBB.Value <> 0 THEN
-	Thisform.FE.F1DetalleTributoItemCantidad = 1
-	Thisform.FE.f1IndiceItem   = 0
-	Thisform.FE.F1DetalleTributoId  = 2
-	Thisform.FE.F1DetalleTributoDesc = "IIBB Pcia Bs AS"
-	Thisform.FE.F1DetalleTributoBaseImp = Thisform.datos_cbtes.lnncimpfinal
-	Thisform.FE.F1DetalleTributoAlic = Thisform.datos_cbtes.lnncporiibb
-	Thisform.FE.F1DetalleTributoImporte = Thisform.datos_cbtes.lnncimpiibb
-ENDIF
-
-Thisform.fe.F1DetalleConcepto = 1
-Thisform.fe.F1DetalleImpNeto = ROUND(Thisform.datos_cbtes.lnncimpfinal, 2)
-Thisform.fe.F1DetalleImpTotalConc = ROUND(Thisform.datos_cbtes.nc_totanograv, 2)	&& Agrego el no gravado
-Thisform.fe.F1DetalleImpIva = lnTotalIVA
-Thisform.fe.F1DetalleImpOpEx = 0
-Thisform.fe.F1DetalleImpTrib = Thisform.FE.F1DetalleTributoImporte
-Thisform.fe.F1DetalleMonId = "PES"
-Thisform.fe.F1DetalleMonCotiz = 1
-Thisform.fe.F1DetalleImpTotal = Thisform.datos_cbtes.lnnctotfact
-
-* Agrego la generación del QR
-Thisform.fe.f1DEtalleQrArchivo = Thisform.qr_image
-Thisform.fe.f1DEtalleQrFormato = 1
-Thisform.fe.f1DetalleQrResolucion = 5
-Thisform.fe.f1DetalleQrTolerancia = 0
-
-llRes = Thisform.fe.f1CAESolicitar()
-
-IF llRes THEN
-	lcNumero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-		REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde)))) + ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde))
-	
-	Thisform.ptovta = lnPtoVta
-	Thisform.nrocbte = INT(VAL(Thisform.fe.F1RespuestaDetalleCbteDesdeS))
-	
-	lcMensaje = "CAE: " + Thisform.fe.F1RespuestaDetalleCae + CHR(13)+ CHR(10)
-	lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaDetalleCaeFchVto + CHR(13) + CHR(10)
-	lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-	lcMensaje = lcMensaje + "PROCESO: " + Thisform.fe.F1RespuestaReProceso
-	MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-	
-	Thisform.aut_numero = lcNumero
-	Thisform.aut_cae = Thisform.fe.F1RespuestaDetalleCae
-	Thisform.aut_cae_vto = Thisform.fe.F1RespuestaDetalleCaeFchVto
-	Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-	Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-ELSE
-	IF !(ISNULL(Thisform.fe.F1RespuestaReProceso) .OR. Thisform.fe.F1RespuestaReProceso == "R") THEN
-		lcNumero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-			REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde)))) + ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde))
-		
-		&& lcMensaje = "CAE: " + Thisform.fe.F1RespuestaDetalleCae + CHR(13)+ CHR(10)
-		lcMensaje = "ATENCION: Factura rechazada por el AFIP" + CHR(13) + CHR(10)
-		&&lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaDetalleCaeFchVto + CHR(13) + CHR(10)		
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		&&lcMensaje = lcMensaje + "PROCESO: " + Thisform.fe.F1RespuestaReProceso
-		MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-		MESSAGEBOX("Recomendación: Elimine este comprobante y vuelva a generarlo por favor.", 0+48, Thisform.Caption)
-		
-		Thisform.aut_numero = lcNumero
-		Thisform.aut_cae = Thisform.fe.F1RespuestaDetalleCae
-		Thisform.aut_cae_vto = Thisform.fe.F1RespuestaDetalleCaeFchVto
-		Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-		Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-		RETURN .F.
-	ELSE
-		lcMensaje = "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ERROR: " + Thisform.fe.f1ErrorMsg1 + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ULTIMO: " + Thisform.fe.UltimoMensajeError
-		MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-		
-		Thisform.aut_numero = lcNumero
-		Thisform.aut_cae = ""
-		Thisform.aut_cae_vto = ""
-		Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-		Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-		RETURN .F.
-	ENDIF
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE calc_digito_verificador
-&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
-
-PARAMETERS tcCodigo
-
-LOCAL lnDigito
-LOCAL lnSumaE1
-LOCAL lnSumaE3
-LOCAL lnProductoE2
-LOCAL lnSumaE4
-LOCAL lnMin
-LOCAL lnPos
-
-lnDigito = 0
-lnSumaE1 = 0
-lnSumaE3 = 0
-lnSumaE4 = 0
-lnMin = 0
-
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(i, 2) <> 0 THEN
-		&& Etapa 1 (posiciones impares)
-		lnSumaE1 = lnSumaE1 + lnDigito
-	ELSE
-		&& Etapa 3 (posiciones pares)
-		lnSumaE3 = lnSumaE3 + lnDigito
-	ENDIF
-NEXT i
-
-lnProductoE2 = lnSumaE1 * 3 && Etapa 2
-lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
-
-&& Etapa 5
-lnPos = 0
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
-		IF lnPos = 0 THEN
-			lnMin = lnDigito
-		ELSE
-			IF lnDigito < lnMin THEN
-				lnMin = lnDigito
-			ENDIF
-		ENDIF
-		
-		lnPos = lnPos + 1
-	ENDIF
-NEXT i
-
-RETURN lnMin
-ENDPROC
-PROCEDURE ticket_valido
-LOCAL llTkValido
-LOCAL lcTicket
-LOCAL lcFileTicket
-LOCAL lcTK
-LOCAL hndFile
-LOCAL llModoLocal
-
-llTkValido = .F.
-lcTicket = ""
-lcTK = ""
-lcFileTicket = getGlobalCFG("FE_TICKACC")
-llModoLocal = getGlobalCFG("FELOCAL")
-
-IF !llModoLocal THEN
-	** Si el ticket se está transfiriendo al cloud server, entonces,
-	** Descargo el último ticket que está en el server para validar luego
-	** si es válido o no.
-	IF DATE() > FDATE(lcFileTicket) THEN
-		* Si la fecha del archivo no coincide entonces descargo del FTP
-		descargar_ticket_acceso(lcFileTicket)
-	ENDIF
-ENDIF
-
-IF FILE(ALLTRIM(lcFileTicket)) THEN
-	hndFile = FOPEN(lcFileTicket, 12)
-	IF hndFile < 0 THEN
-		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
-		=FCLOSE(hndFile)
-	ELSE
-		=FCLOSE(hndFile)
-		
-		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
-		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
-		
-		IF Thisform.fe.f1TicketEsValido THEN
-			llTkValido = .T.
-		ELSE
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-	
-	IF !llTkValido THEN
-		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
-		** generar con los nuevos datos.
-		DELETE FILE ALLTRIM(lcFileTicket)
-		
-		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-			lcTK = Thisform.fe.f1GuardarTicketAcceso()
-			hndFile = FCREATE(lcFileTicket)
-			
-			IF hndFile < 0 THEN
-				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
-			ELSE
-				=FWRITE(hndFile, lcTK)
-				llTkValido = .T.
-			ENDIF
-			
-			=FCLOSE(hndFile)
-			
-			IF !llModoLocal THEN
-				* Envío el ticket de acceso al FTP
-				enviar_ticket_acceso(lcFileTicket)
-			ENDIF
-		ELSE
-			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-ELSE
-	** Si no existe el archivo entonces lo creo y lo envío al servidor.
-	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-		lcTK = Thisform.fe.f1GuardarTicketAcceso()
-		hndFile = FCREATE(lcFileTicket)
-		
-		IF hndFile < 0 THEN
-			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
-		ELSE
-			=FWRITE(hndFile, lcTK)
-			llTkValido = .T.
-		ENDIF
-		
-		=FCLOSE(hndFile)
-
-		IF !llModoLocal THEN
-			* Envío el ticket de acceso al FTP
-			enviar_ticket_acceso(lcFileTicket)
-		ENDIF
-	ELSE
-		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-		llTkValido = .F.			
-	ENDIF	
-ENDIF
-
-RETURN llTkValido
-ENDPROC
-PROCEDURE Init
-DODEFAULT()
-Thisform.oTicket = CREATEOBJECT("cls_tickets")
-Thisform.oTicket.crear_cursor()
-
-ENDPROC
-PROCEDURE imprimir
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.porIIBB, m.impIIBB, m.observ
-LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
-LOCAL m.cae, m.caevto
-LOCAL lcAnio, lcMes, lcDia
-LOCAL lcSql, loResult, lcPrinterName, lnCantCpia
-LOCAL m.codigoCbte, m.barcode, m.code
-LOCAL lnIdNum, m.vendedor, m.nroOC, m.NroRto, m.condPago
-LOCAL m.porRec, loPDF, lcFileName
-LOCAL lcNomEmp, lcRepName
-LOCAL m.qr, llUsaTicket, m.motivo, lnIdSitIVA, m.totaNoGrav
-LOCAL m.saldodeudor_total
-
-&& Calculo los saldos para imprimir. Solo lo calculo si la condición de pago
-&& no es contado
-IF clientes.idCondPago <> 1 THEN
-	thisform.calcular_saldo_deudor_c1()
-	thisform.calcular_saldo_deudor_c2()
-ELSE
-	thisform.saldodeudor_c1 = 0.00
-	thisform.saldodeudor_c2 = 0.00
-ENDIF
-m.saldodeudor_total = thisform.saldodeudor_c1 + thisform.saldodeudor_c2
-
-lcNomEmp = getconfig("NOMEMP")
-loResult = CREATEOBJECT("odbc_result")
-lcSql = ""
-lcRepName = ""
-
-lcSql = "SELECT clientes.*, localidad.descripcio as descLoc, localidad.codPostal, provincias.descripcio as pcia, sitiva.descripcio as sitiva "
-lcSql = lcSql + "FROM clientes INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid "
-lcSql = lcSql + "	INNER JOIN provincias ON provincias.idProvin = localidad.idProvin "
-lcSql = lcSql + "	INNER JOIN sitiva ON sitiva.idsitiva = clientes.idsitiva "
-lcSql = lcSql + "WHERE clientes.idCliente = " + ALLTRIM(STR(thisform.contenido.sel_cliente.valcpoid))
-lcSql = lcSql + " AND sitiva.idsitiva = " + ALLTRIM(STR(Thisform.datos_cbtes.idsitiva))
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_cli"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResult.Error_Message, 0+48, thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_cli
-m.NroCli = cur_cli.idCliente
-m.RazSoc = ALLTRIM(thisform.cli_razsoc)
-m.Telefono = ALLTRIM(cur_cli.telefono)
-m.direccion = ALLTRIM(cur_cli.direccion)
-m.localidad = ALLTRIM(cur_cli.descLoc)
-m.codPostal = ALLTRIM(cur_cli.codPostal)
-m.pcia = ALLTRIM(cur_cli.pcia)
-m.nroCUIT = ALLTRIM(thisform.cli_cuit)
-lnIdSitIVA = cur_cli.idSitIVA
-m.TipoIVA = ALLTRIM(cur_cli.sitiva)
-m.codigoCbte = REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo))
-m.barcode = ""
-m.code = ""
-m.qr = thisform.qr_image
-
-loResult.close_query()
-
-m.totaNoGrav = 0.00 && Agrego no gravado
-m.Total = 0.00
-m.tipoDoc = ""
-m.leyenda = ""
-m.Fecha = DATETIME()
-m.porIVA105 = 0.00
-m.porIVA21 = 0.00
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.fecVto = DATE()
-m.tipoDoc = this.datos_cbtes.tipodoc
-m.ptovta = thisform.ptovta
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-lcPrinterName = ""
-lnCantCpia = 0
-m.observ = thisform.datos_cbtes.observ
-m.total = thisform.contenido.paginas.page2.txtNcTotFact.Value
-m.porRec = 0.00
-m.NroRto = ""
-m.condPago = ALLTRIM(thisform.cli_condpago)
-
-&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
-lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_num"
-loResult.OpenQuery(lcSql)
-
-SELECT cur_num
-lnIdNum = cur_num.idNum
-lcRepName = cur_num.repname
-
-loResult.close_query()
-
-lcSql = "SELECT * FROM impresoras WHERE idNum = " + ALLTRIM(STR(lnIdNum)) + " AND hostName = '" + ALLTRIM(SYS(0)) + "'"
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_imp"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_imp
-IF RECCOUNT("cur_imp") = 0 THEN
-	MESSAGEBOX("La impresora no está configurada en este puesto de trabajo", 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-lcPrinterName = ALLTRIM(cur_imp.impresora)
-lnCantCpia = cur_imp.copias
-llUsaTicket = cur_imp.usa_ticket
-
-loResult.Close_Query()
-
-&& Si es monotributo extraigo la leyenda.
-IF lnIdSitIVA = 6 THEN
-	IF !llUsaTicket THEN
-		m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
-			+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
-	ELSE
-		m.motivo =   "El crédito fiscal discriminado en el presente" + CHR(13) + CHR(10) ;
-				   + "comprobante, sólo podrá ser computado a " + CHR(13) + CHR(10) ;
-				   + "efectos del Régimen de Sostenimiento e " + CHR(13) + CHR(10) ;
-				   + "Inclusión Fiscal para Pequeños Contri-" + CHR(13) + CHR(10) ;
-				   + "buyentes de la Ley Nº 27.618"
-	ENDIF
-ELSE
-	m.motivo = ""
-ENDIF
-
-m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(thisform.ptovta)))) + ALLTRIM(STR(thisform.ptovta)) + "-" + ;
-	REPLICATE("0", 8 - LEN(ALLTRIM(STR(thisform.nrocbte)))) + ALLTRIM(STR(thisform.nrocbte))
-	
-m.Leyenda = "NOTA DE CREDITO"
-
-m.porDesc1 = thisform.contenido.paginas.page2.txtNCPorDto1.Value
-m.porDesc2 = thisform.contenido.paginas.page2.txtNCPorDto2.Value
-m.porDesc3 = thisform.contenido.paginas.page2.txtNCPorDto3.Value
-m.porDesc4 = thisform.contenido.paginas.page2.txtNCPorDto4.Value
-m.impDesc1 = thisform.contenido.paginas.page2.txtNCImpDto1.Value
-m.impDesc2 = thisform.contenido.paginas.page2.txtNCImpDto2.Value
-m.impDesc3 = thisform.contenido.paginas.page2.txtNCImpDto3.Value
-m.impDesc4 = thisform.contenido.paginas.page2.txtNCImpDto4.Value
-m.porIVA105 = 10.5
-m.porIVA21 = 21
-m.impIVA105 = thisform.contenido.paginas.page2.txtNCImpIVA105.Value
-m.impIVA21 = thisform.contenido.paginas.page2.txtNCImpIVA21.Value
-&&m.impNeto = thisform.contenido.paginas.page2.txtNCImpNeto.Value
-m.impNeto = thisform.contenido.paginas.page2.txtNCImpFinal.Value
-m.porIIBB = thisform.contenido.paginas.page2.txtNCPorIIBB.Value
-m.impIIBB = thisform.contenido.paginas.page2.txtNCImpIIBB.Value
-m.totaNoGrav = thisform.contenido.paginas.page2.txtNCTotalNoGrav.Value
-
-m.vendedor = thisform.nombre_usuario
-m.nroOC = ""
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-m.cae = thisform.aut_cae
-m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
-
-&& Generación del código de barra
-m.barcode = ALLTRIM(Thisform.cli_cuit)
-m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
-m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
-m.barcode = m.barcode + ALLTRIM(m.cae)
-m.barcode = m.barcode + ALLTRIM(lcAnio)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
-m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
-m.code = m.barcode
-m.barcode = getcodbarras(m.barcode)
-
-&& Creo el cursor cur_aux para imprimir el detalle del comprobante
-&& USE IN cur_aux
-SELECT cur_aux
-ZAP
-
-SELECT cur_detalle
-GO TOP
-DO WHILE !EOF("cur_detalle")
-	SELECT cur_aux
-	APPEND BLANK
-	REPLACE cur_aux.idVentasD WITH cur_detalle.idVentasD
-	REPLACE cur_aux.idArticulo WITH cur_detalle.idArticulo ADDITIVE
-	REPLACE cur_aux.codArt WITH cur_detalle.codArt ADDITIVE
-	REPLACE cur_aux.descripcio WITH cur_detalle.descripcio ADDITIVE
-	REPLACE cur_aux.cantidad WITH cur_detalle.cantidad ADDITIVE
-	REPLACE cur_aux.cantNC WITH 0 ADDITIVE
-	REPLACE cur_aux.nroPart WITH cur_detalle.nroPart ADDITIVE
-	REPLACE cur_aux.costoRep WITH cur_detalle.costoRep ADDITIVE
-	REPLACE cur_aux.porDesc1 WITH cur_detalle.porDesc1 ADDITIVE
-	REPLACE cur_aux.porDesc2 WITH cur_detalle.porDesc2 ADDITIVE
-	REPLACE cur_aux.porDesc3 WITH cur_detalle.porDesc3 ADDITIVE
-	REPLACE cur_aux.porDesc4 WITH cur_detalle.porDesc4 ADDITIVE
-	REPLACE cur_aux.impDesc1 WITH cur_detalle.impDesc1 ADDITIVE
-	REPLACE cur_aux.impDesc2 WITH cur_detalle.impDesc2 ADDITIVE
-	REPLACE cur_aux.impDesc3 WITH cur_detalle.impDesc3 ADDITIVE
-	REPLACE cur_aux.impDesc4 WITH cur_detalle.impDesc4 ADDITIVE
-	REPLACE cur_aux.pDtoVta1 WITH cur_detalle.pDtoVta1 ADDITIVE
-	REPLACE cur_aux.pDtoVta2 WITH cur_detalle.pDtoVta2 ADDITIVE
-	REPLACE cur_aux.pDtoVta3 WITH cur_detalle.pDtoVta3 ADDITIVE
-	REPLACE cur_aux.pDtoVta4 WITH cur_detalle.pDtoVta4 ADDITIVE
-	REPLACE cur_aux.iDtoVta1 WITH cur_detalle.iDtoVta1 ADDITIVE
-	REPLACE cur_aux.iDtoVta2 WITH cur_detalle.iDtoVta2 ADDITIVE
-	REPLACE cur_aux.iDtoVta3 WITH cur_detalle.iDtoVta3 ADDITIVE
-	REPLACE cur_aux.iDtoVta4 WITH cur_detalle.iDtoVta4 ADDITIVE
-	REPLACE cur_aux.totNeto WITH cur_detalle.totNeto ADDITIVE
-	REPLACE cur_aux.alicIVA WITH cur_detalle.alicIVA ADDITIVE
-	REPLACE cur_aux.impIVA WITH cur_detalle.impIVA ADDITIVE
-	REPLACE cur_aux.subTotal WITH cur_detalle.subTotal ADDITIVE
-	REPLACE cur_aux.impNeto WITH cur_detalle.impNeto ADDITIVE
-	REPLACE cur_aux.prArtic WITH cur_detalle.prArtic ADDITIVE
-	REPLACE cur_aux.pRecVta WITH cur_detalle.pRecVta ADDITIVE
-	REPLACE cur_aux.iRecVta WITH cur_detalle.iRecVta ADDITIVE
-	
-	SELECT cur_detalle
-	SKIP
-ENDDO
-
-SELECT cur_aux
-GO TOP
-
-IF thisform.printcbte THEN		
-	SET PRINTER TO NAME ALLTRIM(lcPrinterName)
-
-	FOR i = 1 TO lnCantCpia 
-		IF ALLTRIM(This.datos_cbtes.tipodoc) == "X" THEN
-			&& Imprime un comprobante de tipo "X"
-			REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-		ELSE
-			IF ALLTRIM(This.datos_cbtes.tipodoc) == "A" THEN
-				&& Imprime el comprobante de tipo "A"
-				IF llUsaTicket THEN
-					****************************************************************************
-					* Envío a imprimir el ticket
-					****************************************************************************
-					Thisform.oticket.limpiar_datos()
-					Thisform.oticket.codigo_cbte = m.codigoCbte
-					Thisform.oticket.leyenda = m.leyenda
-					Thisform.oticket.letra = m.tipoDoc
-					Thisform.oticket.nro_cbte = m.nroCbte
-					Thisform.oticket.fecha_cbte = m.fecha
-					Thisform.oticket.fecha_vencimiento = m.fecVto
-					Thisform.oticket.numero_cliente = m.NroCli
-					Thisform.oticket.razon_social = m.razSoc
-					Thisform.oticket.direccion = m.direccion
-					Thisform.oticket.codigo_postal = m.codPostal 
-					Thisform.oticket.localidad = m.localidad
-					Thisform.oticket.provincia = m.pcia
-					Thisform.oticket.tipo_iva = m.TipoIVA
-					SELECT cur_aux
-					GO TOP
-					DO WHILE !EOF("cur_aux")
-						Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-								cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-						SELECT cur_aux
-						SKIP
-					ENDDO
-					Thisform.oticket.total_neto = m.impNeto
-					Thisform.oticket.total_imp_iva21 = m.impIVA21
-					Thisform.oticket.total_imp_iva105 = m.impIVA105
-					Thisform.oticket.total = m.Total
-					Thisform.oticket.qr_image = Thisform.qr_image
-					Thisform.oticket.nro_cae = m.cae
-					Thisform.oticket.vto_cae = m.caevto
-					Thisform.oticket.motivo = m.motivo
-					Thisform.oticket.imprimir()				
-				ELSE
-					REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-				ENDIF
-			ELSE
-				&& Imprime el comprobante de tipo "B"
-				IF llUsaTicket THEN
-					****************************************************************************
-					* Envío a imprimir el ticket
-					****************************************************************************
-					Thisform.oticket.limpiar_datos()
-					Thisform.oticket.codigo_cbte = m.codigoCbte
-					Thisform.oticket.leyenda = m.leyenda
-					Thisform.oticket.letra = m.tipoDoc
-					Thisform.oticket.nro_cbte = m.nroCbte
-					Thisform.oticket.fecha_cbte = m.fecha
-					Thisform.oticket.fecha_vencimiento = m.fecVto
-					Thisform.oticket.numero_cliente = m.NroCli
-					Thisform.oticket.razon_social = m.razSoc
-					Thisform.oticket.direccion = m.direccion
-					Thisform.oticket.codigo_postal = m.codPostal 
-					Thisform.oticket.localidad = m.localidad
-					Thisform.oticket.provincia = m.pcia
-					Thisform.oticket.tipo_iva = m.TipoIVA
-					SELECT cur_aux
-					GO TOP
-					DO WHILE !EOF("cur_aux")
-						Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-								cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-						SELECT cur_aux
-						SKIP
-					ENDDO
-					Thisform.oticket.total_neto = m.impNeto
-					Thisform.oticket.total_imp_iva21 = m.impIVA21
-					Thisform.oticket.total_imp_iva105 = m.impIVA105
-					Thisform.oticket.total = m.Total
-					Thisform.oticket.qr_image = Thisform.qr_image
-					Thisform.oticket.nro_cae = m.cae
-					THisform.oticket.vto_cae = m.caevto
-					Thisform.oticket.motivo = m.motivo
-					Thisform.oticket.imprimir()				
-				ELSE
-					REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-				ENDIF
-			ENDIF
-		ENDIF 
-	NEXT
-ENDIF
-
-IF thisform.envcbte THEN
-	IF !DIRECTORY(getGlobalCFG("FACPDFPATH")) THEN
-		lcFileName = SYS(5) + SYS(2003) + "\wsafip\ComprobantesPDF\" + this.cbte + "_" + m.NroCbte + ".pdf"
-	ELSE
-		lcFileName = getGlobalCFG("FACPDFPATH") + this.cbte + "_" + m.NroCbte + ".pdf"
-	ENDIF
-	
-	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
-		loPDF.SetValue('output', lcFileName)
-		loPDF.SetValue('DisableOptionDialog', 'no') 
-		loPDF.SetValue('ConfirmOverwrite', 'no')
-		loPDF.SetValue('Showsettings', 'never') 
-		loPDF.SetValue('ShowSaveAS', 'nofile') 
-		loPDF.SetValue('ShowPdf', 'no') 
-		loPDF.WriteSettings(.t.)
-	
-	SET CONSOLE OFF
-	SET PRINTER TO NAME("Bullzip PDF Printer")
-	IF ALLTRIM(This.datos_cbtes.tipodoc) == "A" THEN
-		&& Imprime el comprobante de tipo "A"
-		SELECT cur_aux
-		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
-	ELSE
-		&& Imprime el comprobante de tipo "B"
-		SELECT cur_aux
-		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
-	ENDIF
-	SET PRINTER TO DEFAULT
-	SET CONSOLE ON
-	
-	WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
-	DO WHILE !FILE(lcFileName)
-		
-	ENDDO
-	
-	&&MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, thisform.Caption)
-	
-	TEXT TO lcMailMsg NOSHOW
-	Estimado cliente,
-	
-	Le adjuntamos el comprobante electrónico de su compra en formato PDF.
-	
-	Muchas gracias!
-	
-	
-	Saludos cordiales,
-	
-	ENDTEXT
-	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILFIRMA") + CHR(13) + CHR(10)
-	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILEMP")
-	
-	&& Procedo a hacer el envío de mail
-	DO LOCFILE("FoxyPreviewer.App")
-	WITH _screen.oFoxyPreviewer	
-		.cEmailType = "PDF"
-		.nEmailMode = 2
-		.cEMailTo = thisform.mailfc
-		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
-		.cSMTPServer = getGlobalCFG("EMAILSMTP")
-		.cEmailFrom = getGlobalCFG("EMAILEMP") + " <" + getGlobalCFG("EMAILADDR") + ">"
-		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
-		.nSMTPPort = getGlobalCFG("EMAILPORT")
-		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
-		.cSMTPUserName = getGlobalCFG("EMAILUSR")
-		.cSMTPPassword = getGlobalCFG("EMAILPWD")
-		.lReadReceipt  = .F.
-		.lPriority = .F.
-		.cEmailBody = lcMailMsg
-		.SendEmailUsingCDO(lcFileName)
-	ENDWITH	
-ENDIF
-
-DO FoxyPreviewer.App WITH "Release"
-
-RETURN .T.
-ENDPROC
-PROCEDURE contenido.btnGrabar.Click
-LOCAL lnResp
-
-thisform.datos_cbtes.lnncimpdesc1 = thisform.contenido.paginas.page2.txtNCImpDto1.Value
-thisform.datos_cbtes.lnncimpdesc2 = thisform.contenido.paginas.page2.txtNCImpDto2.Value
-thisform.datos_cbtes.lnncimpdesc3 = thisform.contenido.paginas.page2.txtNCImpDto3.Value
-thisform.datos_cbtes.lnncimpdesc4 = thisform.contenido.paginas.page2.txtNCImpDto4.Value
-thisform.datos_cbtes.lnncimpfinal = thisform.contenido.paginas.page2.txtNCImpFinal.Value
-thisform.datos_cbtes.lnncporiibb = thisform.contenido.paginas.page2.txtNCPorIIBB.Value
-thisform.datos_cbtes.lnncimpiibb = thisform.contenido.paginas.page2.txtNCImpIIBB.Value
-thisform.datos_cbtes.lnncimpiva105 =  thisform.contenido.paginas.page2.txtNCImpIVA105.Value
-thisform.datos_cbtes.lnncimpiva21 = thisform.contenido.paginas.page2.txtNCImpIVA21.Value
-thisform.datos_cbtes.lnncimpneto = thisform.contenido.paginas.page2.txtNCImpNeto.Value
-thisform.datos_cbtes.lnnctotfact = thisform.contenido.paginas.page2.txtNCTotFact.Value
-thisform.datos_cbtes.lnncpordto1 = thisform.contenido.paginas.page2.txtNCPorDto1.Value
-thisform.datos_cbtes.lnncpordto2 = thisform.contenido.paginas.page2.txtNCPorDto2.Value
-thisform.datos_cbtes.lnncpordto3 = thisform.contenido.paginas.page2.txtNCPorDto3.Value
-thisform.datos_cbtes.lnncpordto4 = thisform.contenido.paginas.page2.txtNCPorDto4.Value
-thisform.datos_cbtes.lnncporrec = thisform.contenido.paginas.page2.txtNCporRec.Value
-thisform.datos_cbtes.lnncimprec = thisform.contenido.paginas.page2.txtNCimpRec.Value
-thisform.datos_cbtes.poriva21 = IIF(thisform.datos_cbtes.lnncimpiva21 <> 0, 21, 0)
-thisform.datos_cbtes.poriva105 = IIF(thisform.datos_cbtes.lnncimpiva105 <> 0, 10.5, 0)
-
-thisform.datos_cbtes.cli_razsoc = thisform.cli_razsoc
-thisform.datos_cbtes.cli_nrodoc = thisform.cli_cuit
-thisform.datos_cbtes.cli_tipodoc = thisform.cli_idtipodoc
-thisform.datos_cbtes.esfe = 1
-
-IF !thisform.validardetalle() THEN
-	RETURN .F.
-ENDIF
-
-Thisform.datos_cbtes.fecemision = DATETIME()
-THisform.datos_cbtes.fecvto = DATETIME()
-
-IF !thisform.datos_cbtes.grabar() THEN
-	MESSAGEBOX(thisform.datos_cbtes.error_message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-IF !thisform.enviar_wsafipfe() THEN
-	MESSAGEBOX("Este comprobante no ha sido autorizado, por favor, vuelva a intentarlo desde la autorización diferida", 0+48, Thisform.Caption)
-	
-	Thisform.limpiar()
-	
-	RETURN .F.
-ELSE
-	IF thisform.fe_set_cae() THEN
-		
-		IF !Thisform.fc_cancelada THEN
-			lnResp = MESSAGEBOX("¿Desea vincular esta nota de crédito " ;
-				+ "al comprobante de origen?", 4+32, thisform.Caption)		
-			IF lnResp = 6 THEN
-				thisform.datos_cbtes.vincular_cbte = .t.
-			ELSE
-				thisform.datos_cbtes.vincular_cbte = .f.
-			ENDIF
-		ELSE
-			thisform.datos_cbtes.vincular_cbte = .f.
-		ENDIF
-	
-		IF Thisform.datos_cbtes.grabar_ctacte() THEN
-			Thisform.imprimir()
-		ENDIF
-	ENDIF
-ENDIF
-
-Thisform.limpiar()
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: fe
-************************************************************
-*** PROPIEDADES ***
-Top = 444
-Left = 756
-Height = 24
-Width = 36
-Name = "fe"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cls_ncdev_fe
-************************************************************
-*** PROPIEDADES ***
-Arial, 0, 9, 5, 15, 12, 32, 3, 0
-Arial, 1, 8, 5, 14, 11, 29, 3, 0
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cls_cbtesnc_vtas
-************************************************************
-*** PROPIEDADES ***
-idventasc = 0
-idcliente = 
-fecemision = {}
-cbte = 
-tipodoc = 
-ptovta = 0
-numcbte = 0
-anulado = 0
-impneto = 0.00
-impfinal = 0.00
-poriva21 = 0.00
-impiva21 = 0.00
-poriva105 = 0.00
-impiva105 = 0.00
-pordesc1 = 0.00
-impdesc1 = 0.00
-pordesc2 = 0.00
-impdesc2 = 0.00
-pordesc3 = 0.00
-impdesc3 = 0.00
-pordesc4 = 0.00
-impdesc4 = 0.00
-totfact = 0.00
-saldo = 0.00
-espendi = 0
-usuario = 
-fecha = {}
-hostname = 
-esdemo = .F.
-demo_connection = 
-error_message = 
-printerdevice = 
-observ = 
-poriibb = 0.00
-impiibb = 0.00
-idcondpago = 0
-idsitiva = 0
-idvendedor = 0
-procesado = 0
-fecvto = {}
-nro_item = 0
-id_vta_origen = 0
-lnncimpneto = 0.00
-lnncimpdesc1 = 0.00
-lnncimpdesc2 = 0.00
-lnncimpdesc3 = 0.00
-lnncimpdesc4 = 0.00
-lnncimpfinal = 0.00
-lnncimpiva21 = 0.00
-lnncimpiva105 = 0.00
-lnncporiibb = 0.00
-lnncimpiibb = 0.00
-lnnctotfact = 0.00
-idcc_origen = 0
-id_oper = 0
-cant_copianc = 0
-lnncpordto1 = 0.00
-lnncpordto2 = 0.00
-lnncpordto3 = 0.00
-lnncpordto4 = 0.00
-nrocbte = 
-cbte_origen = 
-tipodoc_origen = 
-nrocbte_origen = 
-fis_num_cbte = 
-porrec = 0.00
-imprec = 0.00
-lnncporrec = 0.00
-lnncimprec = 0.00
-cli_razsoc = 
-cli_tipodoc = 0
-cli_nrodoc = 
-esfe = 0
-vincular_cbte = .F.
-aut_tipocbteorigen = 
-ptovta_origen = 
-nro_origen = 
-tipodoc_codafip = 
-totanograv = 0.00
-nc_totanograv = 0.00
-repname = 
-repnamecp = 
-Name = "cls_cbtesnc_vtas"
-
-*** METODOS ***
-PROCEDURE grabar
-* Tener en cuenta que al transacción deberá ser manejada desde donde se realiza la llamada.
-* Este método devolverá .T. en caso de que se haya ejecutado correctamente o .F. en caso de que 
-* se haya detectado algún error.
-
-LOCAL lcSql, loCommand, loDT
-LOCAL lnIdCC_Cli, loMovStock, lnIdVtaRel
-LOCAL lnIdVentasD, lnOperacion
-
-lcSql = ""
-loCommand = CREATEOBJECT("odbc_command")
-loDT = CREATEOBJECT("datetime")
-loMovStock = CREATEOBJECT("cl_mov_stock")
-lnIdCC_Cli = 0
-lnIdVtaRel = 0
-lnIdVentasD = 0
-lnOperacion = 0
-
-loMovStock.circuito = "S"
-loMovStock.crear_cursor()
-loMovStock.tipomov = "ENT"
-
-this.cbte = "NC"
-IF INT(VAL(getConfig("DEMO"))) = 1 THEN
-	this.ptovta = 9999
-ELSE
-	this.ptovta = INT(VAL(getConfig("PTOVTA")))
-ENDIF
-
-IF EMPTY(this.tipodoc) .OR. ALLTRIM(this.tipodoc) == "" THEN
-	this.calcuar_tipodoc()
-ENDIF
-
-IF this.esfe = 0 THEN 
-	IF EMPTY(this.fis_num_cbte) THEN
-		IF !this.calcular_nro_cbte() THEN
-			This.error_message = "No se puede calcular el número de comprobante"
-			RETURN .F.
-		ENDIF
-	ELSE
-		&& Si la propiedad fis_num_cbte no es vacío, entonces, se debe tomar el número
-		&& para grabar.
-		&& this.nrocbte = this.fis_num_cbte
-		this.numcbte = this.fis_num_cbte
-	ENDIF
-ENDIF 
-
-goConn.BeginTransaction()
-
-this.idventasc = goConn.getNextID("ventascab", "idVentasC")
-
-lcSql = "INSERT INTO ventascab ( "
-lcSql = lcSql + "idVentasC, "
-lcSql = lcSql + "idCliente, "
-lcSql = lcSql + "razSoc, "
-lcSql = lcSql + "idTipoDoc, "
-lcSql = lcSql + "nroDoc, "
-lcSql = lcSql + "fecEmision, "
-lcSql = lcSql + "cbte, "
-lcSql = lcSql + "tipoDoc, "
-lcSql = lcSql + "ptoVta, "
-lcSql = lcSql + "numCbte, "
-lcSql = lcSql + "anulado, "
-lcSql = lcSql + "impNeto, "
-lcSql = lcSql + "impFinal, "
-lcSql = lcSql + "porIVA21, "
-lcSql = lcSql + "impIVA21, "
-lcSql = lcSql + "porIVA105, "
-lcSql = lcSql + "impIVA105, "
-lcSql = lcSql + "porDesc1, "
-lcSql = lcSql + "impDesc1, "
-lcSql = lcSql + "porDesc2, "
-lcSql = lcSql + "impDesc2, "
-lcSql = lcSql + "porDesc3, "
-lcSql = lcSql + "impDesc3, "
-lcSql = lcSql + "porDesc4, "
-lcSql = lcSql + "impDesc4, "
-lcSql = lcSql + "totaNoGrav, "	&& Agrego el no gravado
-lcSql = lcSql + "totFact, "
-lcSql = lcSql + "saldo, "
-lcSql = lcSql + "esPendi, "
-lcSql = lcSql + "usuAlta, "
-lcSql = lcSql + "fecAlta, "
-lcSql = lcSql + "idHostAlta, "
-lcSql = lcSql + "observ, "
-lcSql = lcSql + "porIIBB, "
-lcSql = lcSql + "impIIBB, "
-lcSql = lcSql + "idCondPago, "
-lcSql = lcSql + "idSitIVA, "
-lcSql = lcSql + "idVendedor, "
-lcSql = lcSql + "procesado, "
-lcSql = lcSql + "fecVto, "
-lcSql = lcSql + "porRec, "
-lcSql = lcSql + "impRec) "
-lcSql = lcSql + "VALUES ( "
-lcSql = lcSql + ALLTRIM(STR(this.idventasc)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.idcliente)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(this.cli_razsoc) + "', "
-lcSql = lcSql + ALLTRIM(STR(this.cli_tipodoc)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(this.cli_nrodoc) + "', "
-lcSql = lcSql + loDT.toMySql(this.fecemision) + ", "
-lcSql = lcSql + "'" + ALLTRIM(this.cbte) + "', "
-lcSql = lcSql + "'" + ALLTRIM(this.tipodoc) + "', "
-lcSql = lcSql + ALLTRIM(STR(this.ptovta)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.numcbte)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.anulado)) + 	", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpneto, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpfinal, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.poriva21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpiva21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.poriva105, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpiva105, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.pordesc1, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc1, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.pordesc2, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc2, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.pordesc3, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc3, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.pordesc4, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc4, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.nc_totanograv, 20, 2)) + ", "	&& Agrego el no gravado
-lcSql = lcSql + ALLTRIM(STR(this.lnnctotfact, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(0, 10, 2)) + ", "	&& saldo
-lcSql = lcSql + ALLTRIM(STR(this.espendi)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(gcCodusu) + "', "
-lcSql = lcSql + loDT.getDateTime() + ", "
-lcSql = lcSql + "'" + ALLTRIM(SYS(0)) + "', "
-lcSql = lcSql + "'" + ALLTRIM(this.observ) + "', "
-lcSql = lcSql + ALLTRIM(STR(this.poriibb, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimpiibb, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.idcondpago)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.idsitiva)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.idvendedor)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.procesado)) + ", "
-lcSql = lcSql + loDT.toMySql(this.fecemision) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncporrec, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(this.lnncimprec, 10, 2)) + ") "
-
-loCommand.commandText = lcSql
-loCommand.ActiveConnection = goConn.ActiveConnection
-
-IF !loCommand.Execute() THEN
-	this.error_message = loCommand.ErrorMessage
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-SELECT cur_detalle
-IF RECCOUNT("cur_detalle") > 0 THEN
-	GO TOP
-ENDIF
-
-DO WHILE !EOF("cur_detalle") 
-	lnIdVentasD = lnIdVentasD + 1
-	
-	IF cur_detalle.cantNC <> 0 THEN
-		&& Aca tengo que agregar el grabado en la tabla ventasdet
-		lcSql = "INSERT INTO ventasdet ( "
-		lcSql = lcSql + " idVentasD, "
-		lcSql = lcSql + " idVentasC, "
-		lcSql = lcSql + " idArticulo, "
-		lcSql = lcSql + " descripcio, "
-		lcSql = lcSql + " cantidad, "
-		lcSql = lcSql + " cantNC, "
-		lcSql = lcSql + " nroPart, "
-		lcSql = lcSql + " costoRep, "
-		lcSql = lcSql + " prVenta, "
-		lcSql = lcSql + " porDesc1, "
-		lcSql = lcSql + " porDesc2, "
-		lcSql = lcSql + " porDesc3, "
-		lcSql = lcSql + " porDesc4, "
-		lcSql = lcSql + " impDesc1, "
-		lcSql = lcSql + " impDesc2, "
-		lcSql = lcSql + " impDesc3, "
-		lcSql = lcSql + " impDesc4, "
-		lcSql = lcSql + " pDtoVta1, "
-		lcSql = lcSql + " pDtoVta2, "
-		lcSql = lcSql + " pDtoVta3, "
-		lcSql = lcSql + " pDtoVta4, "
-		lcSql = lcSql + " iDtoVta1, "
-		lcSql = lcSql + " iDtoVta2, "
-		lcSql = lcSql + " iDtoVta3, "
-		lcSql = lcSql + " iDtoVta4, "
-		lcSql = lcSql + " totNeto, "
-		lcSql = lcSql + " alicIVA, "
-		lcSql = lcSql + " impIVA, "
-		&& Agrego los campos no gravados
-		lcSql = lcSql + " porNoGrav, "
-		lcSql = lcSql + " baseGrav, "
-		lcSql = lcSql + " subtNoGrav, "
-		
-		lcSql = lcSql + " subTotal, "
-		lcSql = lcSql + " impNeto, "
-		lcSql = lcSql + " prArtic, "
-		lcSql = lcSql + " pRecVta, "
-		lcSql = lcSql + " iRecVta) "
-		lcSql = lcSql + "VALUES ( "
-		lcSql = lcSql + ALLTRIM(STR(lnIdVentasD)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(this.idventasc)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.idArticulo)) + ", "
-		lcSql = lcSql + "'" + ALLTRIM(cur_detalle.descripcio) + "', "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.cantNC)) + ", "
-		lcSql = lcSql + "0, "
-		lcSql = lcSql + "'" + ALLTRIM(cur_detalle.nroPart) + "', "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.costoRep, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.prVenta, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc1, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc2, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc3, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc4, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc1, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc2, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc3, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc4, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta1, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta2, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta3, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta4, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta1, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta2, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta3, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta4, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.totNeto, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.alicIVA, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impIVA, 10, 2)) + ", "
-		
-		&& Agrego los no gravados
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porNoGrav, 20, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.baseGrav, 20, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.subtNoGrav, 20, 2)) + ", "
-		
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.subTotal, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impNeto, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.prArtic, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pRecVta, 10, 2)) + ", "
-		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iRecVta, 10, 2)) + ")"
-		
-		loCommand.commandText = lcSql
-		loCommand.ActiveConnection = goConn.ActiveConnection
-		
-		IF !loCommand.Execute() THEN
-			this.error_message = loCommand.ErrorMessage
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
-	ENDIF
-	
-	&& Agrego los artículos al movimiento de stock
-	IF !loMovStock.Agregar_Articulo(cur_detalle.idArticulo, cur_detalle.cantNC, cur_detalle.nroPart) THEN
-		MESSAGEBOX(loMovStock.ErrorMessage, 0+48, Thisform.Caption)
-	ENDIF
-	
-	&& Actualizo los items de la factura de origen filtrando por el idArticulo y
-	&& el id de venta de origen
-	
-	lcSql = "UPDATE ventasdet SET cantNC = cantNC + " + ALLTRIM(STR(cur_detalle.cantNC)) + " "
-	lcSql = lcSql + "WHERE idArticulo = " + ALLTRIM(STR(cur_detalle.idArticulo)) + " "
-	lcSql = lcSql + "	AND idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
-	lcSql = lcSql + "	AND idVentasD = " + ALLTRIM(STR(cur_detalle.idVentasD))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		this.error_message = loCommand.ErrorMessage
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-	
-	SELECT cur_detalle
-	SKIP
-ENDDO
-
-&& Armo la relación entre comprobantes
-lnIdVtaRel = goConn.getNextID("ventasrel", "idVtaRel")
-
-lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES ( "
-lcSql = lcSql + ALLTRIM(STR(lnIdVtaRel)) + ", " + ALLTRIM(STR(this.id_vta_origen)) + ", " + ALLTRIM(STR(this.idventasc)) + ")"
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	this.error_message = loCommand.ErrorMessage
-	goConn.Rollback()
-	RETURN .F.	
-ENDIF
-
-&& Actualizo el saldo de la factura
-lcSql = "UPDATE ventascab "
-lcSql = lcSql + "SET 	saldo = ROUND(saldo - " + ALLTRIM(STR(this.lnnctotfact, 10, 2)) + ", 2), "
-lcSql = lcSql + "		usuModi = '" + ALLTRIM(gcCodusu) + "', "
-lcSql = lcSql + "		fecModi = " + loDT.getDateTime() + ", "
-lcSql = lcSql + "		idHostModi = '" + SYS(0) + "' "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	this.error_message = loCommand.ErrorMessage
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-IF this.esfe = 0 THEN 
-	&& Actualizo el numerador
-	lcSql = "UPDATE numerador SET numActual = " + ALLTRIM(STR(this.numcbte)) + " "
-	lcSql = lcSql + "WHERE cbte = '" + ALLTRIM(this.cbte) + "' "
-	lcSql = lcSql + "	AND tipoDoc = '" + ALLTRIM(this.tipodoc) + "' "
-	lcSql = lcSql + "	AND ptoVta = " + ALLTRIM(STR(this.ptovta))
-
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-
-	IF !loCommand.Execute() THEN
-		this.error_message = loCommand.ErrorMessage
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-ENDIF 
-
-goConn.Commit()
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE calcular_nro_cbte
-LOCAL loResul, loCommand, lcSql
-LOCAL lnIdNum
-
-lcSql = ""
-loResult = CREATEOBJECT("odbc_result")
-loCommand = CREATEOBJECT("odbc_command")
-
-lcSql = "SELECT * FROM numerador WHERE cbte = '" + This.cbte + "' AND tipoDoc = '" + this.tipodoc + "' AND ptoVta = " + ALLTRIM(STR(this.ptovta))
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.cursor_name = "cur_Num"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	this.error_message = loResult.Error_Message
-	RETURN .F.
-ENDIF
-
-IF RECCOUNT("cur_num") = 0 THEN
-	this.error_message = "No se encuentra configurado el numerador del comprobante " + ALLTRIM(this.cbte) + " Punto de Venta: " + ALLTRIM(STR(this.ptovta)) + " Letra: " + ALLTRIM(this.tipodoc)
-	loResult.close_query()
-	RETURN .F.
-ENDIF
-
-IF DATE() > cur_Num.fecVto THEN
-	this.error_message = "El talonario actual está vencido, por favor, verifique que su talonario se encuentre en orden"
-	loResult.close_query()
-	RETURN .F.
-ENDIF
-
-SELECT cur_num
-lnIdNum = cur_num.idNum
-lnNroCbte = cur_num.numActual + 1
-this.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(this.ptovta)))) + ALLTRIM(STR(this.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_num.numActual)))) + ALLTRIM(STR(cur_num.numActual))
-this.repname = ALLTRIM(cur_Num.repname)
-this.repnamecp = ALLTRIM(cur_Num.repnamecp)
-
-loResult.close_query()	
-
-lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND idNum = " + ALLTRIM(STR(lnIdNum))
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_imp"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	This.error_message = "Error SQL: " + lcSql
-	RETURN .F.
-ENDIF
-
-SELECT cur_imp
-IF RECCOUNT("cur_imp") = 0 THEN
-	This.error_message = "La impresora no está configurada para este puesto de trabajo"
-	loResult.Close_Query()
-	RETURN .F.
-ENDIF
-
-This.cant_copianc = cur_imp.copias
-This.printerdevice = ALLTRIM(cur_imp.impresora)
-
-this.numcbte = lnNroCbte
-
-RETURN .T.
-ENDPROC
-PROCEDURE crear_cursor
-**
-* Este método crea los cursores que se necesitan para generar la nota
-* de crédito.
-**
-
-&& Detalle de la factura recuperado
-CREATE CURSOR cur_detalleFC (	;
-	idVentasD	int,;
-	idArticulo	int,;
-	codArt		varchar(20),;
-	descripcio	varchar(60),;
-	cantidad	float(10, 2),;
-	cantNC		float(10, 2),;
-	nroPart		varchar(30),;
-	costoRep	float(10, 2),;
-	prVenta		float(10, 2),;
-	porDesc1	float(10, 2),;
-	porDesc2	float(10, 2),;
-	porDesc3	float(10, 2),;
-	porDesc4	float(10, 2),;
-	impDesc1	float(10, 2),;
-	impDesc2	float(10, 2),;
-	impDesc3	float(10, 2),;
-	impDesc4	float(10, 2),;
-	pDtoVta1	float(10, 2),;
-	pDtoVta2	float(10, 2),;
-	pDtoVta3	float(10, 2),;
-	pDtoVta4	float(10, 2),;
-	iDtoVta1	float(10, 2),;
-	iDtoVta2	float(10, 2),;
-	iDtoVta3	float(10, 2),;
-	iDtoVta4	float(10, 2),;
-	totNeto		float(10, 2),;
-	alicIVA		float(10, 2),;
-	impIVA		float(10, 2),;
-	porNoGrav	float(20, 2) DEFAULT 0,;
-	baseGrav	float(20, 2) DEFAULT 0,;
-	subtNoGrav	float(20, 2) DEFAULT 0,;
-	subTotal	float(10, 2),;
-	impNeto		float(10, 2),;
-	prArtic		float(10, 2),;
-	pRecVta		float(10, 2),;
-	iRecVta		float(10, 2),;
-	pRecItem	float(10, 2),;
-	iRecItem	float(10, 2))
-	
-&& Detalle de la nota de crédito
-CREATE CURSOR cur_detalle (	;
-	idVentasD	int,;
-	idArticulo	int,;
-	codArt		varchar(20),;
-	descripcio	varchar(60),;
-	cantidad	float(10,2),;
-	cantNC		float(10,2),;
-	nroPart		varchar(30),;
-	costoRep	float(10, 2),;
-	prVenta		float(10, 2),;
-	porDesc1	float(10, 2),;
-	porDesc2	float(10, 2),;
-	porDesc3	float(10, 2),;
-	porDesc4	float(10, 2),;
-	impDesc1	float(10, 2),;
-	impDesc2	float(10, 2),;
-	impDesc3	float(10, 2),;
-	impDesc4	float(10, 2),;
-	pDtoVta1	float(10, 2),;
-	pDtoVta2	float(10, 2),;
-	pDtoVta3	float(10, 2),;
-	pDtoVta4	float(10, 2),;
-	iDtoVta1	float(10, 2),;
-	iDtoVta2	float(10, 2),;
-	iDtoVta3	float(10, 2),;
-	iDtoVta4	float(10, 2),;
-	totNeto		float(10, 2),;
-	alicIVA		float(10, 2),;
-	impIVA		float(10, 2),;
-	porNoGrav	float(20, 2) DEFAULT 0,;
-	baseGrav	float(20, 2) DEFAULT 0,;
-	subtNoGrav	float(20, 2) DEFAULT 0,;
-	subTotal	float(10, 2),;
-	impNeto		float(10, 2),;
-	prArtic		float(10, 2),;
-	pRecVta		float(10, 2),;
-	iRecVta		float(10, 2),;
-	pRecItem	float(10, 2),;
-	iRecItem	float(10, 2))
-
-&& Armo un cursor de detalle auxiliar para particionar la nota de crédito
-CREATE CURSOR cur_aux ( ;
-	idVentasD	int,;
-	idArticulo	int,;
-	codArt		varchar(20),;
-	descripcio	varchar(60),;
-	cantidad	float(10, 2),;
-	cantNC		float(10, 2),;
-	nroPart		varchar(30),;
-	costoRep	float(10, 2),;
-	prVenta		float(10, 2),;
-	porDesc1	float(10, 2),;
-	porDesc2	float(10, 2),;
-	porDesc3	float(10, 2),;
-	porDesc4	float(10, 2),;
-	impDesc1	float(10, 2),;
-	impDesc2	float(10, 2),;
-	impDesc3	float(10, 2),;
-	impDesc4	float(10, 2),;
-	pDtoVta1	float(10, 2),;
-	pDtoVta2	float(10, 2),;
-	pDtoVta3	float(10, 2),;
-	pDtoVta4	float(10, 2),;
-	iDtoVta1	float(10, 2),;
-	iDtoVta2	float(10, 2),;
-	iDtoVta3	float(10, 2),;
-	iDtoVta4	float(10, 2),;
-	totNeto		float(10, 2),;
-	alicIVA		float(10, 2),;
-	impIVA		float(10, 2),;
-	porNoGrav	float(20, 2) DEFAULT 0,;
-	baseGrav	float(20, 2) DEFAULT 0,;
-	subtNoGrav	float(20, 2) DEFAULT 0,;
-	subTotal	float(10, 2),;
-	impNeto		float(10, 2),;
-	prArtic		float(10, 2),;
-	pRecVta		float(10, 2),;
-	iRecVta		float(10, 2),;
-	pRecItem	float(10, 2),;
-	iRecItem	float(10, 2))
-	
-ENDPROC
-PROCEDURE recuperar_fc
-**
-* Este métdo permite recuperar los datos de la factura de origen con
-* su detalle incluído
-**
-
-LOCAL lcSql, loResult, loResDet, loResCC
-
-lcSql = ""
-loResult = CREATEOBJECT("odbc_result")
-loResDet = CREATEOBJECT("odbc_result")
-loResCC = CREATEOBJECT("odbc_result")
-
-*lcSql = "SELECT * FROM ventascab WHERE idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
-lcSql = "CALL ventascab_getById (?idVentasC)"
-lcSql = loResult.AddParameter(lcSql, "idVentasC", ALLTRIM(STR(this.id_vta_origen)), .f., .f.)
-loResult.ActiveConnection = IIF(this.esdemo, this.demo_connection.ActiveConnection, goConn.ActiveConnection)
-loResult.Cursor_Name = "cur_ventasC"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	This.Error_Message = loResult.Error_Message
-	RETURN .F.
-ENDIF
-
-SELECT cur_ventasC 
-IF RECCOUNT("cur_ventasC") > 0 THEN
-	this.id_vta_origen = cur_ventasC.idVentasC
-	this.idcliente = cur_ventasC.idCliente
-	this.tipodoc = cur_ventasC.tipoDoc
-	this.idcondpago = cur_ventasC.idcondpago
-	this.idsitiva = cur_ventasC.idsitiva
-	this.fecemision = cur_ventasC.fecEmision
-	this.pordesc1 = cur_ventasC.porDesc1
-	this.pordesc2 = cur_ventasC.porDesc2
-	this.pordesc3 = cur_ventasC.porDesc3
-	this.pordesc4 = cur_ventasC.porDesc4
-	this.impdesc1 = cur_ventasC.impDesc1
-	this.impdesc2 = cur_ventasC.impDesc2
-	this.impdesc3 = cur_ventasC.impDesc3
-	this.impdesc4 = cur_ventasC.impDesc4
-	this.saldo = cur_ventasc.saldo
-	this.totanograv = cur_ventasc.totaNoGrav	&& Agrego la recuperacón del total no gravado
-	this.totfact = cur_ventasC.totFact
-	this.impfinal = cur_ventasC.impFinal
-	this.impiva105 = cur_VentasC.impIVA105
-	this.impiva21 = cur_VentasC.impIVA21
-	this.impiibb = cur_VentasC.impIIBB
-	this.poriibb = cur_VentasC.porIIBB
-	this.impneto = cur_ventasC.impNeto
-	this.idvendedor = cur_ventasC.idVendedor
-	this.porrec = cur_ventasC.porRec
-	this.imprec = cur_ventasC.impRec
-	this.cli_razsoc = cur_ventasC.razSoc
-	this.cli_nrodoc = cur_ventasC.nroDoc
-	this.cli_tipodoc = cur_ventasC.idTipoDoc
-	
-	* Levanto el comprobante de origen
-	this.aut_tipocbteorigen = IIF(ISNULL(cur_ventasC.aut_tipoCbte), 0, ALLTRIM(cur_ventasC.aut_tipoCbte))
-	this.cbte_origen = ALLTRIM(cur_ventasC.cbte)
-	this.tipodoc_origen = ALLTRIM(cur_ventasC.tipodoc)
-	this.nrocbte_origen = REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_ventasC.ptovta)))) + ALLTRIM(STR(cur_ventasC.ptovta)) ;
-		+ "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_ventasC.numCbte)))) + ALLTRIM(STR(cur_ventasC.numCbte))
-	this.ptovta_origen = cur_ventasC.ptoVta
-	this.nro_origen = cur_ventasc.numCbte
-	this.tipodoc_codafip = cur_ventasC.CodAfip
-
-	this.observ = "Devolución de " + this.cbte_origen + " " + this.tipodoc_origen + " " + this.nrocbte_origen
-	
-	lcSql = "SELECT ventasdet.*, articulos.codArt, ventasdet.descripcio "
-	lcSql = lcSql + "FROM ventasdet INNER JOIN articulos ON ventasdet.idArticulo = articulos.idArticulo "
-	lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
-	
-	loResDet.ActiveConnection = IIF(this.esdemo, this.demo_connection.ActiveConnection, goConn.ActiveConnection)
-	loResDet.Cursor_Name = "cur_VtasD"
-	
-	IF !loResDet.OpenQuery(lcSql) THEN
-		this.error_message = loResDet.Error_Message
-		RETURN .F.
-	ENDIF
-	
-	&& Recupero el detalle de la factura
-	SELECT cur_VtasD 
-	DO WHILE !EOF("cur_VtasD")
-		&&this.nro_item = this.nro_item + 1
-		
-		SELECT cur_detalleFC
-		APPEND BLANK
-		REPLACE cur_detalleFC.idVentasD WITH cur_VtasD.idVentasD
-		REPLACE cur_detalleFC.idArticulo WITH cur_VtasD.idArticulo ADDITIVE
-		REPLACE cur_detalleFC.codArt WITH cur_VtasD.CodArt ADDITIVE
-		REPLACE cur_detalleFC.descripcio WITH cur_VtasD.Descripcio ADDITIVE
-		REPLACE cur_detalleFC.cantidad WITH cur_VtasD.Cantidad - IIF(ISNULL(cur_VtasD.CantNC), 0, cur_VtasD.CantNC) ADDITIVE
-		REPLACE cur_detalleFC.cantNC WITH 0 ADDITIVE
-		REPLACE cur_detalleFC.nroPart WITH IIF(ISNULL(cur_VtasD.nroPart), "", cur_VtasD.nroPart) ADDITIVE
-		REPLACE cur_detalleFC.costoRep WITH cur_VtasD.CostoRep ADDITIVE
-		REPLACE cur_detalleFC.prVenta WITH cur_VtasD.prVenta ADDITIVE
-		REPLACE cur_detalleFC.porDesc1 WITH cur_VtasD.PorDesc1 ADDITIVE
-		REPLACE cur_detalleFC.porDesc2 WITH cur_VtasD.PorDesc2 ADDITIVE
-		REPLACE cur_detalleFC.porDesc3 WITH cur_VtasD.PorDesc3 ADDITIVE
-		REPLACE cur_detalleFC.porDesc4 WITH cur_VtasD.PorDesc4 ADDITIVE
-		REPLACE cur_detalleFC.impDesc1 WITH cur_VtasD.impDesc1 ADDITIVE
-		REPLACE cur_detalleFC.impDesc2 WITH cur_VtasD.impDesc2 ADDITIVE
-		REPLACE cur_detalleFC.impDesc3 WITH cur_VtasD.impDesc3 ADDITIVE
-		REPLACE cur_detalleFC.impDesc4 WITH cur_VtasD.impDesc4 ADDITIVE
-		REPLACE cur_detalleFC.pDtoVta1 WITH cur_VtasD.pDtoVta1 ADDITIVE
-		REPLACE cur_detalleFC.pDtoVta2 WITH cur_VtasD.pDtoVta2 ADDITIVE
-		REPLACE cur_detalleFC.pDtoVta3 WITH cur_VtasD.pDtoVta3 ADDITIVE
-		REPLACE cur_detalleFC.pDtoVta4 WITH cur_VtasD.pDtoVta4 ADDITIVE
-		REPLACE cur_detalleFC.iDtoVta1 WITH cur_VtasD.iDtoVta1 ADDITIVE
-		REPLACE cur_detalleFC.iDtoVta2 WITH cur_VtasD.iDtoVta2 ADDITIVE
-		REPLACE cur_detalleFC.iDtoVta3 WITH cur_VtasD.iDtoVta3 ADDITIVE
-		REPLACE cur_detalleFC.iDtoVta4 WITH cur_VtasD.iDtoVta4 ADDITIVE
-		REPLACE cur_detalleFC.totNeto WITH cur_VtasD.totNeto ADDITIVE
-		REPLACE cur_detalleFC.alicIVA WITH cur_VtasD.alicIVA ADDITIVE
-		REPLACE cur_detalleFC.impIVA WITH cur_VtasD.impIVA ADDITIVE
-		REPLACE cur_detalleFC.subTotal WITH cur_VtasD.SubTotal ADDITIVE
-		REPLACE cur_detalleFC.impNeto WITH cur_VtasD.impNeto ADDITIVE	
-		REPLACE cur_detalleFC.prArtic WITH cur_VtasD.prArtic ADDITIVE
-		REPLACE cur_detalleFC.pRecVta WITH cur_VtasD.pRecVta ADDITIVE 
-		REPLACE cur_detalleFC.iRecVta WITH cur_VtasD.iRecVta ADDITIVE
-		
-		&& Levanto los importes no gravados de la factura
-		REPLACE cur_detalleFC.porNoGrav WITH cur_VtasD.porNoGrav ADDITIVE
-		REPLACE cur_detalleFC.baseGrav WITH cur_VtasD.baseGrav ADDITIVE
-		REPLACE cur_detalleFC.subtNoGrav WITH cur_VtasD.subtNoGrav ADDITIVE
-		
-		SELECT cur_VtasD
-		SKIP
-	ENDDO
-	
-	loResDet.Close_Query()
-	
-	SELECT cur_detalleFC
-	IF RECCOUNT("cur_detalleFC") > 0 THEN
-		GO TOP
-	ENDIF
-ELSE
-	This.error_message = "No hay registros para mostrar"
-	RETURN .F.
-ENDIF
-
-SELECT cur_ventasC
-lcSql = "SELECT * FROM cc_cli WHERE idVentasC = " + ALLTRIM(STR(cur_ventasC.idVentasC))
-loResCC.ActiveConnection = IIF(this.esdemo, this.demo_connection.ActiveConnection, goConn.ActiveConnection)
-loResCC.Cursor_Name = "cur_ccCli"
-
-IF !loResCC.OpenQuery(lcSql) THEN
-	this.error_message = loResCC.ErrorMessage
-	RETURN .F.
-ENDIF
-
-this.idcc_origen = cur_ccCli.idCC_Cli
-this.id_oper = cur_ccCli.idOper
-
-loResCC.close_query()
-loResult.close_query()
-
-RETURN .T.
-ENDPROC
-PROCEDURE calcuar_tipodoc
-LOCAL lnSitIVACli
-
-lnSitIvaEmp = 0
-lnSitIvaEmp = VAL(ALLTRIM(getConfig("SITIVAEMP")))
-
-IF lnSitIvaEmp = 1 .AND. This.idsitiva = 1 THEN
-	RETURN "A"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. This.idsitiva = 2 THEN
-	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. This.idsitiva = 3 THEN
-	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 1 .AND. This.idsitiva = 6 THEN
-	RETURN "B"
-ENDIF
-
-IF lnSitIvaEmp = 6 THEN
-	RETURN "C"
-ENDIF
-
-ENDPROC
-PROCEDURE limpiar
-&& Limpio los cursores
-SELECT cur_detalleFC
-ZAP
-SELECT cur_detalle
-ZAP
-*SELECT cur_aux
-*ZAP
-ENDPROC
-PROCEDURE imprimir
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.porIIBB, m.impIIBB, m.observ
-LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
-LOCAL lcSql, loResult, lcPrinterName, lnCantCpia
-
-lo_rsSitIVA = CREATEOBJECT("odbc_result")
-loResult = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-lcSql = "SELECT clientes.*, localidad.descripcio as descLoc, localidad.codPostal, provincias.descripcio as pcia "
-lcSql = lcSql + "FROM clientes INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid "
-lcSql = lcSql + "	INNER JOIN provincias ON provincias.idProvin = localidad.idProvin "
-lcSql = lcSql + "WHERE clientes.idCliente = " + ALLTRIM(STR(this.idcliente))
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_cli"
-
-IF !loResult.OpenQuery(lcSql) THEN
-	this.error_message = loResult.Error_Message
-	RETURN .F.
-ENDIF
-
-SELECT cur_cli
-m.NroCli = cur_cli.idCliente
-m.RazSoc = ALLTRIM(this.cli_razsoc)
-m.Telefono = ALLTRIM(cur_cli.telefono)
-m.direccion = ALLTRIM(cur_cli.direccion)
-m.localidad = ALLTRIM(cur_cli.descLoc)
-m.codPostal = ALLTRIM(cur_cli.codPostal)
-m.pcia = ALLTRIM(cur_cli.pcia)
-m.nroCUIT = ALLTRIM(this.cli_nrodoc)
-m.TipoIVA = this.idsitiva
-
-loResult.close_query()
-
-m.Total = 0.00
-m.NroCbte = this.nrocbte
-m.leyenda = ""
-m.Fecha = DATETIME()
-m.porIVA105 = 0.00
-m.porIVA21 = 0.00
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.fecVto = DATE()
-m.tipoDoc = this.tipodoc
-m.ptoVta = ""
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-lnCantCpia = 0
-m.observ = ""
-
-m.Leyenda = "NOTA DE CREDITO"
-
-m.porDesc1 = this.lnncpordto1
-m.porDesc2 = this.lnncpordto2
-m.porDesc3 = this.lnncpordto3
-m.porDesc4 = this.lnncpordto4
-m.impDesc1 = this.lnncimpdesc1
-m.impDesc2 = this.lnncimpdesc2
-m.impDesc3 = this.lnncimpdesc3
-m.impDesc4 = this.lnncimpdesc4
-m.porIVA105 = 10.5
-m.porIVA21 = 21
-m.impIVA105 = this.lnncimpiva105
-m.impIVA21 = this.lnncimpiva21
-m.impNeto = this.lnncimpfinal
-&&m.impFinal = this.lnncimpfinal
-m.porIIBB = this.lnncporiibb
-m.impIIBB = this.lnncimpiibb
-m.total = this.lnnctotfact
-
-&& Busco la situacion de IVA
-lcSql = "SELECT * FROM SitIva WHERE idSitIVA = " + ALLTRIM(STR(this.idsitiva))
-lo_rsSitIVA.ActiveConnection = goConn.ActiveConnection
-lo_rsSitIVA.Cursor_Name = "cur_SitIVA"
-lo_rsSitIVA.OpenQuery(lcSql)
-
-SELECT cur_SitIVA
-m.TipoIVA = cur_SitIVA.descripcio
-
-SET PRINTER TO NAME ALLTRIM(this.printerdevice)
-
-FOR i = 1 TO this.cant_copianc
-	IF ALLTRIM(This.tipodoc) == "A" THEN
-		&& Imprime el comprobante de tipo "A"
-		SELECT cur_aux
-		REPORT FORM "repcbtesvta.frx" TO PRINTER NOCONSOLE
-	ELSE
-		&& Imprime el comprobante de tipo "B"
-		SELECT cur_aux
-		REPORT FORM "repcbtesvta_b.frx" TO PRINTER NOCONSOLE
-	ENDIF
-NEXT
-
-RETURN .T.
-ENDPROC
-PROCEDURE grabar_ctacte
-LOCAL loCommand
-LOCAL loRes
-LOCAL loDT
-LOCAL lcSql
-LOCAL lnOperacion
-LOCAL lnIdCC_Cli
-
-loCommand = CREATEOBJECT("odbc_command")
-loRes = CREATEOBJECT("odbc_result")
-loDT = CREATEOBJECT("datetime")
-lcSql = ""
-lnOperacion = 0
-lnIdCC_Cli = 0
-
-goConn.BeginTransaction()
-
-IF this.vincular_cbte THEN
-	lnOperacion = this.getidoper()
-ELSE
-	lnOperacion = INT(VAL(this.getnextidoper()))
-ENDIF
-
-lcSql = "CALL cccli_insert ( " ;
-	+ ALLTRIM(STR(this.idcliente)) + ", " ;
-	+ ALLTRIM(STR(this.idcc_origen)) + ", " ;
-	+ ALLTRIM(STR(this.idventasc)) + ", " ;
-	+ "'" + ALLTRIM(this.cbte) + "', " ;
-	+ "'" + ALLTRIM(this.tipodoc) + "', " ;
-	+ ALLTRIM(STR(this.ptovta)) + ", " ;
-	+ ALLTRIM(STR(this.numCbte)) + ", " ;
-	+ loDT.toMySql(this.fecemision) + ", " ;
-	+ loDT.toMySql(this.fecemision) + ", " ;
-	+ "0, " ;
-	+ ALLTRIM(STR(this.lnnctotfact, 10, 2)) + ", " ;
-	+ ALLTRIM(STR(lnOperacion)) + ", " ;
-	+ "'" + ALLTRIM(this.observ) + "', " ;
-	+ "'" + ALLTRIM(gcCodUsu) + "', " ;
-	+ loDT.getDateTime() + ", " ;
-	+ "'" + SYS(0) + "', " ;
-	+ ALLTRIM(STR(this.idcondpago)) + ", " ;
-	+ ALLTRIM(STR(this.idsitiva)) + ", " ;
-	+ ALLTRIM(STR(this.idvendedor)) + ")"
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	this.error_message = loCommand.ErrorMessage
-	goConn.Rollback()
-	RETURN .F.
-ENDIF
-
-goConn.Commit()
-
-RETURN .T.
-ENDPROC
-PROCEDURE getidoper
-LOCAL loRes
-LOCAL lnIdOper
-
-loRes = CREATEOBJECT("odbc_result")
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tmp"
-lcSql = "CALL cccli_getIdOper ( " ;
-	+ ALLTRIM(STR(this.id_vta_origen)) + ")"
-loRes.OpenQuery(lcSql)
-SELECT cur_tmp
-lnIdOper = cur_tmp.idOper
-loRes.Close_Query()
-RETURN lnIdOper
-ENDPROC
-PROCEDURE getnextidoper
-LOCAL loRes
-LOCAL lnIdOper
-
-loRes = CREATEOBJECT("odbc_result")
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tmp"
-lcSql = "CALL cccli_getNextIdOper()"
-loRes.Cursor_Name = "cur_tmp"
-loRes.OpenQuery(lcSql)
-SELECT cur_tmp
-lnIdOper = cur_tmp.proxIdOper
-loRes.Close_Query()
-
-RETURN lnIdOper
-ENDPROC
-PROCEDURE verificar_estado_fc
-LOCAL loCmd
-LOCAL lcSql
-LOCAL lnSaldo
-lcSql = ""
-lnSaldo = 0.00
-loResult = CREATEOBJECT("odbc_result")
-lcSql = "CALL cccli_verificarEstadoCbte (" + ALLTRIM(STR(this.id_vta_origen)) + ")"
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.Cursor_Name = "cur_x"
-loResult.OpenQuery(lcSql)
-lnSaldo = cur_x.saldo
-loResult.Close_Query()
-RETURN lnSaldo
-ENDPROC
-PROCEDURE grabar_stock
-**********************************************
-* METODO PARA PODER GRABAR STOCK
-**********************************************
-LOCAL loMovStock
-loMovStock = CREATEOBJECT("cl_mov_stock")
-IF INT(VAL(getconfig("DEMO"))) = 1 THEN
-	&& Si se está ejecutando la versión DEMO, entonces, llama al grabar3 y no carga ningún
-	&& dato relativo al comprobante.
-	loMovStock.circuito = "S"
-	loMovStock.tipoDoc = ""
-	loMovStock.cbte = "ENT"
-	
-	IF !loMovStock.grabar3() THEN
-		this.error_message = loMovStock.ErrorMessage
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-ELSE
-	&& Si pasa por aca es en caso que se esté ejecutando la versión normal
-	loMovStock.circuito = "V"
-	
-	loMovStock.idcliente = this.idcliente
-	loMovStock.idprov = 0
-	loMovStock.tipodoc = this.tipodoc
-	loMovStock.cbte = this.cbte
-	loMovStock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(this.ptovta)))) + ALLTRIM(STR(this.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(this.numcbte)))) + ALLTRIM(STR(this.numcbte))
-
-	IF !loMovStock.grabar2() THEN
-		this.error_message = loMovStock.ErrorMessage
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-
-ENDIF
-
-
-ENDPROC
 
 
 ************************************************************
@@ -24978,2382 +17380,805 @@ Arial, 1, 8, 5, 14, 11, 29, 3, 0
 
 
 ************************************************************
-OBJETO: clsformcbtes_fe
+OBJETO: clsform_consbjacbte_sf
 ************************************************************
 *** PROPIEDADES ***
+BorderStyle = 2
+Height = 500
+Width = 1020
 DoCreate = .T.
-aut_cae = 
-aut_cae_vto = 
-aut_resultado = 
-aut_motivo = 
-aut_numero = 
-codigo_cbte = 0
-error_message = 
-qr_image = 
-emitir_ticket = .F.
-oticket = 
-id_ventasc = 0
-nrocbte = 
-cbte = FC
-mailfc = 
-Name = "clsformcbtes_fe"
-contenido.Clsetiqueta1.TabIndex = 42
-contenido.Clsetiqueta1.Name = "Clsetiqueta1"
-contenido.sel_Cliente.txtCodigo.Name = "txtCodigo"
-contenido.sel_Cliente.txtDescripcion.Name = "txtDescripcion"
-contenido.sel_Cliente.TabIndex = 1
-contenido.sel_Cliente.Name = "sel_Cliente"
-contenido.Clsetiqueta2.TabIndex = 44
-contenido.Clsetiqueta2.Name = "Clsetiqueta2"
-contenido.Clsetiqueta3.TabIndex = 45
-contenido.Clsetiqueta3.Name = "Clsetiqueta3"
-contenido.txtSitIVA.TabIndex = 33
-contenido.txtSitIVA.Name = "txtSitIVA"
-contenido.sel_FormaPago.txtCodigo.Name = "txtCodigo"
-contenido.sel_FormaPago.txtDescripcion.Name = "txtDescripcion"
-contenido.sel_FormaPago.TabIndex = 3
-contenido.sel_FormaPago.Name = "sel_FormaPago"
-contenido.Clslinea1.Name = "Clslinea1"
-contenido.Clsetiqueta4.TabIndex = 46
-contenido.Clsetiqueta4.Name = "Clsetiqueta4"
-contenido.sel_Articulo.txtCodigo.Name = "txtCodigo"
-contenido.sel_Articulo.txtDescripcion.Name = "txtDescripcion"
-contenido.sel_Articulo.TabIndex = 6
-contenido.sel_Articulo.Name = "sel_Articulo"
-contenido.Clsetiqueta5.TabIndex = 48
-contenido.Clsetiqueta5.Name = "Clsetiqueta5"
-contenido.txtCantidad.TabIndex = 7
-contenido.txtCantidad.Name = "txtCantidad"
-contenido.btnAgregar.TabIndex = 9
-contenido.btnAgregar.Name = "btnAgregar"
-contenido.grdDetalles.COLUMN1.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN1.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN1.Name = "COLUMN1"
-contenido.grdDetalles.COLUMN2.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN2.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN2.Name = "COLUMN2"
-contenido.grdDetalles.COLUMN3.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN3.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN3.Name = "COLUMN3"
-contenido.grdDetalles.COLUMN4.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN4.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN4.Name = "COLUMN4"
-contenido.grdDetalles.COLUMN5.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN5.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN5.Name = "COLUMN5"
-contenido.grdDetalles.COLUMN6.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN6.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN6.Name = "COLUMN6"
-contenido.grdDetalles.COLUMN7.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN7.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN7.Name = "COLUMN7"
-contenido.grdDetalles.COLUMN8.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN8.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN8.Name = "COLUMN8"
-contenido.grdDetalles.COLUMN9.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN9.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN9.Name = "COLUMN9"
-contenido.grdDetalles.COLUMN10.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN10.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN10.Name = "COLUMN10"
-contenido.grdDetalles.COLUMN11.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN11.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN11.Name = "COLUMN11"
-contenido.grdDetalles.COLUMN12.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN12.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN12.Name = "COLUMN12"
-contenido.grdDetalles.COLUMN13.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN13.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN13.Name = "COLUMN13"
-contenido.grdDetalles.COLUMN14.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN14.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN14.Name = "COLUMN14"
-contenido.grdDetalles.COLUMN15.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN15.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN15.Name = "COLUMN15"
-contenido.grdDetalles.COLUMN16.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN16.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN16.Name = "COLUMN16"
-contenido.grdDetalles.COLUMN17.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN17.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN17.Name = "COLUMN17"
-contenido.grdDetalles.COLUMN18.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN18.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN18.Name = "COLUMN18"
-contenido.grdDetalles.COLUMN19.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN19.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN19.Name = "COLUMN19"
-contenido.grdDetalles.COLUMN20.Header1.Name = "Header1"
-contenido.grdDetalles.COLUMN20.Text1.Name = "Text1"
-contenido.grdDetalles.COLUMN20.Name = "COLUMN20"
-contenido.grdDetalles.TabIndex = 49
-contenido.grdDetalles.Name = "grdDetalles"
-contenido.btnGrabar.TabIndex = 12
-contenido.btnGrabar.Name = "btnGrabar"
-contenido.btnCancelar.TabIndex = 14
-contenido.btnCancelar.Name = "btnCancelar"
-contenido.Clscerrar1.TabIndex = 13
-contenido.Clscerrar1.Name = "Clscerrar1"
-contenido.Clsetiqueta10.TabIndex = 72
-contenido.Clsetiqueta10.Name = "Clsetiqueta10"
-contenido.txtPrMay.TabIndex = 31
-contenido.txtPrMay.Name = "txtPrMay"
-contenido.Clsetiqueta11.TabIndex = 74
-contenido.Clsetiqueta11.Name = "Clsetiqueta11"
-contenido.txtPrMinorista.TabIndex = 30
-contenido.txtPrMinorista.Name = "txtPrMinorista"
-contenido.Clsetiqueta12.TabIndex = 81
-contenido.Clsetiqueta12.Name = "Clsetiqueta12"
-contenido.txtAlicIVA.TabIndex = 82
-contenido.txtAlicIVA.Name = "txtAlicIVA"
-contenido.btnEliminar.TabIndex = 10
-contenido.btnEliminar.Name = "btnEliminar"
-contenido.chkImprimeDup.Alignment = 0
-contenido.chkImprimeDup.TabIndex = 89
-contenido.chkImprimeDup.Name = "chkImprimeDup"
-contenido.btnCbteOrigen.TabIndex = 32
-contenido.btnCbteOrigen.Name = "btnCbteOrigen"
-contenido.txtObserv.TabIndex = 29
-contenido.txtObserv.Name = "txtObserv"
-contenido.Clsetiqueta6.TabIndex = 51
-contenido.Clsetiqueta6.Name = "Clsetiqueta6"
-contenido.Clsetiqueta7.TabIndex = 55
-contenido.Clsetiqueta7.Name = "Clsetiqueta7"
-contenido.Clsetiqueta8.TabIndex = 57
-contenido.Clsetiqueta8.Name = "Clsetiqueta8"
-contenido.Clsetiqueta9.TabIndex = 58
-contenido.Clsetiqueta9.Name = "Clsetiqueta9"
-contenido.txtTotNeto.TabIndex = 60
-contenido.txtTotNeto.Name = "txtTotNeto"
-contenido.txtPorIVA21.TabIndex = 63
-contenido.txtPorIVA21.Name = "txtPorIVA21"
-contenido.txtPorIVA105.TabIndex = 64
-contenido.txtPorIVA105.Name = "txtPorIVA105"
-contenido.txtImpIVA21.TabIndex = 66
-contenido.txtImpIVA21.Name = "txtImpIVA21"
-contenido.txtImpIVA105.TabIndex = 67
-contenido.txtImpIVA105.Name = "txtImpIVA105"
-contenido.txtTotal.TabIndex = 68
-contenido.txtTotal.Name = "txtTotal"
-contenido.Clsetiqueta14.TabIndex = 84
-contenido.Clsetiqueta14.Name = "Clsetiqueta14"
-contenido.txtDesc1.ReadOnly = .F.
-contenido.txtDesc1.TabIndex = 16
-contenido.txtDesc1.Name = "txtDesc1"
-contenido.txtDesc2.ReadOnly = .F.
-contenido.txtDesc2.TabIndex = 19
-contenido.txtDesc2.Name = "txtDesc2"
-contenido.txtDesc3.ReadOnly = .F.
-contenido.txtDesc3.TabIndex = 20
-contenido.txtDesc3.Name = "txtDesc3"
-contenido.txtDesc4.ReadOnly = .F.
-contenido.txtDesc4.TabIndex = 21
-contenido.txtDesc4.Name = "txtDesc4"
-contenido.txtImpDesc1.TabIndex = 37
-contenido.txtImpDesc1.Visible = .F.
-contenido.txtImpDesc1.Name = "txtImpDesc1"
-contenido.txtImpDesc2.TabIndex = 38
-contenido.txtImpDesc2.Visible = .F.
-contenido.txtImpDesc2.Name = "txtImpDesc2"
-contenido.txtImpDesc3.TabIndex = 39
-contenido.txtImpDesc3.Visible = .F.
-contenido.txtImpDesc3.Name = "txtImpDesc3"
-contenido.txtImpDesc4.TabIndex = 40
-contenido.txtImpDesc4.Visible = .F.
-contenido.txtImpDesc4.Name = "txtImpDesc4"
-contenido.Clsetiqueta15.TabIndex = 83
-contenido.Clsetiqueta15.Name = "Clsetiqueta15"
-contenido.Clsetiqueta16.TabIndex = 86
-contenido.Clsetiqueta16.Name = "Clsetiqueta16"
-contenido.Clsetiqueta17.TabIndex = 59
-contenido.Clsetiqueta17.Name = "Clsetiqueta17"
-contenido.txtTotFact.TabIndex = 69
-contenido.txtTotFact.Name = "txtTotFact"
-contenido.Clsetiqueta18.TabIndex = 56
-contenido.Clsetiqueta18.Name = "Clsetiqueta18"
-contenido.txtPorIIBB.TabIndex = 62
-contenido.txtPorIIBB.Name = "txtPorIIBB"
-contenido.txtImpIIBB.TabIndex = 65
-contenido.txtImpIIBB.Name = "txtImpIIBB"
-contenido.Clsetiqueta19.TabIndex = 85
-contenido.Clsetiqueta19.Name = "Clsetiqueta19"
-contenido.txtST.TabIndex = 61
-contenido.txtST.Name = "txtST"
-contenido.Clsetiqueta20.TabIndex = 71
-contenido.Clsetiqueta20.Name = "Clsetiqueta20"
-contenido.txtPorDesc1.ReadOnly = .F.
-contenido.txtPorDesc1.TabIndex = 25
-contenido.txtPorDesc1.Name = "txtPorDesc1"
-contenido.txtImpDescItem1.TabIndex = 90
-contenido.txtImpDescItem1.Name = "txtImpDescItem1"
-contenido.txtPorDesc2.ReadOnly = .F.
-contenido.txtPorDesc2.TabIndex = 26
-contenido.txtPorDesc2.Name = "txtPorDesc2"
-contenido.txtImpDescItem2.TabIndex = 91
-contenido.txtImpDescItem2.Name = "txtImpDescItem2"
-contenido.txtPorDesc3.ReadOnly = .F.
-contenido.txtPorDesc3.TabIndex = 27
-contenido.txtPorDesc3.Name = "txtPorDesc3"
-contenido.txtImpDescItem3.TabIndex = 92
-contenido.txtImpDescItem3.Name = "txtImpDescItem3"
-contenido.txtPorDesc4.ReadOnly = .F.
-contenido.txtPorDesc4.TabIndex = 28
-contenido.txtPorDesc4.Name = "txtPorDesc4"
-contenido.txtImpDescItem4.TabIndex = 93
-contenido.txtImpDescItem4.Name = "txtImpDescItem4"
-contenido.Clsetiqueta21.TabIndex = 80
-contenido.Clsetiqueta21.Name = "Clsetiqueta21"
-contenido.txtImpIVA.TabIndex = 94
-contenido.txtImpIVA.Name = "txtImpIVA"
-contenido.Clsetiqueta22.TabIndex = 76
-contenido.Clsetiqueta22.Name = "Clsetiqueta22"
-contenido.txtSTNeto.TabIndex = 78
-contenido.txtSTNeto.Name = "txtSTNeto"
-contenido.Clsetiqueta13.TabIndex = 87
-contenido.Clsetiqueta13.Name = "Clsetiqueta13"
-contenido.txtSubTotal.TabIndex = 88
-contenido.txtSubTotal.Name = "txtSubTotal"
-contenido.Clsetiqueta23.TabIndex = 73
-contenido.Clsetiqueta23.Name = "Clsetiqueta23"
-contenido.txtPrNeto.TabIndex = 77
-contenido.txtPrNeto.Name = "txtPrNeto"
-contenido.lblExistencia.TabIndex = 79
-contenido.lblExistencia.Name = "lblExistencia"
-contenido.txtExistencia.TabIndex = 95
-contenido.txtExistencia.Name = "txtExistencia"
-contenido.Clsetiqueta24.TabIndex = 53
-contenido.Clsetiqueta24.Name = "Clsetiqueta24"
-contenido.txtPorRec.TabIndex = 15
-contenido.txtPorRec.Name = "txtPorRec"
-contenido.txtImpRec.TabIndex = 96
-contenido.txtImpRec.Name = "txtImpRec"
-contenido.txtRecItem.TabIndex = 41
-contenido.txtRecItem.Visible = .F.
-contenido.txtRecItem.Name = "txtRecItem"
-contenido.Clsetiqueta25.TabIndex = 43
-contenido.Clsetiqueta25.Name = "Clsetiqueta25"
-contenido.txtTelefono.TabIndex = 34
-contenido.txtTelefono.Name = "txtTelefono"
-contenido.Clsetiqueta26.TabIndex = 23
-contenido.Clsetiqueta26.Name = "Clsetiqueta26"
-contenido.txtcuit.TabIndex = 2
-contenido.txtcuit.Name = "txtcuit"
-contenido.Clsetiqueta27.TabIndex = 47
-contenido.Clsetiqueta27.Name = "Clsetiqueta27"
-contenido.cboUnidVta.TabIndex = 11
-contenido.cboUnidVta.Name = "cboUnidVta"
-contenido.txtCantPack.TabIndex = 24
-contenido.txtCantPack.Name = "txtCantPack"
-contenido.Clsetiqueta28.TabIndex = 52
-contenido.Clsetiqueta28.Name = "Clsetiqueta28"
-contenido.txtOC.TabIndex = 36
-contenido.txtOC.Name = "txtOC"
-contenido.Clsetiqueta29.TabIndex = 70
-contenido.Clsetiqueta29.Name = "Clsetiqueta29"
-contenido.txtPorRecItem.TabIndex = 22
-contenido.txtPorRecItem.Name = "txtPorRecItem"
-contenido.Clsetiqueta30.TabIndex = 50
-contenido.Clsetiqueta30.Name = "Clsetiqueta30"
-contenido.TXTFECEMIS.TabIndex = 4
-contenido.TXTFECEMIS.Name = "TXTFECEMIS"
-contenido.Clsetiqueta31.TabIndex = 54
-contenido.Clsetiqueta31.Name = "Clsetiqueta31"
-contenido.txtMailFC.TabIndex = 5
-contenido.txtMailFC.Name = "txtMailFC"
-contenido.chkEnviarMail.Alignment = 0
-contenido.chkEnviarMail.TabIndex = 18
-contenido.chkEnviarMail.Name = "chkEnviarMail"
-contenido.lblPrecioUnitFinal.TabIndex = 75
-contenido.lblPrecioUnitFinal.Name = "lblPrecioUnitFinal"
-contenido.txtPrUnitFinal.TabIndex = 8
-contenido.txtPrUnitFinal.Name = "txtPrUnitFinal"
-contenido.chkImprimirCbte.Alignment = 0
-contenido.chkImprimirCbte.TabIndex = 17
-contenido.chkImprimirCbte.Name = "chkImprimirCbte"
-contenido.btnAgregarCliente.Name = "btnAgregarCliente"
-contenido.Clsetiqueta32.Name = "Clsetiqueta32"
-contenido.txt_subtotal_no_grav.Name = "txt_subtotal_no_grav"
-contenido.Clsetiqueta33.Name = "Clsetiqueta33"
-contenido.txt_total_no_grav.Name = "txt_total_no_grav"
-contenido.TabIndex = 1
-contenido.Name = "contenido"
-mov_stock.Name = "mov_stock"
-faltantes.Name = "faltantes"
+Caption = "Consulta y Baja de Comprobantes"
+list_cbtes = 
+consulta = .T.
+tipo_consulta = 
+Name = "clsform_consbjacbte_sf"
+CONTENIDO.Top = 0
+CONTENIDO.Left = 0
+CONTENIDO.Width = 1021
+CONTENIDO.Height = 505
+CONTENIDO.Name = "CONTENIDO"
 
 *** METODOS ***
-PROCEDURE enviar_wsafipfe
-LOCAL llRes
-LOCAL lnPtoVta
-LOCAL lnTipoDoc, lcTipoDoc
-LOCAL lnRetAlva
-LOCAL lnCantIVA
-LOCAL lnImpBase21
-LOCAL lnImpBase105
-LOCAL lcNumero
-LOCAL lcMensaje
-LOCAL lnModo
-LOCAL lnTotalIVA
-LOCAL lnImpBaseSIVA
-LOCAL lnIndice
-LOCAL lcMensaje
-
-lnTipoDoc = 0
-lcTipoDoc = ""
-lnPtoVta = INT(VAL(getConfig("PTOVTA")))
-lnRetAlva = 0
-lnCantIVA = 0
-lnImpBase21 = 0
-lnImpBase105 = 0
-lnImpBaseSIVA = 0
-lcNumero = ""
-lcMensaje = ""
-lnTotalIVA = 0.00
-lnIndice = 0
-Thisform.error_message = ""
-
-lcMensaje = lcMensaje + DTOC(DATETIME()) + " - Iniciando autoriazción" + CHR(13) + CHR(10)
-IF !Thisform.verificar_cbte() THEN
-	Thisform.error_message = "Por alguna razón el comprobante no se ha grabado."
-	RETURN .F.
-ENDIF
-lcTipoDoc = Thisform.calcular_tipodoc()
-
-&& Tengo que acordarme que en el tercer parámetro tengo que pasar
-&& la ruta y el nombre de archivo del certificado.
-
-lnModo = IIF(getGlobalCFG("FEDEBUG"), 0, 1)
-llRes = Thisform.fe.iniciar(lnModo, getGlobalCFG("FECUIT"), SYS(5) + SYS(2003) + "\wsafip\" + getGlobalCFG("FE_FILE"), ALLTRIM(getGlobalCFG("FE_LIC")))
-Thisform.fe.tls = getGlobalCFG("FETLS")
-IF !llRes THEN
-	Thisform.error_message = "Falló al iniciar: " + Thisform.fe.ultimoMensajeError
-	RETURN .F.
-EndIf
-
-&& Verifico si el servicio está en línea
-IF !Thisform.fe.dummy() THEN 
-	MESSAGEBOX("Los Web Services de AFIP no se encuentran disponibles.",0+16,Thisform.Caption)
-	Return .F.
-ENDIF 
-
-Thisform.fe.ArchivoCertificadoPassWord = ALLTRIM(getGlobalCFG("FE_PWD"))
-IF !Thisform.ticket_valido() THEN
-	MESSAGEBOX("No se pudo generar Ticket de Acceso", 0+48, Thisform.Caption)
-	Thisform.error_message = "No se pudo crear el ticket de acceso, por favor verifique que la unidad de red "
-	Thisform.error_message = Thisform.error_message + "se encuentre accesible."
-	RETURN .F.
-ENDIF
-
-Thisform.fe.ArchivoXMLRecibido = SYS(5) + SYS(2003) + "\wsafip\xml\" + ALLTRIM(STR(thisform.id_ventasc)) + "_rec_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.fe.archivoXMLEnviado = SYS(5) + SYS(2003) + "\wsafip\xml\" + ALLTRIM(STR(thisform.id_ventasc)) + "_env_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".xml"
-	
-Thisform.qr_image = getGlobalCFG("QRPATH") + ALLTRIM(STR(thisform.id_ventasc)) + "_" + ALLTRIM(STR(YEAR(DATETIME()))) + ;
-	ALLTRIM(STR(MONTH(DATETIME()))) + ALLTRIM(STR(DAY(DATETIME()))) + ALLTRIM(STR(HOUR(DATETIME()))) + ;
-	ALLTRIM(STR(MINUTE(DATETIME()))) + ALLTRIM(STR(SEC(DATETIME()))) + ".jpg"
-	
-lnRetAlva = Thisform.fe.f1CompUltimoAutorizado(lnPtoVta, Thisform.fe_get_tipocbte_afip(ALLTRIM(lcTipoDoc)))
-
-* x = Thisform.condicion_iva_receptor_id (Asignar el parámetro cuando habiliten la condición iva receptor
-Thisform.fe.F1CabeceraCantReg = 1
-Thisform.fe.F1CabeceraPtoVta = lnPtoVta
-Thisform.fe.F1CabeceraCbteTipo = Thisform.fe_get_tipocbte_afip(ALLTRIM(lcTipoDoc))
-Thisform.codigo_cbte = Thisform.fe.F1CabeceraCbteTipo
-Thisform.fe.F1DetalleDocTipo = Thisform.fe_convertir_tipodoc(ALLTRIM(Thisform.cli_tipodoc))
-Thisform.fe.F1DetalleDocNro = Thisform.cli_cuit
-Thisform.fe.F1DetalleCbteDesde = lnRetAlva + 1
-Thisform.fe.F1DetalleCbteHasta = lnRetAlva + 1
-
-** Verifico si está activado el condición iva receptor, si está en true informo el parámetro
-If getGlobalCFG("FE_IVAREC") THEN
-	Thisform.fe.F1DetalleCondicionIvaReceptor = Thisform.condicion_iva_receptor_id
-ENDIF
-
-*Thisform.fe.F1DetalleCbteFch = ALLTRIM(STR(YEAR(DATE()))) + IIF(LEN(ALLTRIM(STR(MONTH(DATE())))) < 2, "0" + ALLTRIM(STR(MONTH(DATE()))), ALLTRIM(STR(MONTH(DATE())))) + ;
-	IIF(LEN(ALLTRIM(STR(DAY(DATE())))) < 2, "0" + ALLTRIM(STR(DAY(DATE()))), ALLTRIM(STR(DAY(DATE()))))
-
-Thisform.fe.F1DetalleCbteFch = ALLTRIM(STR(YEAR(Thisform.Contenido.txtFecEmis.Value))) + ;
-	IIF(LEN(ALLTRIM(STR(MONTH(Thisform.Contenido.txtFecEmis.Value)))) < 2, "0" + ;
-	ALLTRIM(STR(MONTH(Thisform.Contenido.txtFecEmis.Value))), ;
-	ALLTRIM(STR(MONTH(Thisform.Contenido.txtFecEmis.Value)))) + ;
-	IIF(LEN(ALLTRIM(STR(DAY(Thisform.Contenido.txtFecEmis.Value)))) < 2, "0" + ;
-	ALLTRIM(STR(DAY(Thisform.Contenido.txtFecEmis.Value))), ALLTRIM(STR(DAY(Thisform.Contenido.txtFecEmis.Value))))
-
-&& Tengo que calcular la suma del neto de los articulos con 21 de IVA y con el 10.5 de IVA por separado
-
-SELECT cur_aux
-GO TOP
-DO WHILE !EOF("cur_aux")
-	IF cur_aux.alicIVA = 21 THEN
-		lnImpBase21 = lnImpBase21 + cur_aux.TotNeto
-	ENDIF
-	
-	IF cur_aux.alicIVA = 10.5 THEN
-		lnImpBase105 = lnImpBase105 + cur_aux.TotNeto
-	ENDIF
-	
-	IF cur_aux.alicIVA = 0 THEN
-		lnImpBaseSIVA = lnImpBaseSIVA + cur_aux.TotNeto
-	ENDIF
-
-	SELECT cur_aux
-	SKIP
-ENDDO
-
-IF Thisform.fe.F1CabeceraCbteTipo <> 11 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 12 ;
-		.AND. Thisform.fe.F1CabeceraCbteTipo <> 13 THEN
-	lnIndice = 0
-	lnTotalIVA = 0.00
-	IF lnImpBase21 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 5
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase21, 2)
-		Thisform.fe.F1DetalleIvaImporte = cur_subtotal.impIVA21
-		lnTotalIVA = lnTotalIVA + cur_subtotal.impIVA21
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBase105 <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 4
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBase105, 2)
-		Thisform.fe.F1DetalleIvaImporte = cur_subtotal.impIVA105
-		lnTotalIVA = lnTotalIVA + cur_subtotal.impIVA105
-		lnIndice = lnIndice + 1
-	ENDIF
-
-	IF lnImpBaseSIVA <> 0 THEN
-		Thisform.fe.F1DetalleIvaItemCantidad = Thisform.fe.F1DetalleIvaItemCantidad + 1
-		Thisform.fe.f1IndiceItem = lnIndice
-		Thisform.fe.F1DetalleIvaId = 3
-		Thisform.fe.F1DetalleIvaBaseImp = ROUND(lnImpBaseSIVA, 2)
-	ENDIF
-ENDIF
-
-&& Agrego los conceptos de IIBB
-
-IF Thisform.Contenido.txtPorIIBB.Value <> 0 THEN
-	Thisform.FE.F1DetalleTributoItemCantidad = 1
-	Thisform.FE.f1IndiceItem = 0
-	Thisform.FE.F1DetalleTributoId = 2
-	Thisform.FE.F1DetalleTributoDesc = "IIBB Pcia Bs AS"
-	Thisform.FE.F1DetalleTributoBaseImp = cur_subtotal.impfinal
-	Thisform.FE.F1DetalleTributoAlic = cur_subtotal.porIIBB
-	Thisform.FE.F1DetalleTributoImporte = cur_subtotal.impIIBB
-ENDIF
-
-Thisform.fe.F1DetalleConcepto = 1
-Thisform.fe.F1DetalleImpNeto = ROUND(cur_subtotal.impfinal, 2)			&& Importe total del comprobante
-Thisform.fe.F1DetalleImpTotalConc = ROUND(cur_subtotal.totaNoGrav, 2)		&& Importe neto no gravado
-Thisform.fe.F1DetalleImpIva = ROUND(lnTotalIVA, 2)
-Thisform.fe.F1DetalleImpOpEx = 0
-Thisform.fe.F1DetalleImpTrib = ROUND(Thisform.FE.F1DetalleTributoImporte, 2)
-Thisform.fe.F1DetalleMonId = "PES"
-Thisform.fe.F1DetalleMonCotiz = 1
-Thisform.fe.F1DetalleImpTotal = ROUND(cur_subtotal.totfact, 2)
-
-* Agrego la generación del QR
-Thisform.fe.f1DEtalleQrArchivo = Thisform.qr_image
-Thisform.fe.f1DEtalleQrFormato = 1
-Thisform.fe.f1DetalleQrResolucion = 5
-Thisform.fe.f1DetalleQrTolerancia = 0
-
-llRes = Thisform.fe.f1CAESolicitar()
-
-IF llRes THEN
-	IF ALLTRIM(Thisform.fe.F1RespuestaResultado) == "A" THEN
-		lcNumero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
-			REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde)))) + ALLTRIM(STR(Thisform.fe.F1RespuestaDetalleCbteDesde))
-		
-		Thisform.ptovta = lnPtoVta
-		Thisform.nrocbte = INT(VAL(Thisform.fe.F1RespuestaDetalleCbteDesdeS))
-		
-		lcMensaje = "CAE: " + Thisform.fe.F1RespuestaDetalleCae + CHR(13)+ CHR(10)
-		lcMensaje = lcMensaje + "FECHA VTO: " + Thisform.fe.F1RespuestaDetalleCaeFchVto + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "RESULTADO: " + Thisform.fe.F1RespuestaResultado + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "PROCESO: " + Thisform.fe.F1RespuestaReProceso + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "El comprobante fué aprobado con éxito"
-		MESSAGEBOX(lcMensaje, 0+64, Thisform.Caption)
-		
-		Thisform.aut_numero = lcNumero
-		Thisform.aut_cae = Thisform.fe.F1RespuestaDetalleCae
-		Thisform.aut_cae_vto = Thisform.fe.F1RespuestaDetalleCaeFchVto
-		Thisform.aut_resultado = Thisform.fe.F1RespuestaResultado
-		Thisform.aut_motivo = Thisform.fe.F1RespuestaDetalleObservacionMsg
-	ELSE
-		* Pasa por acá si la solicidud fue satisfactoria pero la factura fue
-		* rechazada.
-		
-		lcMensaje = "ATENCION: Factura rechazada por el AFIP" + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)		
-		Thisform.error_message = lcMensaje
-		RETURN .F.
-	ENDIF
-ELSE
-	IF !(ISNULL(Thisform.fe.F1RespuestaReProceso) .OR. Thisform.fe.F1RespuestaResultado == "R") THEN
-		lcMensaje = "ATENCION: Falló la solicitud de CAE" + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "RESULTADO: " + Thisform.fe.F1RespuestaResultado + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "MOTIVO: " + Thisform.fe.UltimoMensajeError + CHR(13) + CHR(10)
-		MESSAGEBOX(lcMensaje, 0+48, Thisform.Caption)
-		RETURN .F.
-	ELSE
-		lcMensaje = "MOTIVO: " + Thisform.fe.F1RespuestaDetalleObservacionMsg + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ERROR: " + Thisform.fe.f1ErrorMsg1 + CHR(13) + CHR(10)
-		lcMensaje = lcMensaje + "ULTIMO: " + Thisform.fe.UltimoMensajeError
-		Thisform.error_message = lcMensaje
-		RETURN .F.
-	ENDIF
-ENDIF
-
-RETURN .T.
-ENDPROC
-PROCEDURE fe_convertir_tipodoc
-PARAMETERS tcTipoDoc
-LOCAL lnResultado
-
-lnResultado = 99 && Código que corresponde a sin identificación en el diccionario
-
-DO CASE
-	CASE ALLTRIM(tcTipoDoc) == "CUIT"
-		lnResultado = 80
-	CASE ALLTRIM(tcTipoDoc) == "CUIL"
-		lnResultado = 86
-	CASE ALLTRIM(tcTipoDoc) == "CI"
-		lnResultado = 87
-	CASE ALLTRIM(tcTipoDoc) == "LE"
-		lnResultado = 89
-	CASE ALLTRIM(tcTipoDoc) == "LC"
-		lnResultado = 90
-	CASE ALLTRIM(tcTipoDoc) == "CIE"
-		lnResultado = 91
-	CASE ALLTRIM(tcTipoDoc) == "PAS"
-		lnResultado = 94
-	CASE ALLTRIM(tcTipoDoc) == "DNI"
-		lnResultado = 96
-ENDCASE
-
-RETURN lnResultado
-ENDPROC
-PROCEDURE fe_get_tipocbte_afip
-PARAMETERS tc_letra
-
-DO CASE
-	CASE ALLTRIM(thisform.cbte) == "FC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 1
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 6
-			CASE ALLTRIM(tc_letra) == "C" 
-				RETURN 11
-		ENDCASE
-	CASE ALLTRIM(thisform.cbte) == "ND"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 2
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 7
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 12
-		ENDCASE
-	CASE ALLTRIM(thisform.cbte) == "NC"
-		DO CASE
-			CASE ALLTRIM(tc_letra) == "A"
-				RETURN 3
-			CASE ALLTRIM(tc_letra) == "B"
-				RETURN 8
-			CASE ALLTRIM(tc_letra) == "C"
-				RETURN 13
-		ENDCASE	
-ENDCASE
-
-RETURN -1
-ENDPROC
-PROCEDURE fe_set_cae
-LOCAL loCommand, lcSql
-LOCAL loDT, ldFecVto
-LOCAL lcAnio, lcMes, lcDia
-
-loDT = CREATEOBJECT("datetime")
-loCommand = CREATEOBJECT("odbc_command")
-lcSql = ""
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-lcSql = "update ventascab "
-lcSql = lcSql + "set "
-lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
-lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
-lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
-lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
-lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
-lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
-lcSql = lcsql + "	aut_tipoCbte = '" + REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)) + "', "
-lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
-lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
-
-goConn.BeginTransaction()
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lcSql = "update cc_cli set nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + " "
-lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
-
-loCommand.ActiveConnection = goConn.ActiveConnection
-loCommand.CommandText = lcSql
-
-IF !loCommand.Execute() THEN
-	goConn.Rollback()
-	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-&& Si el sistema está configurado para llevar el stock, entonces,
-&& una vez autorizado el comprobante genero los movimientos de stock
-&& asginando el número de comprobante devuelto por el AFIP. 
-IF getGlobalCFG("stk_module") then
-	IF ALLTRIM(Thisform.cbte) == "FC" THEN
-		Thisform.mov_stock.circuito = "V"
-		Thisform.mov_stock.idcliente = thisform.contenido.sel_Cliente.valcpoid
-		Thisform.mov_stock.idprov = 0
-		Thisform.mov_stock.tipodoc = Thisform.tipodoc
-		Thisform.mov_stock.cbte = IIF(ALLTRIM(Thisform.cbte) == "PTO", "SAL", Thisform.cbte )
-		Thisform.mov_stock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ;
-				ALLTRIM(STR(Thisform.Ptovta)) + "-" + ;
-				REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))		
-		IF !Thisform.mov_stock.grabar2() THEN
-			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
-			thisform.desbloq_numerador()
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
-	ENDIF
-ENDIF
-goConn.Commit()
-
-RETURN .T.
-ENDPROC
-PROCEDURE calc_digito_verificador
-&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
-
-PARAMETERS tcCodigo
-
-LOCAL lnDigito
-LOCAL lnSumaE1
-LOCAL lnSumaE3
-LOCAL lnProductoE2
-LOCAL lnSumaE4
-LOCAL lnMin
-LOCAL lnPos
-
-lnDigito = 0
-lnSumaE1 = 0
-lnSumaE3 = 0
-lnSumaE4 = 0
-lnMin = 0
-
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(i, 2) <> 0 THEN
-		&& Etapa 1 (posiciones impares)
-		lnSumaE1 = lnSumaE1 + lnDigito
-	ELSE
-		&& Etapa 3 (posiciones pares)
-		lnSumaE3 = lnSumaE3 + lnDigito
-	ENDIF
-NEXT i
-
-lnProductoE2 = lnSumaE1 * 3 && Etapa 2
-lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
-
-&& Etapa 5
-lnPos = 0
-FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
-	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
-	
-	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
-		IF lnPos = 0 THEN
-			lnMin = lnDigito
-		ELSE
-			IF lnDigito < lnMin THEN
-				lnMin = lnDigito
-			ENDIF
-		ENDIF
-		
-		lnPos = lnPos + 1
-	ENDIF
-NEXT i
-
-RETURN lnMin
-ENDPROC
-PROCEDURE ticket_valido
-LOCAL llTkValido
-LOCAL lcTicket
-LOCAL lcFileTicket
-LOCAL lcTK
-LOCAL hndFile
-LOCAL llModoLocal
-
-llTkValido = .F.
-lcTicket = ""
-lcTK = ""
-lcFileTicket = getGlobalCFG("FE_TICKACC")
-llModoLocal = getGlobalCFG("FELOCAL")
-
-IF !llModoLocal THEN
-	** Si el ticket se está transfiriendo al cloud server, entonces,
-	** Descargo el último ticket que está en el server para validar luego
-	** si es válido o no.
-	IF DATE() > FDATE(lcFileTicket) THEN
-		* Si la fecha del archivo no coincide entonces descargo del FTP
-		descargar_ticket_acceso(lcFileTicket)
-	ENDIF
-ENDIF
-
-IF FILE(ALLTRIM(lcFileTicket)) THEN
-	hndFile = FOPEN(lcFileTicket, 12)
-	IF hndFile < 0 THEN
-		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
-		=FCLOSE(hndFile)
-	ELSE
-		=FCLOSE(hndFile)
-		
-		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
-		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
-		
-		IF Thisform.fe.f1TicketEsValido THEN
-			llTkValido = .T.
-		ELSE
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-	
-	IF !llTkValido THEN
-		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
-		** generar con los nuevos datos.
-		DELETE FILE ALLTRIM(lcFileTicket)
-		
-		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-			lcTK = Thisform.fe.f1GuardarTicketAcceso()
-			hndFile = FCREATE(lcFileTicket)
-			
-			IF hndFile < 0 THEN
-				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
-			ELSE
-				=FWRITE(hndFile, lcTK)
-				llTkValido = .T.
-			ENDIF
-			
-			=FCLOSE(hndFile)
-			
-			IF !llModoLocal THEN
-				* Envío el ticket de acceso al FTP
-				enviar_ticket_acceso(lcFileTicket)
-			ENDIF
-		ELSE
-			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-			llTkValido = .F.
-		ENDIF
-	ENDIF
-ELSE
-	** Si no existe el archivo entonces lo creo y lo envío al servidor.
-	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
-		lcTK = Thisform.fe.f1GuardarTicketAcceso()
-		hndFile = FCREATE(lcFileTicket)
-		
-		IF hndFile < 0 THEN
-			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
-		ELSE
-			=FWRITE(hndFile, lcTK)
-			llTkValido = .T.
-		ENDIF
-		
-		=FCLOSE(hndFile)
-
-		IF !llModoLocal THEN
-			* Envío el ticket de acceso al FTP
-			enviar_ticket_acceso(lcFileTicket)
-		ENDIF
-	ELSE
-		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
-		llTkValido = .F.			
-	ENDIF	
-ENDIF
-
-RETURN llTkValido
-ENDPROC
-PROCEDURE imprimir_ticket
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4, m.porRec
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.porIIBB, m.impIIBB, m.observ, m.vendedor
-LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
-LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
-LOCAL m.cae, m.caevto, lcDia, lcMes, lcAnio
-LOCAL m.codigoCbte, m.barcode, m.code, m.condPago, m.qr
-LOCAL lnIdNum, lnResp, m.NroRto, m.nroOC
-LOCAL loPDF, lcMailMsg
-LOCAL lcNomEmp, loTicket, m.motivo
-
-loNumerador = CREATEOBJECT("odbc_result")
-lcSql = ""
-m.NroCli = Thisform.contenido.sel_Cliente.txtCodigo.Value
-m.RazSoc = Thisform.contenido.sel_Cliente.txtDescripcion.Value
-m.Telefono = ALLTRIM(Thisform.cli_telefono)
-m.direccion = ALLTRIM(Thisform.cli_calle)
-m.localidad = ALLTRIM(Thisform.cli_localidad)
-m.codPostal = ALLTRIM(Thisform.cli_codPostal)
-m.pcia = ALLTRIM(Thisform.cli_Pcia)
-m.nroCUIT = ALLTRIM(Thisform.contenido.txtCuit.Value)
-m.TipoIVA = Thisform.Contenido.txtSitIVA.Value
-m.Total = 0.00
-m.tipoDoc = ""
-m.ptoVta = ""
-m.NroCbte = ""
-m.leyenda = ""
-m.Fecha = Thisform.Contenido.txtFecEmis.Value
-m.porIVA105 = 0.00
-m.porIVA21 = 0.00
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.fecVto = Thisform.Contenido.txtFecEmis.Value + thisform.cp_cntdias
-m.tipoDoc = Thisform.tipodoc
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-lnCantCpia = 0
-m.observ = ""
-m.vendedor = thisform.nombre_usuario
-m.cae = thisform.aut_cae
-m.codigoCbte = REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.codigo_cbte)))) + ALLTRIM(STR(Thisform.codigo_cbte))
-m.barcode = ""
-m.code = ""
-lnIdNum = 0
-lnResp = 0
-m.NroRto = ""
-m.nroOC = Thisform.contenido.txtoc.Value
-lcNomEmp = getconfig("NOMEMP")
-m.condPago = IIF(This.idCondPago = 1, "CONTADO", "CUENTAS CORRIENTES")
-m.qr = Thisform.qr_image
-
-IF Thisform.sitivacli = 6 THEN
-	&& Solo extraigo el motivo si es monotributista
-	m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
-		+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
-ELSE
-	m.motivo = ""
-ENDIF
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
-m.ptovta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
-
-&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
-lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-GO TOP
-lnIdNum = cur_num.idNum
-
-loNumerador.close_query()
-
-&& Levanto la impresora configurada en el puesto de trabajo actual
-lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND "
-lcSql = lcSql + "idNum = " + ALLTRIM(STR(lnIdNum))
-
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_imp"
-
-IF !loNumerador.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loNumerador.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_imp
-IF RECCOUNT("cur_imp") = 0 THEN
-	MESSAGEBOX("La impresora no se encuentra configurada en el puesto de trabajo actual", 0+48, Thisform.Caption)
-	loNumerador.Close_Query()
-	RETURN
-ENDIF
-
-lcPrinterName = ALLTRIM(cur_imp.impresora)
-lnCantCpia = cur_imp.copias
-
-loNumerador.Close_Query()
-
-m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
-
-IF ALLTRIM(Thisform.cbte) == "COT"
-	m.leyenda = "COTIZACION"
-	m.tipoDoc = "X"
-	m.Total = cur_Subtotal.totFact
-ELSE 
-	IF ALLTRIM(Thisform.cbte) == "PTO"
-		m.leyenda = "PRESUPUESTO"
-		m.tipoDoc = "X"
-		m.Total = cur_Subtotal.impFinal
-	ELSE
-		IF ALLTRIM(Thisform.cbte) == "PED"
-			m.leyenda = "NOTA DE PEDIDO"
-			m.tipoDoc = "P"
-			m.Total = Thisform.contenido.txtTotFact.Value
-		ELSE
-			IF ALLTRIM(Thisform.Cbte) == "FC"
-				m.leyenda = "FACTURA"
-				m.Total = cur_Subtotal.totFact
-			ELSE
-				IF ALLTRIM(Thisform.Cbte) == "NC"
-					m.Leyenda = "NOTA DE CREDITO"
-					m.Total = cur_Subtotal.totFact
-				ELSE
-					IF ALLTRIM(Thisform.Cbte) == "ND"
-						m.leyenda = "NOTA DE DEBITO"
-						m.Total = cur_Subtotal.totFact
-					ENDIF
-				ENDIF
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-IF (ALLTRIM(Thisform.cbte) == "NC") .OR. (ALLTRIM(Thisform.cbte) == "FC") .OR. (ALLTRIM(Thisform.cbte) == "PTO") .OR. (ALLTRIM(Thisform.cbte) == "COT") THEN
-	m.porDesc1 = cur_Subtotal.porDesc1 
-	m.porDesc2 = cur_Subtotal.porDesc2 
-	m.porDesc3 = cur_Subtotal.porDesc3 
-	m.porDesc4 = cur_Subtotal.porDesc4 
-	m.impDesc1 = cur_Subtotal.impDesc1
-	m.impDesc2 = cur_Subtotal.impDesc2
-	m.impDesc3 = cur_Subtotal.impDesc3
-	m.impDesc4 = cur_Subtotal.impDesc4
-	m.porIVA105 = cur_Subtotal.porIVA105
-	m.porIVA21 = cur_Subtotal.porIVA21
-	m.impIVA105 = cur_Subtotal.impIVA105
-	m.impIVA21 = cur_Subtotal.impIVA21
-	m.impNeto = cur_Subtotal.impFinal
-	m.impFinal = cur_Subtotal.impFinal
-	m.porIIBB = cur_Subtotal.porIIBB
-	m.impIIBB = cur_Subtotal.impIIBB
-	m.porRec = cur_Subtotal.porRec
-	
-	SELECT cur_aux
-ELSE 
-	m.porDesc1 = Thisform.Contenido.txtDesc1.Value
-	m.porDesc2 = Thisform.Contenido.txtDesc2.Value
-	m.porDesc3 = Thisform.Contenido.txtDesc3.Value
-	m.porDesc4 = Thisform.Contenido.txtDesc4.Value
-	m.impDesc1 = Thisform.Contenido.txtImpDesc1.Value
-	m.impDesc2 = Thisform.Contenido.txtImpDesc2.Value
-	m.impDesc3 = Thisform.Contenido.txtImpDesc3.Value
-	m.impDesc4 = Thisform.Contenido.txtImpDesc4.Value
-	m.porIVA105 = Thisform.contenido.txtPorIVA105.Value
-	m.porIVA21 = Thisform.Contenido.txtPorIVA21.value
-	m.impIVA105 = Thisform.Contenido.txtImpIVA105.Value
-	m.impIVA21 = Thisform.Contenido.txtImpIVA21.Value
-	m.impNeto = Thisform.Contenido.txtST.Value
-	m.impFinal = Thisform.Contenido.txtTotFact.Value
-	m.porIIBB = Thisform.Contenido.txtPorIIBB.Value
-	m.impIIBB = Thisform.Contenido.txtImpIIBB.Value
-	m.porRec = Thisform.contenido.txtPorRec.Value
-	
-	SELECT cur_detalle
-ENDIF 
-
-m.observ = thisform.contenido.txtObserv.Value + ""
-
-&& Generación del código de barra
-m.barcode = ALLTRIM(Thisform.cli_cuit)
-m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
-m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
-m.barcode = m.barcode + ALLTRIM(m.cae)
-m.barcode = m.barcode + ALLTRIM(lcAnio)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
-m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
-m.code = m.barcode
-m.barcode = getcodbarras(m.barcode)
-
-****************************************************************************
-* Envío a imprimir el ticket
-****************************************************************************
-Thisform.oticket.limpiar_datos()
-Thisform.oticket.codigo_cbte = m.codigoCbte
-Thisform.oticket.leyenda = m.leyenda
-Thisform.oticket.letra = m.tipoDoc
-Thisform.oticket.nro_cbte = m.nroCbte
-Thisform.oticket.fecha_cbte = m.fecha
-Thisform.oticket.fecha_vencimiento = m.fecVto
-Thisform.oticket.numero_cliente = m.NroCli
-Thisform.oticket.razon_social = m.razSoc
-Thisform.oticket.direccion = m.direccion
-Thisform.oticket.codigo_postal = m.codPostal 
-Thisform.oticket.localidad = m.localidad
-Thisform.oticket.provincia = m.pcia
-Thisform.oticket.tipo_iva = m.TipoIVA
-SELECT cur_aux
-GO TOP
-DO WHILE !EOF("cur_aux")
-	Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-			cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-	SELECT cur_aux
-	SKIP
-ENDDO
-Thisform.oticket.total_neto = m.impNeto
-Thisform.oticket.total_imp_iva21 = m.impIVA21
-Thisform.oticket.total_imp_iva105 = m.impIVA105
-Thisform.oticket.total = m.Total
-Thisform.oticket.qr_image = Thisform.qr_image
-Thisform.oticket.nro_cae = m.cae
-Thisform.oticket.vto_cae = m.caevto
-Thisform.oticket.motivo = m.motivo
-Thisform.oticket.imprimir()
-
-ENDPROC
-PROCEDURE validarcampos
-LOCAL lnDiasDif
-LOCAL loRes
-LOCAL lcSql
-LOCAL loDT
-LOCAL lnPtoVta
-
-lnDiasDif = 0
-loRes = CREATEOBJECT("odbc_result")
-loDT = CREATEOBJECT("datetime")
-lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
-
-IF !DODEFAULT() THEN
-	RETURN .F.
-ENDIF
-
-IF thisform.id_ventasc <> 0 THEN
-	MESSAGEBOX("El comprobante ya se ha grabado, dirijase a autorización de comprobantes.", 0+64, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-lnDiasDif = DATE() - Thisform.Contenido.txtFecEmis.Value
-IF lnDiasDif > 5 THEN
-	MESSAGEBOX("Fecha de emisión fuera de rango.", 0+48, Thisform.Caption)
-	Thisform.Contenido.txtFecEmis.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF lnDiasDif < 0 THEN
-	MESSAGEBOX("Está intentado emitir facturas con fecha superior a la actual", 0+48, Thisform.Caption)
-	Thisform.Contenido.txtFecEmis.SetFocus()
-	RETURN .F.
-ENDIF
-
-lcSql = "SELECT fecEmision FROM ventascab "
-lcSql = lcSql + "WHERE CAST(fecEmision AS DATE) > " + loDT.ToMySql(Thisform.Contenido.txtFecEmis.Value) + " "
-lcSql = lcSql + " AND ventascab.ptoVta = " + ALLTRIM(STR(lnPtoVta)) + " "
-lcSql = lcSql + " AND ventascab.cbte = 'FC' "
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_tmp"
-IF !loRes.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-SELECT cur_tmp
-IF RECCOUNT("cur_tmp") > 0 THEN
-	MESSAGEBOX("Hay facturas emitidas posterior a la fecha ingresada en el punto de venta: " + ;
-		ALLTRIM(STR(lnPtoVta)), 0+48, Thisform.Caption)
-	Thisform.Contenido.txtFecEmis.SetFocus()
-	loRes.Close_Query()
-	RETURN .F.
-ENDIF
-
-loRes.Close_Query()
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE imprimir
-LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
-LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
-LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4, m.porRec
-LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
-LOCAL m.porIIBB, m.impIIBB, m.observ, m.vendedor
-LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
-LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
-LOCAL m.cae, m.caevto, lcDia, lcMes, lcAnio
-LOCAL m.codigoCbte, m.barcode, m.code, m.condPago, m.qr
-LOCAL lnIdNum, lnResp, m.NroRto, m.nroOC
-LOCAL loPDF, lcMailMsg
-LOCAL lcNomEmp, llUsaTicket, m.motivo, m.totaNoGrav
-LOCAL lcRepName
-LOCAL m.saldodeudor_total
-
-&& Calculo los saldos para imprimir. Solo lo calculo si la condición de pago
-&& no es contado
-IF Thisform.contenido.sel_FormaPago.valcpoid <> 1 THEN
-	thisform.calcular_saldo_deudor_c1()
-	thisform.calcular_saldo_deudor_c2()
-ELSE
-	thisform.saldodeudor = 0.00
-	thisform.saldodeudor_c2 = 0.00
-ENDIF
-
-loNumerador = CREATEOBJECT("odbc_result")
-lcSql = ""
-m.NroCli = Thisform.contenido.sel_Cliente.txtCodigo.Value
-m.RazSoc = Thisform.contenido.sel_Cliente.txtDescripcion.Value
-m.Telefono = ALLTRIM(Thisform.cli_telefono)
-m.direccion = ALLTRIM(Thisform.cli_calle)
-m.localidad = ALLTRIM(Thisform.cli_localidad)
-m.codPostal = ALLTRIM(Thisform.cli_codPostal)
-m.pcia = ALLTRIM(Thisform.cli_Pcia)
-m.nroCUIT = ALLTRIM(Thisform.contenido.txtCuit.Value)
-m.TipoIVA = Thisform.Contenido.txtSitIVA.Value
-m.totaNoGrav = 0.00 && Agrego el no gravado
-m.Total = 0.00
-m.tipoDoc = ""
-m.ptoVta = ""
-m.NroCbte = ""
-m.leyenda = ""
-m.Fecha = Thisform.Contenido.txtFecEmis.Value
-m.porIVA105 = 0.00
-m.porIVA21 = 0.00
-m.impIVA105 = 0.00
-m.impIVA21 = 0.00
-m.impNeto = 0.00
-m.impFinal = 0.00
-m.fecVto = Thisform.Contenido.txtFecEmis.Value + thisform.cp_cntdias
-m.tipoDoc = Thisform.tipodoc
-m.porIIBB = 0.00
-m.impIIBB = 0.00
-lnCantCpia = 0
-m.observ = ""
-m.vendedor = thisform.nombre_usuario
-m.cae = thisform.aut_cae
-m.codigoCbte = REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.codigo_cbte)))) + ALLTRIM(STR(Thisform.codigo_cbte))
-m.barcode = ""
-m.code = ""
-lnIdNum = 0
-lnResp = 0
-m.NroRto = ""
-m.nroOC = Thisform.contenido.txtoc.Value
-lcNomEmp = getconfig("NOMEMP")
-m.condPago = IIF(This.idCondPago = 1, "CONTADO", "CUENTAS CORRIENTES")
-m.qr = Thisform.qr_image
-llUsaTicket = .T.
-m.saldodeudor_total = thisform.saldodeudor + thisform.saldodeudor_c2
-
-lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
-lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
-lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
-
-m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
-m.ptovta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
-
-&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
-lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
-loNumerador = CREATEOBJECT("odbc_result")
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_num"
-loNumerador.OpenQuery(lcSql)
-
-SELECT cur_num
-GO TOP
-lnIdNum = cur_num.idNum
-lcRepName = ALLTRIM(cur_num.repname)
-
-loNumerador.close_query()
-
-&& Levanto la impresora configurada en el puesto de trabajo actual
-lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND "
-lcSql = lcSql + "idNum = " + ALLTRIM(STR(lnIdNum))
-
-loNumerador.ActiveConnection = goConn.ActiveConnection
-loNumerador.Cursor_Name = "cur_imp"
-
-IF !loNumerador.OpenQuery(lcSql) THEN
-	MESSAGEBOX(loNumerador.Error_Message, 0+48, Thisform.Caption)
-	RETURN
-ENDIF
-
-SELECT cur_imp
-IF RECCOUNT("cur_imp") = 0 THEN
-	MESSAGEBOX("La impresora no se encuentra configurada en el puesto de trabajo actual", 0+48, Thisform.Caption)
-	loNumerador.Close_Query()
-	RETURN
-ENDIF
-
-lcPrinterName = ALLTRIM(cur_imp.impresora)
-lnCantCpia = cur_imp.copias
-llUsaTicket = cur_imp.usa_ticket
-
-loNumerador.Close_Query()
-
-&& Lo pongo aca porque tengo que saber si usa o no el ticket
-IF Thisform.sitivacli = 6 THEN
-	&& Solo extraigo el motivo si es monotributista
-	IF !llUsaTicket THEN
-		m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
-			+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
-	ELSE
-		m.motivo =   "El crédito fiscal discriminado en el presente" + CHR(13) + CHR(10) ;
-				   + "comprobante, sólo podrá ser computado a " + CHR(13) + CHR(10) ;
-				   + "efectos del Régimen de Sostenimiento e " + CHR(13) + CHR(10) ;
-				   + "Inclusión Fiscal para Pequeños Contri-" + CHR(13) + CHR(10) ;
-				   + "buyentes de la Ley Nº 27.618"
-	ENDIF
-ELSE
-	m.motivo = ""
-ENDIF
-
-m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
-
-IF ALLTRIM(Thisform.cbte) == "COT"
-	m.leyenda = "COTIZACION"
-	m.tipoDoc = "X"
-	m.Total = cur_Subtotal.totFact
-ELSE 
-	IF ALLTRIM(Thisform.cbte) == "PTO"
-		m.leyenda = "PRESUPUESTO"
-		m.tipoDoc = "X"
-		m.Total = cur_Subtotal.impFinal
-	ELSE
-		IF ALLTRIM(Thisform.cbte) == "PED"
-			m.leyenda = "NOTA DE PEDIDO"
-			m.tipoDoc = "P"
-			m.Total = Thisform.contenido.txtTotFact.Value
-		ELSE
-			IF ALLTRIM(Thisform.Cbte) == "FC"
-				m.leyenda = "FACTURA"
-				m.Total = cur_Subtotal.totFact
-			ELSE
-				IF ALLTRIM(Thisform.Cbte) == "NC"
-					m.Leyenda = "NOTA DE CREDITO"
-					m.Total = cur_Subtotal.totFact
-				ELSE
-					IF ALLTRIM(Thisform.Cbte) == "ND"
-						m.leyenda = "NOTA DE DEBITO"
-						m.Total = cur_Subtotal.totFact
-					ENDIF
-				ENDIF
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-IF (ALLTRIM(Thisform.cbte) == "NC") .OR. (ALLTRIM(Thisform.cbte) == "FC") .OR. (ALLTRIM(Thisform.cbte) == "PTO") .OR. (ALLTRIM(Thisform.cbte) == "COT") THEN
-	m.porDesc1 = cur_Subtotal.porDesc1 
-	m.porDesc2 = cur_Subtotal.porDesc2 
-	m.porDesc3 = cur_Subtotal.porDesc3 
-	m.porDesc4 = cur_Subtotal.porDesc4 
-	m.impDesc1 = cur_Subtotal.impDesc1
-	m.impDesc2 = cur_Subtotal.impDesc2
-	m.impDesc3 = cur_Subtotal.impDesc3
-	m.impDesc4 = cur_Subtotal.impDesc4
-	m.porIVA105 = cur_Subtotal.porIVA105
-	m.porIVA21 = cur_Subtotal.porIVA21
-	m.impIVA105 = cur_Subtotal.impIVA105
-	m.impIVA21 = cur_Subtotal.impIVA21
-	m.impNeto = cur_Subtotal.impFinal
-	m.impFinal = cur_Subtotal.impFinal
-	m.porIIBB = cur_Subtotal.porIIBB
-	m.impIIBB = cur_Subtotal.impIIBB
-	m.porRec = cur_Subtotal.porRec
-	
-	&& Agrego el no gravado
-	m.totaNoGrav = cur_Subtotal.totaNoGrav
-	
-	SELECT cur_aux
-ELSE 
-	m.porDesc1 = Thisform.Contenido.txtDesc1.Value
-	m.porDesc2 = Thisform.Contenido.txtDesc2.Value
-	m.porDesc3 = Thisform.Contenido.txtDesc3.Value
-	m.porDesc4 = Thisform.Contenido.txtDesc4.Value
-	m.impDesc1 = Thisform.Contenido.txtImpDesc1.Value
-	m.impDesc2 = Thisform.Contenido.txtImpDesc2.Value
-	m.impDesc3 = Thisform.Contenido.txtImpDesc3.Value
-	m.impDesc4 = Thisform.Contenido.txtImpDesc4.Value
-	m.porIVA105 = Thisform.contenido.txtPorIVA105.Value
-	m.porIVA21 = Thisform.Contenido.txtPorIVA21.value
-	m.impIVA105 = Thisform.Contenido.txtImpIVA105.Value
-	m.impIVA21 = Thisform.Contenido.txtImpIVA21.Value
-	m.impNeto = Thisform.Contenido.txtST.Value
-	m.impFinal = Thisform.Contenido.txtTotFact.Value
-	m.totaNoGrav = thisform.contenido.txt_total_no_grav.value
-	m.porIIBB = Thisform.Contenido.txtPorIIBB.Value
-	m.impIIBB = Thisform.Contenido.txtImpIIBB.Value
-	m.porRec = Thisform.contenido.txtPorRec.Value
-	
-	SELECT cur_detalle
-ENDIF 
-m.observ = thisform.contenido.txtObserv.Value + ""
-
-&& Generación del código de barra
-m.barcode = ALLTRIM(Thisform.cli_cuit)
-m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
-m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
-m.barcode = m.barcode + ALLTRIM(m.cae)
-m.barcode = m.barcode + ALLTRIM(lcAnio)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
-m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
-m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
-m.code = m.barcode
-m.barcode = getcodbarras(m.barcode)
-
-IF thisform.contenido.chkImprimirCbte.Value THEN
-	SET PRINTER TO NAME ALLTRIM(lcPrinterName)
-
-	FOR i = 1 TO lnCantCpia 
-		IF ALLTRIM(Thisform.tipodoc) == "A" THEN
-			&& Imprime el comprobante de tipo "A"
-			SELECT cur_aux
-			IF llUsaTicket THEN
-				****************************************************************************
-				* Envío a imprimir el ticket
-				****************************************************************************
-				Thisform.oticket.limpiar_datos()
-				Thisform.oticket.con_corte = .T.
-				Thisform.oticket.codigo_cbte = m.codigoCbte
-				Thisform.oticket.leyenda = m.leyenda
-				Thisform.oticket.letra = m.tipoDoc
-				Thisform.oticket.nro_cbte = m.nroCbte
-				Thisform.oticket.fecha_cbte = m.fecha
-				Thisform.oticket.fecha_vencimiento = m.fecVto
-				Thisform.oticket.numero_cliente = m.NroCli
-				Thisform.oticket.razon_social = m.razSoc
-				Thisform.oticket.direccion = m.direccion
-				Thisform.oticket.codigo_postal = m.codPostal 
-				Thisform.oticket.localidad = m.localidad
-				Thisform.oticket.provincia = m.pcia
-				Thisform.oticket.tipo_iva = m.TipoIVA
-				Thisform.oticket.condicion_pago = m.condPago
-				SELECT cur_aux
-				GO TOP
-				DO WHILE !EOF("cur_aux")
-					Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-							cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-					SELECT cur_aux
-					SKIP
-				ENDDO
-				Thisform.oticket.total_neto = m.impNeto
-				Thisform.oticket.total_imp_iva21 = m.impIVA21
-				Thisform.oticket.total_imp_iva105 = m.impIVA105
-				Thisform.oticket.total = m.Total
-				Thisform.oticket.qr_image = Thisform.qr_image
-				Thisform.oticket.nro_cae = m.cae
-				Thisform.oticket.vto_cae = m.caevto
-				Thisform.oticket.motivo = m.motivo
-				Thisform.oticket.imprimir()
-			ELSE
-				REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-			ENDIF
-		ELSE
-			&& Imprime el comprobante de tipo "B"
-			SELECT cur_aux
-			IF llUsaTicket THEN
-				****************************************************************************
-				* Envío a imprimir el ticket
-				****************************************************************************
-				Thisform.oticket.limpiar_datos()
-				Thisform.oticket.codigo_cbte = m.codigoCbte
-				Thisform.oticket.leyenda = m.leyenda
-				Thisform.oticket.letra = m.tipoDoc
-				Thisform.oticket.nro_cbte = m.nroCbte
-				Thisform.oticket.fecha_cbte = m.fecha
-				Thisform.oticket.fecha_vencimiento = m.fecVto
-				Thisform.oticket.numero_cliente = m.NroCli
-				Thisform.oticket.razon_social = m.razSoc
-				Thisform.oticket.direccion = m.direccion
-				Thisform.oticket.codigo_postal = m.codPostal 
-				Thisform.oticket.localidad = m.localidad
-				Thisform.oticket.provincia = m.pcia
-				Thisform.oticket.tipo_iva = m.TipoIVA
-				Thisform.oticket.condicion_pago = m.condPago
-				SELECT cur_aux
-				GO TOP
-				DO WHILE !EOF("cur_aux")
-					Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-							cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-					SELECT cur_aux
-					SKIP
-				ENDDO
-				Thisform.oticket.total_neto = m.impNeto
-				Thisform.oticket.total_imp_iva21 = m.impIVA21
-				Thisform.oticket.total_imp_iva105 = m.impIVA105
-				Thisform.oticket.total_nograv = m.totaNoGrav
-				Thisform.oticket.total = m.Total
-				Thisform.oticket.qr_image = Thisform.qr_image
-				Thisform.oticket.nro_cae = m.cae
-				THisform.oticket.vto_cae = m.caevto
-				Thisform.oticket.motivo = m.motivo
-				Thisform.oticket.imprimir()
-			ELSE
-				REPORT FORM &lcRepName TO PRINTER NOCONSOLE
-			ENDIF
-		ENDIF
-	NEXT
-ENDIF
-
-IF thisform.contenido.chkEnviarMail.Value THEN
-	Thisform.mailfc = Thisform.Contenido.txtMailFC.Value
-	lcFileName = ALLTRIM(GetGlobalCfg("FACPDFPATH")) + ;
-		this.cbte + "_" + m.NroCbte + ".pdf"
-	
-	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
-		loPDF.SetValue('output', lcFileName)
-		loPDF.SetValue('DisableOptionDialog', 'no') 
-		loPDF.SetValue('ConfirmOverwrite', 'no')
-		loPDF.SetValue('Showsettings', 'never') 
-		loPDF.SetValue('ShowSaveAS', 'nofile') 
-		loPDF.SetValue('ShowPdf', 'no') 
-		loPDF.WriteSettings(.t.)
-	
-	SET CONSOLE OFF
-	SET PRINTER TO NAME("Bullzip PDF Printer")
-	IF ALLTRIM(Thisform.tipodoc) == "A" THEN
-		&& Imprime el comprobante de tipo "A"
-		SELECT cur_aux
-		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
-	ELSE
-		&& Imprime el comprobante de tipo "B"
-		SELECT cur_aux
-		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
-	ENDIF
-	SET PRINTER TO DEFAULT
-	SET CONSOLE ON
-	
-	WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
-	DO WHILE !FILE(lcFileName)
-		
-	ENDDO
-	
-	&&MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, thisform.Caption)
-	
-	TEXT TO lcMailMsg NOSHOW
-	Estimado cliente,
-	
-	Le adjuntamos el comprobante electrónico de su compra en formato PDF.
-	Por favor no responder a este mail.
-	
-	Por favor, no responder a esta dirección de mail.
-	
-	Muchas gracias!
-	--
-	Mail generado por LINFOW Gestión.
-		
-	ENDTEXT
-	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILFIRMA") + CHR(13) + CHR(10)
-	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILEMP")
-
-	&& Procedo a hacer el envío de mail
-	DO LOCFILE("FoxyPreviewer.App")
-	WITH _screen.oFoxyPreviewer	
-		.cEmailType = "PDF"
-		.nEmailMode = 2
-		.cEMailTo = thisform.mailfc
-		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
-		.cSMTPServer = getGlobalCFG("EMAILSMTP")
-		.cEmailFrom = getGlobalCFG("EMAILEMP") + " <" + getGlobalCFG("EMAILADDR") + ">"
-		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
-		.nSMTPPort = getGlobalCFG("EMAILPORT")
-		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
-		.cSMTPUserName = getGlobalCFG("EMAILUSR")
-		.cSMTPPassword = getGlobalCFG("EMAILPWD")
-		.lReadReceipt  = .F.
-		.lPriority = .F.
-		.cEmailBody = lcMailMsg
-		.SendEmailUsingCDO(lcFileName)
-	ENDWITH	
-ENDIF
-
-DO FoxyPreviewer.App WITH "Release"
-ENDPROC
-PROCEDURE grabar_cbte_part
-**
-* Este método permite grabar el comprobante particionado cada 25 ítems.
-**
-
-LOCAL lnIdVentasC, lnIdCliente, lcFecEmis, lcCbte, lcTipoDoc, lnPtoVta
-LOCAL lnNroCbte, llAnulado, lnImpNeto, lnImpFinal, lnPorIVA21, lnImpIVA21
-LOCAL lnPorIVA105, lnImpIVA105, lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
-LOCAL lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4, lnTotFact
-LOCAL lnIdVentasD, lnIdArticulo, lnCantidad, lnCostoRep, lnPrVenta, lnAlicIVA, lnImpIVA
-LOCAL lnTotNeto, lnSubTotal, lnSaldo, lcObserv, lnPorIIBB, lnImpIIBB
-LOCAL lnPDtoVta1, lnPDtoVta2, lnPDtoVta3, lnPDtoVta4, lnIDtoVta1, lnIDtoVta2, lnIDtoVta3, lnIDtoVta4
-LOCAL lnIdCondPago, lnIdSitIVA, lnPrArtic, lnPorRec, lnImpRec, lnUnidDesp, lnCantPack, lcUniMed
-LOCAL lnPRecItem, lnIRecItem
-LOCAL ldFecVto, lnIdOper, oDT, lnOC
-LOCAL loNumerador, lcSql, loCommand, loArtic, loOper, lnSqlSrv, lnPrNeto, lnIdCCOrig, loCliente, lnIdVendedor
-LOCAL loConDMO, loResCli, lcSql, lnIntentos
-LOCAL lnTotalNoGravado, lnItemPorNoGrav, lnItemBaseGrav, lnItemSubtNoGrav
-
-&& Inicializo las variables del detalle
-
-lnIdVentasD = 0
-lnIdArticulo = 0
-lnCantidad = 0.00
-lnCostoRep = 0.00
-lnPrVenta = 0.00
-lnAlicIVA = 0.00
-lnImpIVA = 0.00
-lnTotNeto = 0.00
-lnSubTotal = 0.00
-ldFecVto = {}
-lnIdOper = 0
-lnSaldo = 0
-oDT = CREATEOBJECT("datetime")
-loArtic = CREATEOBJECT("odbc_result")
-loOper = CREATEOBJECT("odbc_result")
-loCliente = CREATEOBJECT("odbc_result")
-loCommand = CREATEOBJECT("odbc_command")
-lnSqlSrv = INT(VAL(getconfig("SQLSRV")))
-lcObserv = Thisform.Contenido.txtObserv.Value
-lnPorIIBB = 0.00
-lnImpIIBB = 0.00
-lnPDtoVta1 = 0.00
-lnPDtoVta2 = 0.00
-lnPDtoVta3 = 0.00
-lnPDtoVta4 = 0.00
-lnIDtoVta1 = 0.00
-lnIDtoVta2 = 0.00
-lnIDtoVta3 = 0.00
-lnIDtoVta4 = 0.00
-lnPrNeto = 0.00
-lnIdCondPago = 0
-lnIdSitIVA = 0
-lnIdVendedor = 0
-loConDMO = CREATEOBJECT("odbc_connect")
-lnPrArtic = 0.00
-lnPorRec = 0.00
-lnImpRec = 0.00
-lcSql = ""
-loResCli = CREATEOBJECT("odbc_result") && Este objeto lo uso para validar que el cliente exista
-lnUniDesp = 0.00
-lnCantPack = 0.00
-lcUniMed = ""
-lnOC = Thisform.Contenido.txtOC.Value 
-lnPRecItem = 0.00
-lnIRecItem = 0.00
-
-&& Variables para grabar los totales no gravados.
-lnTotalNoGravado = 0.00
-lnItemPorNoGrav = 0.00 
-lnItemBaseGrav = 0.00
-lnItemSubtNoGrav = 0.00
-
-lcCbte = Thisform.Cbte
-
-
-lnIdCliente = Thisform.Contenido.sel_Cliente.ValCpoId
-
-IF ALLTRIM(lcCbte) == "PTO" THEN
-	&& Si es un comprobante PTO, entonces, abro la base DMO para generar el registro.
-
-	loConDMO.ConnectionString = ALLTRIM(getConfig("DMO_CC"))
-
-	IF !loConDMO.Open() THEN
-		MESSAGEBOX(loConDMO.ErrorMessage, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-	
-	lcSql = "SELECT COUNT(*) AS cantCli FROM clientes WHERE idCliente = " + ALLTRIM(STR(lnIdCliente))
-	loResCli.ActiveConnection = loConDMO.ActiveConnection
-	loResCli.Cursor_Name = "cur_x"
-	
-	IF !loResCli.OpenQuery(lcSql) THEN
-		MESSAGEBOX(loResCli.Error_Message, 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF
-	
-	IF TYPE('cur_x.cantCli') != "C" THEN
-		IF cur_x.cantCli = 0 THEN
-			MESSAGEBOX("El cliente no existe en DMO, actualice la base y vuelva a intentar", 0+48, Thisform.Caption)
-			loResCli.Close_Query()
-			RETURN .F.
-		ENDIF
-	ELSE
-		IF INT(VAL(cur_x.cantCli)) = 0 THEN
-			MESSAGEBOX("El cliente no existe en DMO, actualice la base y vuelva a intentar", 0+48, Thisform.Caption)
-			loResCli.Close_Query()
-			RETURN .F.
-		ENDIF	
-	ENDIF
-	
-	loResCli.Close_Query()
-	
-	* Agrego el inicio de transacción para cuenta 2.
-	loConDMO.BeginTransaction()
-ELSE
-	* Agrego el inicio de transacción para cuenta 1.
-	goConn.BeginTransaction()
-ENDIF
-
-
-&& Asigno el idvendedor
-lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(lnIdCliente))
-loCliente.ActiveConnection = goConn.ActiveConnection
-loCliente.Cursor_Name = "cur_cliente"
-loCliente.OpenQuery(lcSql)
-
-lnIdVendedor = cur_cliente.idVendedor
-
-loCliente.Close_Query()
-
-lcFecEmis = ALLTRIM(STR(YEAR(DATETIME()))) + "-" + ALLTRIM(STR(MONTH(DATETIME()))) + " - " + ;
-	ALLTRIM(STR(DAY(DATETIME())))
-
-IF lcCbte == "COT"
-	lcTipoDoc = "X"
-	Thisform.tipodoc = lcTipoDoc
-ELSE
-	&& Aca tengo que agregar el cálculo en caso que sea
-	&& comprobante fiscal
-	IF lcCbte == "PED"
-		lcTipoDoc = "P"
-		Thisform.tipodoc = lcTipoDoc
-	ELSE
-		lcTipoDoc = thisform.calcular_tipodoc()
-		Thisform.tipodoc = lcTipoDoc
-	ENDIF
-ENDIF
-
-IF lcCbte == "PTO" THEN
-	lnPtoVta = 9999
-	lcTipoDoc = "X"
-	Thisform.tipodoc = lcTipoDoc
-ELSE
-	lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
-ENDIF
-
-Thisform.ptovta = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta))
-
-llAnulado = .F.
-lnImpNeto = cur_Subtotal.impNeto
-lnImpFinal = cur_Subtotal.impFinal
-lnPorIVA21 = cur_Subtotal.porIVA21
-lnPorIVA105 = cur_Subtotal.porIVA105
-lnImpIVA21 = cur_Subtotal.impIVA21
-lnImpIVA105 = cur_Subtotal.impIVA105
-lnPorIIBB= cur_Subtotal.porIIBB
-lnImpIIBB = cur_Subtotal.impIIBB
-lnPorDesc1 = cur_Subtotal.porDesc1
-lnPorDesc2 = cur_Subtotal.porDesc2
-lnPorDesc3 = cur_Subtotal.porDesc3
-lnPorDesc4 = cur_Subtotal.porDesc4
-lnImpDesc1 = cur_Subtotal.impDesc1
-lnImpDesc2 = cur_Subtotal.impDesc2
-lnImpDesc3 = cur_Subtotal.impDesc3
-lnImpDesc4 = cur_Subtotal.impDesc4
-lnTotFact = cur_Subtotal.totFact
-lnPorRec = cur_Subtotal.porRec
-lnImpRec = cur_Subtotal.impRec
-lnIdCondPago = clientes.idCondPago
-lnIdSitIVA = clientes.idSitIVA
-&& Agrego el total no gravado
-lnTotalNoGravado = cur_Subtotal.totaNoGrav
-
-IF ALLTRIM(thisform.cbte) == "PTO"
-	lnIdVentasC = loConDMO.GetNextID("ventascab", "idVentasC")
-ELSE
-	lnIdVentasC = goConn.GetNextID("ventascab", "idVentasC")
-ENDIF
-
-Thisform.id_ventasc = lnIdVentasC
-lnNroCbte = 0
-
-&& Calculo la fecha de vencimiento correspondiente a la factura
-IF ALLTRIM(Thisform.cbte) == "FC" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN 
-	IF thisform.cp_cntdias <> 0 THEN
-		ldFecVto = Thisform.contenido.txtFecEmis.Value + thisform.cp_cntdias
-	ELSE
-		ldFecVto = Thisform.contenido.txtFecEmis.Value
+PROCEDURE cargar_combos
+&& Cargo los combobox de cbte y tipo de acuerdo a los comprobante seteados en la propiedad list_cbtes
+
+LOCAL lc_cbtes, ln, lc_cantcbtes, ln_cargoAB
+DIMENSION la_vector[10]
+
+lc_cbtes = thisform.list_cbtes
+lc_cantcbtes = ALINES(la_vector,lc_cbtes,5,",")
+ln_cargoAB = 0
+
+Thisform.contenido.cmbTipo.AddItem("Todos")
+
+FOR ln=1 TO lc_cantcbtes 
+	IF ln == 1 THEN 
+		IF lc_cantcbtes > 1
+			Thisform.contenido.cmbCbte.AddItem("Todos")
+		ENDIF 
 	ENDIF 
-ELSE
-	ldFecVto = Thisform.contenido.txtFecEmis.Value
-ENDIF
-
-IF ALLTRIM(Thisform.cbte) == "FC" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN
-	lnSaldo = lnTotFact
-ELSE
-	lnSaldo = 0
-ENDIF
-
-lcSql = "INSERT INTO ventascab ( "
-lcSql = lcSql + "idVentasC, idCliente, razSoc, idTipoDoc, nroDoc, fecEmision, cbte, tipoDoc, ptoVta, numCbte, anulado, idCondPago, idSitIVA, idVendedor,"
-lcSql = lcSql + "impNeto, impFinal, porIVA21, impIVA21, porIVA105, impIVA105, porDesc1, "
-lcSql = lcSql + "porDesc2, porDesc3, porDesc4, impDesc1, impDesc2, impDesc3, impDesc4, totFact, Saldo, usuAlta, fecAlta, idHostAlta, observ, porIIBB, impIIBB, fecVto, porRec, impRec, nroOC, totaNoGrav) VALUES ("
-lcSql = lcSql + ALLTRIM(STR(lnIdVentasC)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdCliente)) + ", "
-lcSql = lcSql + "'" + STRTRAN(ALLTRIM(Thisform.contenido.sel_Cliente.txtDescripcion.Value), "'", "''") + "', "
-lcSql = lcSql + ALLTRIM(STR(Thisform.cli_idTipoDoc)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(Thisform.contenido.txtCuit.Value) + "', "
-*lcSql = lcSql + oDT.getDateTime() + ", "
-lcSql = lcSql + oDT.toMySql(Thisform.contenido.txtFecEmis.Value) + ", "
-lcSql = lcSql + "'" + IIF(ALLTRIM(lcCbte) == "PTO", "FC", ALLTRIM(lcCbte)) + "', "
-lcSql = lcSql + "'" + ALLTRIM(lcTipoDoc) + "', "
-lcSql = lcSql + ALLTRIM(STR(lnPtoVta)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", "
-lcSql = lcSql + IIF(lnSqlSrv = 0, "false", "0") + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdCondPago)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnIdVendedor)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpNeto, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpFinal, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorIVA21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIVA21, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorIVA105, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIVA105, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorDesc1, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorDesc2, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorDesc3, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnPorDesc4, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpDesc1, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpDesc2, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpDesc3, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpDesc4, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnTotFact, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnSaldo, 10, 2)) + ", "
-lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', " 
-lcSql = lcSql + oDT.getDateTime() + ", "
-lcSql = lcSql + "'" + SYS(0) + "', '" + strtran(ALLTRIM(lcObserv), "'", "''") + "', "
-lcSql = lcSql + ALLTRIM(STR(lnPorIIBB, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpIIBB, 10, 2)) + ", "
-
-IF INT(VAL(getconfig("SQLSRV"))) = 1 THEN
-	lcSql = lcSql + oDT.getDateTime() + " + " + ALLTRIM(STR(thisform.cp_cntdias)) + ", "
-ELSE
-	lcSql = lcSql + oDT.toMySql(ldFecVto) + ", "
-ENDIF
-
-lcSql = lcSql + ALLTRIM(STR(lnPorRec, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnImpRec, 10, 2)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnOC)) + ", "
-lcSql = lcSql + ALLTRIM(STR(lnTotalNoGravado, 20, 2)) + ")"
-
-loCommand.CommandText = lcSql
-
-IF ALLTRIM(lcCbte) == "PTO" THEN
-	loCommand.ActiveConnection = loConDMO.ActiveConnection
 	
-	IF !loCommand.Execute()
-		thisform.desbloq_numerador()
-		loConDMO.Rollback()
-		RETURN .F.
-	ENDIF	
-ELSE
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	IF !loCommand.Execute()
-		thisform.desbloq_numerador()
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
+	Thisform.contenido.cmbCbte.AddItem(STRTRAN(la_vector(ln),"'",""))
+	
+	IF STRTRAN(la_vector(ln),"'","") == "FC" OR STRTRAN(la_vector(ln),"'","") == "NC" OR STRTRAN(la_vector(ln),"'","") == "ND"
+		IF ln_cargoAB = 0 THEN 
+			Thisform.contenido.cmbTipo.AddItem("A")
+			Thisform.contenido.cmbTipo.AddItem("B")
+			ln_cargoAB = 1
+		ENDIF 
+	ELSE 
+		IF STRTRAN(la_vector(ln),"'","") == "PED"
+			Thisform.contenido.cmbTipo.AddItem("P")
+		ENDIF 
+	ENDIF 
+ENDFOR 
+
+IF INT(VAL(getConfig("SQLSRV"))) = 2 THEN
+	THisform.contenido.cmbTipo.AddItem("X")
 ENDIF
 
-&& Grabo el detalle del comprobante
+Thisform.contenido.cmbCbte.ListIndex = 1
+Thisform.contenido.cmbTipo.ListIndex = 1
 
-SELECT cur_aux
+ENDPROC
+PROCEDURE anular_cantnc_factura
+**********************************************************************
+* Método para actualizar cantNC de una factura con nota de crédito por devolución anulada.
+**********************************************************************
+local lcSql, loRes
+local loCommand
+LOCAL idArticulo, idNotaCredito, idFacturaOrigen, cantidadArticulo
+
+&& Variables que utilizo para la busqueda de articulos en la factura origen,
+idArticulo = 0
+cantidadArticulo = 0
+idNotaCredito = 0
+idFacturaOrigen = 0
+
+lcSql = ""
+loRes = createobject("odbc_result")
+loCommand = createobject("odbc_command")
+
+&& Busco la factura de origen de la NC.
+select cur_cbtes
+idNotaCredito = cur_cbtes.idVentasC
+lcSql = "select * from ventasrel where idvtacd = " + alltrim(str(idNotaCredito))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_name = "cur_vr"
+
+if !loRes.OpenQuery(lcSql) then
+	messagebox(loRes.Error_message, 0+48, thisform.caption)
+	goConn.rollback()
+	return .f.
+endif
+idFacturaOrigen = cur_vr.idvtaco
+
+lcSql = "select idArticulo, cantidad from ventasdet where idVentasC = " + ALLTRIM(STR(idNotaCredito))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_name = "cur_x"
+loRes.close_query()
+
+IF !loRes.OpenQuery(lcSql) then
+	MESSAGEBOX(loRes.error_message, 0+48, thisform.Caption)
+	goConn.rollback()
+	RETURN .f.
+ENDIF
+
+&& Actualizo cantNC a 0
+goConn.beginTransaction()
+select cur_x
+DO WHILE !EOF("cur_x") 
+	idArticulo = cur_x.idArticulo
+	cantidadArticulo = cur_x.cantidad
+		
+	lcSql = "UPDATE ventasdet "
+	lcSql = lcSql + "SET cantNC = cantNC - " + ALLTRIM(STR(cantidadArticulo))
+	lcSql = lcSql + " WHERE idventasc = " + alltrim(str(idFacturaOrigen))
+	lcSql = lcSql + " AND ventasdet.idArticulo = " + ALLTRIM(STR(idArticulo))
+	
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+
+	if !loCommand.execute()
+		MessageBox("No se ha podido actualizar la cantidad de la factura", 0+48, thisform.caption)
+		goConn.rollback()
+		return .f.
+	endif
+
+
+	SELECT cur_x
+	SKIP 	
+ENDDO
+
+
+ENDPROC
+PROCEDURE Load
+DODEFAULT()
+
+CREATE CURSOR cur_Cbtes( 	;
+	idVentasC	int,;
+	idCliente	int,;
+	razSoc		C(60),;
+	fecEmis		date,;
+	nroDoc		C(20),;
+	impFinal	N(20,2),;
+	usualta		C(5),;
+	fecAlta		datetime,;
+	idhostalta	C(50),;
+	Observ		M)
+	
+	
+SELECT cur_Cbtes
+INDEX on idVentasC TAG idVentasC ASCENDING
+INDEX on idCliente TAG idCliente ASCENDING ADDITIVE 
+INDEX on razSoc TAG razSoc ASCENDING ADDITIVE 
+INDEX on fecEmis TAG fecEmis ASCENDING ADDITIVE 
+INDEX on nroDoc TAG nroDoc ASCENDING ADDITIVE 
+INDEX on impFinal TAG impFinal ASCENDING ADDITIVE
+INDEX on usualta TAG usualta ASCENDING ADDITIVE
+INDEX on idhostalta TAG idhostalta ASCENDING ADDITIVE 
+	
+SELECT cur_Cbtes
+SET ORDER TO TAG fecEmis ASCENDING
+ENDPROC
+PROCEDURE Init
+&& Configuro según la funcionalidad del formulario
+
+Thisform.cargar_combos()
+
+IF thisform.consulta
+	thisform.contenido.btnEliminar.Visible = .F.
+ELSE
+	thisform.contenido.btnEliminar.Visible = .T.
+ENDIF
+
+thisform.contenido.txtFecDesde.Value = DATE() - 30
+thisform.contenido.txtFecHasta.Value = DATE()
+thisform.contenido.txtptovta.Value = "0000"
+thisform.contenido.txtnumero.Value = "00000000"
+thisform.ShowTips = .T.
+
+ENDPROC
+
+
+************************************************************
+OBJETO: stock
+************************************************************
+*** PROPIEDADES ***
+Top = 468
+Left = 384
+Height = 17
+Width = 36
+Name = "stock"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: CLSETIQUETA1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Cliente Desde:"
+Height = 15
+Left = 5
+Top = 13
+TabIndex = 12
+Name = "CLSETIQUETA1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta2
+************************************************************
+*** PROPIEDADES ***
+Caption = "Cliente Hasta:"
+Height = 15
+Left = 5
+Top = 37
+TabIndex = 13
+Name = "Clsetiqueta2"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta3
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha Desde:"
+Height = 15
+Left = 5
+Top = 89
+Width = 84
+TabIndex = 15
+Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta4
+************************************************************
+*** PROPIEDADES ***
+Caption = "Fecha Hasta:"
+Height = 15
+Left = 202
+Top = 89
+Width = 84
+TabIndex = 16
+Name = "Clsetiqueta4"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_cliDesde
+************************************************************
+*** PROPIEDADES ***
+Top = 8
+Left = 96
+TabIndex = 1
+cfieldname = idCliente
+esnumerico = .T.
+nombre_campo_codigo = idCliente
+nombre_campo_desc = razSoc
+nombre_tabla = clientes
+pkfield = idCliente
+requerido = .F.
+criterio_filtro = clientes.fecBaja IS NULL
+Name = "sel_cliDesde"
+TXTCODIGO.Name = "TXTCODIGO"
+TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: sel_cliHasta
+************************************************************
+*** PROPIEDADES ***
+Top = 32
+Left = 96
+TabIndex = 2
+cfieldname = idCliente
+esnumerico = .T.
+nombre_campo_codigo = idCliente
+nombre_campo_desc = razSoc
+nombre_tabla = clientes
+pkfield = idCliente
+requerido = .F.
+criterio_filtro = clientes.fecBaja IS NULL
+Name = "sel_cliHasta"
+TXTCODIGO.Name = "TXTCODIGO"
+TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecDesde
+************************************************************
+*** PROPIEDADES ***
+Left = 98
+TabIndex = 7
+Top = 85
+isdatetime = .T.
+Name = "txtFecDesde"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtFecHasta
+************************************************************
+*** PROPIEDADES ***
+Left = 292
+TabIndex = 8
+Top = 85
+isdatetime = .T.
+Name = "txtFecHasta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: grdCbtes
+************************************************************
+*** PROPIEDADES ***
+Height = 309
+Left = 2
+TabIndex = 17
+Top = 112
+Width = 1013
+alias_name = cur_Cbtes
+permitir_busqueda = .F.
+permitir_ordenamiento = .F.
+list_controlsource = fecEmis,idCliente,razSoc,nroDoc,impFinal,usualta,fecAlta,idhostalta
+lista_ancho_cols = 100,70,210,150,70,70,130,150
+titulos_cabeceras = Fecha,Cliente,Razón Social,Nro. Comprobante,Importe,Usuario,Fecha Alta,Host
+Name = "grdCbtes"
+COLUMN1.HEADER1.Name = "HEADER1"
+COLUMN1.TEXT1.Name = "TEXT1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.HEADER1.Name = "HEADER1"
+COLUMN2.TEXT1.Name = "TEXT1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.HEADER1.Name = "HEADER1"
+COLUMN3.TEXT1.Name = "TEXT1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.HEADER1.Name = "HEADER1"
+COLUMN4.TEXT1.Name = "TEXT1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.HEADER1.Name = "HEADER1"
+COLUMN5.TEXT1.Name = "TEXT1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.HEADER1.Name = "HEADER1"
+COLUMN6.TEXT1.Name = "TEXT1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.HEADER1.Name = "HEADER1"
+COLUMN7.TEXT1.Name = "TEXT1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.HEADER1.Name = "HEADER1"
+COLUMN8.TEXT1.Name = "TEXT1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.HEADER1.Name = "HEADER1"
+COLUMN9.TEXT1.Name = "TEXT1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.HEADER1.Name = "HEADER1"
+COLUMN10.TEXT1.Name = "TEXT1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.HEADER1.Name = "HEADER1"
+COLUMN11.TEXT1.Name = "TEXT1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.HEADER1.Name = "HEADER1"
+COLUMN12.TEXT1.Name = "TEXT1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.HEADER1.Name = "HEADER1"
+COLUMN13.TEXT1.Name = "TEXT1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.HEADER1.Name = "HEADER1"
+COLUMN14.TEXT1.Name = "TEXT1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.HEADER1.Name = "HEADER1"
+COLUMN15.TEXT1.Name = "TEXT1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.HEADER1.Name = "HEADER1"
+COLUMN16.TEXT1.Name = "TEXT1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.HEADER1.Name = "HEADER1"
+COLUMN17.TEXT1.Name = "TEXT1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.HEADER1.Name = "HEADER1"
+COLUMN18.TEXT1.Name = "TEXT1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.HEADER1.Name = "HEADER1"
+COLUMN19.TEXT1.Name = "TEXT1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.HEADER1.Name = "HEADER1"
+COLUMN20.TEXT1.Name = "TEXT1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnAceptar
+************************************************************
+*** PROPIEDADES ***
+Top = 66
+Left = 973
+Height = 44
+Width = 45
+TabIndex = 9
+Name = "btnAceptar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lcFecDesde, lcFecHasta, loDateTime, lcNroDoc 
+LOCAL lnIdCliDesde, lnIdCliHasta, lcSql, loResult
+LOCAL lnTotal
+
+loDateTime = CREATEOBJECT("datetime")
+loResult = CREATEOBJECT("odbc_result")
+lcFecDesde = loDateTime.toMySql(thisform.contenido.txtFecDesde.Value)
+lcFecHasta = loDateTime.toMySql(thisform.contenido.txtFecHasta.Value)
+lcNroDoc = "" 
+lnTotal = 0.00
+
+IF thisform.contenido.sel_cliDesde.valcpoid <> 0 .AND. thisform.contenido.sel_CliHasta.valcpoid <> 0
+	lnIdCliDesde = thisform.contenido.sel_cliDesde.valcpoid
+	lnIdCliHasta = thisform.contenido.sel_CliHasta.valcpoid
+ELSE
+	lnIdCliDesde = 0
+	lnIdCliHasta = 999999
+ENDIF
+
+SELECT cur_Cbtes
+ZAP
+
+lcSql = "CALL ventascab_consultar ( " ;
+	+ "?tipoConsulta, " ;
+	+ "?fechaDesde, " ;
+	+ "?fechaHasta, " ;
+	+ "?idClienteDesde, " ;
+	+ "?idClienteHasta, " ;
+	+ "?cbte, " ;
+	+ "?tipoDoc, " ;
+	+ "?ptoVta, " ;
+	+ "?numCbte)"
+	
+lcSql = loResult.AddParameter(lcSql, "tipoConsulta", thisform.tipo_consulta, .t., .f.)
+lcSql = loResult.AddParameter(lcSql, "fechaDesde", thisform.contenido.txtFecDesde.Value, .f., .t.)
+lcSql = loResult.AddParameter(lcSql, "fechaHasta", thisform.contenido.txtFecHasta.Value, .f., .t.)
+lcSql = loResult.AddParameter(lcSql, "idClienteDesde", ALLTRIM(STR(thisform.contenido.sel_cliDesde.valcpoid)), .f., .f.)
+lcSql = loResult.AddParameter(lcSql, "idClienteHasta", ALLTRIM(STR(thisform.contenido.sel_cliHasta.valcpoid)), .f., .f.)
+lcSql = loResult.AddParameter(lcSql, "cbte", ALLTRIM(UPPER(thisform.contenido.cmbCbte.Value)), .t., .f.)
+lcSql = loResult.AddParameter(lcSql, "tipoDoc", ALLTRIM(UPPER(thisform.contenido.cmbTipo.Value)), .t., .f.)
+lcSql = loResult.AddParameter(lcSql, "ptoVta", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtPtoVta.Value))))), .f., .f.)
+lcSql = loResult.AddParameter(lcSql, "numCbte", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtNumero.Value))))), .f., .f.)
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.cursor_name = "cur_tempo"
+loResult.OpenQuery(lcSql)
+SELECT cur_tempo
 IF RECCOUNT() > 0
 	GO TOP
 ENDIF
 
-lnIdVentasD = 0
-
+SELECT cur_tempo
 DO WHILE !EOF()
-	lnIdVentasD = lnIdVentasD + 1
-	
-	lnIdArticulo = cur_aux.idArticulo
-	lnCantidad = cur_aux.cantidad
-	lnAlicIVA = cur_aux.alicIVA
-	lnPrVenta = cur_aux.PrVta
-	lnImpIVA = cur_aux.impIVA
-	lnPrNeto = cur_aux.impNeto
-	lnTotNeto = cur_aux.totNeto
-	lnSubTotal = cur_aux.subTotal
-	lnPDtoVta1 = cur_aux.pDtoVta1
-	lnPDtoVta2 = cur_aux.pDtoVta2
-	lnPDtoVta3 = cur_aux.pDtoVta3
-	lnPDtoVta4 = cur_aux.pDtoVta4
-	lnIDtoVta1 = cur_aux.iDtoVta1
-	lnIDtoVta2 = cur_aux.iDtoVta2
-	lnIDtoVta3 = cur_aux.iDtoVta3
-	lnIDtoVta4 = cur_aux.iDtoVta4
-	
-	lnPorDesc1 = cur_aux.pDtoCli1
-	lnPorDesc2 = cur_aux.pDtoCli2
-	lnPorDesc3 = cur_aux.pDtoCli3
-	lnPorDesc4 = cur_aux.pDtoCli4
-	lnImpDesc1 = cur_aux.iDtoCli1
-	lnImpDesc2 = cur_aux.iDtoCli2
-	lnImpDesc3 = cur_aux.iDtoCli3
-	lnImpDesc4 = cur_aux.iDtoCli4
-	
-	lnPrArtic = cur_aux.prArtic
-	lnPorRec = cur_aux.pRecVta
-	lnImpRec = cur_aux.iRecVta
-	lnUniDesp = cur_aux.uniDesp
-	lnCantPack = cur_aux.cantPack
-	lcUniMed = cur_aux.uniMed
-	lnPRecItem = cur_aux.pRecItem
-	lnIRecItem = cur_aux.iRecItem
-	lnItemPorNoGrav = cur_aux.porNoGrav
-	lnItemBaseGrav = cur_aux.baseGrav
-	lnItemSubtNoGrav = cur_aux.subtNoGrav
-	
-	lcSql = "SELECT * FROM articulos WHERE idArticulo = " + ALLTRIM(STR(lnIdArticulo))
-	
-	IF ALLTRIM(lcCbte) == "PTO" THEN
-		loArtic.ActiveConnection = loConDMO.ActiveConnection
-	ELSE
-		loArtic.ActiveConnection = goConn.ActiveConnection
-	ENDIF
-	
-	loArtic.Cursor_Name = "cur_Artic"
-	loArtic.OpenQuery(lcSql)
-	
-	SELECT cur_Artic
-	lnCostoRep = cur_Artic.costoRep
-	
-	loArtic.close_query()
+	lcNroDoc = ALLTRIM(cur_tempo.Cbte) + " " + ALLTRIM(cur_tempo.tipoDoc) + " "
+	lcNroDoc = lcNroDoc + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_tempo.ptoVta)))) + ALLTRIM(STR(cur_tempo.ptoVta)) + "-"
+	lcNroDoc = lcNroDoc + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_tempo.numCbte)))) + ALLTRIM(STR(cur_tempo.numCbte))
 
-	lcSql = "INSERT INTO ventasdet ( "
-	lcSql = lcSql + "idVentasD, "
-	lcSql = lcSql + "idVentasC, "
-	lcSql = lcSql + "idArticulo, "
-	lcSql = lcSql + "descripcio, "
-	lcSql = lcSQl + "nroPart, "
-	lcSql = lcSql + "Cantidad, "
-	
-	IF ALLTRIM(lcCbte) == "PED" THEN
-		lcSql = lcSql + "cant_pri1, "
-	ENDIF
-	
-	lcSql = lcSql + "costoRep, "
-	lcSql = lcSql + "prVenta, "
-	lcSql = lcSql + "alicIVA, "
-	lcSql = lcSql + "impIVA, "
-	lcSql = lcSql + "subTotal, "
-	lcSql = lcSql + "porDesc1, "
-	lcSql = lcSql + "porDesc2, "
-	lcSql = lcSql + "porDesc3, "
-	lcSql = lcSql + "porDesc4, "
-	lcSql = lcSql + "impDesc1, "
-	lcSql = lcSql + "impDesc2, "
-	lcSql = lcSql + "impDesc3, "
-	lcSql = lcSql + "impDesc4, "
-	lcSql = lcSql + "pDtoVta1, "
-	lcSql = lcSql + "pDtoVta2, "
-	lcSql = lcSql + "pDtoVta3, "
-	lcSql = lcSql + "pDtoVta4, "
-	lcSql = lcSql + "iDtoVta1, "
-	lcSql = lcSql + "iDtoVta2, "
-	lcSql = lcSql + "iDtoVta3, "
-	lcSql = lcSql + "iDtoVta4, "
-	lcSql = lcSql + "pRecItem, "
-	lcSql = lcSql + "iRecItem, "
-	lcSql = lcSql + "impNeto, "
-	lcSql = lcSql + "totNeto, "
-	
-	&& Agrego los no gravados
-	lcSql = lcSql + "porNoGrav, "
-	lcSql = lcSql + "baseGrav, "
-	lcSql = lcSql + "subtNoGrav, "
-	
-	lcSql = lcSql + "prArtic, "
-	lcSql = lcSql + "esOferta, "
-	lcSql = lcSql + "pRecVta, "
-	lcSql = lcSql + "iRecVta, "
-	lcSql = lcSql + "uniDesp, "
-	lcSql = lcSql + "cantPack, "
-	lcSql = lcSql + "codUM) VALUES ( "
-	lcSql = lcSql + ALLTRIM(STR(lnIdVentasD)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIdVentasC)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIdArticulo)) + ", "
-	lcSql = lcSql + "'" + STRTRAN(ALLTRIM(cur_aux.descripcio), "'", "''") + "', "
-	lcSql = lcSql + "'" + ALLTRIM(cur_aux.nroPart) + "', "
-	lcSql = lcSql + ALLTRIM(STR(lnCantidad, 10, 2)) + ", "
-	
-	IF ALLTRIM(lcCbte) == "PED" THEN
-		lcSql = lcSql + ALLTRIM(STR(lnCantidad, 10, 2)) + ", "
-	ENDIF	
-	
-	lcSql = lcSql + ALLTRIM(STR(lnCostoRep, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPrVenta, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnAlicIVA, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnImpIVA, 10, 4)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnSubTotal, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPorDesc1, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPorDesc2, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPorDesc3, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPorDesc4, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnImpDesc1, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnImpDesc2, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnImpDesc3, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnImpDesc4, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta1, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta2, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta3, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta4, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta1, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta2, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta3, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta4, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPRecItem, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIRecItem, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPrNeto, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnTotNeto, 10, 2)) + ", "
-	
-	&& Agrego los no gravados
-	lcSql = lcSql + ALLTRIM(STR(lnItemPorNoGrav, 20, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnItemBaseGrav, 20, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnItemSubtNoGrav, 20, 2)) + ", "
-	
-	lcSql = lcSql + ALLTRIM(STR(lnPrArtic, 10, 2)) + ", "
-	lcSql = lcSql + IIF(cur_detalle.esOferta, "1", "0") + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnPorRec, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnImpRec, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnUniDesp, 10, 2)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnCantPack, 10, 2)) + ", "
-	lcSql = lcSql + "'" + ALLTRIM(lcUniMed) + "')"
-	
-	*******************************************************************************************
-	
-	loCommand.CommandText = lcSql
-
-	IF ALLTRIM(lcCbte) == "PTO" 
-		loCommand.ActiveConnection = loConDMO.ActiveConnection
-		IF !loCommand.Execute()
-			thisform.desbloq_numerador()
-			loConDMO.Rollback()
-			RETURN .F.
-		ENDIF	
+	SELECT cur_Cbtes
+	APPEND BLANK
+	REPLACE idVentasC WITH cur_tempo.idVentasC
+	REPLACE idCliente WITH cur_tempo.idCliente ADDITIVE
+	REPLACE razSoc WITH cur_tempo.razSoc ADDITIVE
+	REPLACE fecEmis WITH cur_tempo.fecEmision ADDITIVE
+	REPLACE nroDoc WITH lcNroDoc ADDITIVE
+	REPLACE impFinal WITH cur_tempo.totFact ADDITIVE
+	REPLACE usualta WITH cur_tempo.usualta ADDITIVE
+	REPLACE fecAlta WITH cur_tempo.fecAlta ADDITIVE
+	REPLACE idhostalta WITH cur_tempo.idhostalta ADDITIVE
+	REPLACE observ WITH IIF(ISNULL(cur_tempo.Observ), "", cur_tempo.Observ) ADDITIVE
+	IF ALLTRIM(cur_tempo.Cbte) == "NC" THEN
+		lnTotal = lnTotal - cur_tempo.totFact
 	ELSE
-		loCommand.ActiveConnection = goConn.ActiveConnection
-		IF !loCommand.Execute()
-			thisform.desbloq_numerador()
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
-	ENDIF	
-	
-	&& Si es nota de crédito entonces, actualizo la cantidad de NC en los
-	&& items de la factura.
-	&& Actualizar este dato tiene como objetivo de que si se hace más una NC
-	&& que no se pueda hacer dos veces sobre la misma cantidad de un producto
-	&& sino que por el resto.
-	
-	IF ALLTRIM(Thisform.cbte) == "NC" THEN
-		lcSql = "UPDATE ventasdet SET cantNC = cantNC + " + ALLTRIM(STR(lnCantidad, 10, 2)) + " "
-		lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.idorigen)) + " "
-		lcSql = lcSql + " AND idArticulo = " + ALLTRIM(STR(cur_aux.idArticulo))
-		
-		loCommand.ActiveConnection = goConn.ActiveConnection
-		loCommand.CommandText = lcSql
-		
-		IF !loCommand.Execute() THEN
-			thisform.desbloq_numerador()
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
+		lnTotal = lnTotal + cur_tempo.totFact
 	ENDIF
-	
-	SELECT cur_aux
+	SELECT cur_tempo
 	SKIP
 ENDDO
 
-IF ALLTRIM(thisform.cbte) == "PTO" THEN
-	lnProxID = loConDMO.GetNextId("cc_cli", "idCC_Cli")
-	lnIdOper = loConDMO.GetNextID("cc_cli", "idOper")		
-	lnIdCliente = Thisform.contenido.sel_Cliente.valcpoid
+loResult.close_query()
 
-	&& Inserto el registro correspondiente a la factura en la tabla de cuentas corrientes
-	lcSql = "INSERT INTO cc_cli (idCC_Cli, idCliente, idCC_Orig, cbte, nroCbte, tipoDoc, ptoVta, idCondPago, idSitIVA, idVendedor, "
-	lcSql = lcSql + "fecEmis, fecVto, impDebe, impHaber, idOper, idVentasC, usuAlta, fecAlta, idHostAlta) VALUES ( "
-	lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ALLTRIM(STR(lnIdCliente)) + ", null, '" + IIF(ALLTRIM(lcCbte) == "PTO", "FC", ALLTRIM(lcCbte)) + "', "
-	lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", '" + ALLTRIM(lcTipoDoc) + "', " + ALLTRIM(STR(lnPtoVta)) + ", " + ALLTRIM(STR(lnIdCondPago)) + ", "
-	lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", " + ALLTRIM(STR(lnIdVendedor)) + ", " + oDT.toMySql(Thisform.contenido.txtFecEmis.Value) + ", "
-	lcSql = lcsql + IIF(INT(VAL(getconfig("SQLSRV"))) = 1, oDT.getDateTime() + " + " + ALLTRIM(STR(thisform.cp_cntdias)), oDT.toMySql(ldFecVto)) + ", " + ALLTRIM(STR(lnTotFact, 10, 2)) + ", 0, " + ALLTRIM(STR(lnIdOper)) + ", " + ALLTRIM(STR(lnIdVentasC)) + ", "
-	lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', " + oDT.getDateTime() + ", '" + ALLTRIM(SYS(0)) + "')"
+SELECT cur_Cbtes
+IF RECCOUNT() > 0
+	GO TOP
+ENDIF
 
-	loCommand.ActiveConnection = loConDMO.ActiveConnection	
+Thisform.Contenido.grdCbtes.Refresh()
+Thisform.Contenido.txtTotal.Value = lnTotal
+ENDPROC
+
+
+************************************************************
+OBJETO: btnEliminar
+************************************************************
+*** PROPIEDADES ***
+Top = 454
+Left = 922
+TabIndex = 12
+Name = "btnEliminar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp, lcSql, loRes
+LOCAL loCommand
+
+lnResp = 0
+lcSql = ""
+loRes = CREATEOBJECT("odbc_result")
+loCommand = CREATEOBJECT("odbc_command")
+
+lnResp = MESSAGEBOX("¿Está seguro que desea anular el comprobante?", 4+32, Thisform.Caption)
+
+IF lnResp = 6
+	goConn.BeginTransaction()
+
+	lcSql = "UPDATE ventascab "
+	lcSql = lcSql + "SET anulado = 1, "
+	lcSql = lcSql + "usuBaja = '" + ALLTRIM(gcCodUsu) + "', " 
+	IF ALLTRIM(getconfig("SQLSRV")) == "0" THEN
+		lcSql = lcSql + "fecBaja = current_timestamp, "
+	ELSE
+		lcSql = lcSql + "fecBaja = GETDATE(), "
+	ENDIF
+	lcSql = lcSql + "idHostBaja = '" + SYS(0) + "' "
+	lcSql = lcSql + "WHERE idventasc = " + ALLTRIM(STR(cur_Cbtes.idventasc))
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
 	loCommand.CommandText = lcSql
 	
-	IF !loCommand.Execute()	
-		thisform.desbloq_numerador()
+	IF !loCommand.execute()
+		MESSAGEBOX("No se ha podido anular el comprobante", 0+64, thisform.Caption)
 		goConn.Rollback()
 		RETURN .F.
 	ENDIF
-ENDIF
-
-&& Ahora tengo que generar la relación entre el comprobante de origen con el comprobante
-&& de destino
-IF (ALLTRIM(Thisform.Cbte) == "FC") .OR. (ALLTRIM(Thisform.cbte) == "PTO") THEN
-	SELECT cur_cbtes
-	IF RECCOUNT("cur_cbtes") > 0 THEN
-		GO TOP
-	ENDIF
 	
-	DO WHILE !EOF("cur_cbtes")
-		IF cur_cbtes.sel THEN
-			IF ALLTRIM(thisform.cbte) == "PTO" THEN
-				lnProxID = loConDMO.GetNextId("ventasrel", "idVtaRel")
-			ELSE
-				lnProxID = goConn.GetNextId("ventasrel", "idVtaRel")
+	&& Verifico que sea una Nota de crédito a eliminar y seteo cantNC en 0 al eliminar la nota de crédito, antes de limpiar el cursor_cbtes.
+	IF SUBSTR(cur_cbtes.nroDoc, 1, 2) == "NC" then
+		thisform.anular_cantnc_factura()
+		
+	endif
+	
+	SELECT cur_Cbtes
+	DELETE
+	thisform.contenido.grdCbtes.Refresh()
+		
+	&& Si estoy eliminando una factura, entonces, tengo que dar de alta nuevamente
+	&& el stock
+	IF getGlobalCFG("STK_MODULE") THEN
+		IF SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "FC" .OR. SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "PED" THEN
+			lcSql = "select * from ventasdet where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
+			loRes.ActiveConnection = goConn.ActiveConnection
+			loRes.Cursor_Name = "cur_x"
+			
+			IF !loRes.OpenQuery(lcSql) THEN
+				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+				goConn.Rollback()
+				RETURN .F.
 			ENDIF
 			
-			lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES ("
-			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ALLTRIM(STR(cur_cbtes.idVentasC)) + ", " + ALLTRIM(STR(lnIdVentasC)) + ")"
+			SELECT cur_x
+			IF RECCOUNT() > 0 THEN
+				GO TOP
+			ENDIF
 			
-			loCommand.CommandText = lcSql
-
-			IF ALLTRIM(lcCbte) == "PTO" 
-				loCommand.ActiveConnection = loConDMO.ActiveConnection
-				IF !loCommand.Execute()
-					thisform.desbloq_numerador()
-					loConDMO.Rollback()
-					RETURN .F.
-				ENDIF	
-			ELSE
-				loCommand.ActiveConnection = goConn.ActiveConnection
-				IF !loCommand.Execute()
-					thisform.desbloq_numerador()
+			DO WHILE !EOF("cur_x")
+				thisform.stock.crear_cursor()
+				thisform.stock.circuito = "V"
+				thisform.stock.tipomov = "ENT"
+				thisform.stock.cbte = ""
+				thisform.stock.numcbte = "ANULACION " + SUBSTR(cur_Cbtes.nroDoc, 1, 2)
+				thisform.stock.agregar_articulo(cur_x.idArticulo, cur_x.cantidad, IIF(ISNULL(cur_x.nroPart), "", cur_x.nroPart))
+				
+				IF !thisform.stock.grabar2() THEN
+					MESSAGEBOX(thisform.stock.ErrorMessage, 0+48, thisform.Caption)
 					goConn.Rollback()
 					RETURN .F.
 				ENDIF
-			ENDIF
-		ENDIF
-		
-		SELECT cur_cbtes
-		SKIP
-	ENDDO
-ENDIF
-
-************************************************************************************************
-* Solo se procede a hacer el grabado de stock si es PTO.
-************************************************************************************************
-IF (ALLTRIM(Thisform.Cbte) <> "COT" .OR. ALLTRIM(THisform.Cbte) <> "NC") THEN
-
-	IF ALLTRIM(thisform.cbte) == "PTO" THEN
-		Thisform.mov_stock.circuito = "S"
-		Thisform.mov_stock.tipodoc = ""
-		Thisform.mov_stock.cbte = ""
-		IF !Thisform.mov_stock.grabar2() THEN
-			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
-			thisform.desbloq_numerador()
-			goConn.Rollback()
-			RETURN .F.
-		ENDIF
-	ENDIF	
-ENDIF
-
-IF ALLTRIM(thisform.cbte) == "PTO" THEN
-	loConDMO.Commit()
-	loConDMO.close()	
-ELSE
-	goConn.Commit()
-ENDIF
-
-thisform.desbloq_numerador()
-thisform.id_ventasc = lnIdVentasC
-
-RETURN .T.
-ENDPROC
-PROCEDURE particionar_cbte
-************************************************************************************
-** Esta función permite grabar una factura cada 25 items.
-** Pablo Díaz
-************************************************************************************
-
-LOCAL ln_cantitems
-LOCAL lnResp, llPreguntarPorComprobante
-
-STORE 0 TO ln_cantitems, lnResp
-STORE getGlobalCFG("RTOIMPXFC") TO llPreguntarPorComprobante
-
-IF getGlobalCFG("PRINT_RTO") .AND. !llPreguntarPorComprobante THEN
-	lnResp = MESSAGEBOX("Desea imprimir remitos para este cliente", 4+32, Thisform.Caption)
-ENDIF
-
-SELECT cur_aux
-ZAP 
-
-*!*	IF !(ALLTRIM(thisform.cbte) == "COT") THEN
-*!*		IF !thisform.validar_stk_en_grabado() THEN
-*!*			goConn.Rollback()
-*!*			RETURN .F.
-*!*		ENDIF
-*!*	ENDIF
-
-SELECT cur_detalle
-IF RECCOUNT() > 0 THEN 
-	GO TOP
-ELSE 
-	RETURN .F.
-ENDIF 
-
-************************************************************************************
-** Paso de a 25 items del cursor de detalle al cursor auxiliar
-************************************************************************************
-SELECT cur_detalle
-DO WHILE !EOF()
-	ln_cantitems = ln_cantitems + 1
-	
-	SELECT cur_aux
-	APPEND BLANK	
-	
-	REPLACE cur_aux.idDetalle WITH cur_detalle.idDetalle
-	REPLACE cur_aux.idArticulo WITH cur_detalle.idArticulo ADDITIVE
-	REPLACE cur_aux.codArt WITH cur_detalle.codArt ADDITIVE
-	REPLACE cur_aux.descripcio WITH cur_detalle.descripcio ADDITIVE
-	REPLACE cur_aux.nroPart WITH cur_detalle.nroPart ADDITIVE
-	REPLACE cur_aux.cantidad WITH cur_detalle.cantidad ADDITIVE
-	REPLACE cur_aux.prVta WITH cur_detalle.prVta ADDITIVE
-	REPLACE cur_aux.pDtoVta1 WITH cur_detalle.pDtoVta1 ADDITIVE
-	REPLACE cur_aux.pDtoVta2 WITH cur_detalle.pDtoVta2 ADDITIVE
-	REPLACE cur_aux.pDtoVta3 WITH cur_detalle.pDtoVta3 ADDITIVE
-	REPLACE cur_aux.pDtoVta4 WITH cur_detalle.pDtoVta4 ADDITIVE
-	REPLACE cur_aux.iDtoVta1 WITH cur_detalle.iDtoVta1 ADDITIVE
-	REPLACE cur_aux.iDtoVta2 WITH cur_detalle.iDtoVta2 ADDITIVE
-	REPLACE cur_aux.iDtoVta3 WITH cur_detalle.iDtoVta3 ADDITIVE
-	REPLACE cur_aux.iDtoVta4 WITH cur_detalle.iDtoVta4 ADDITIVE
-	REPLACE cur_aux.pDtoCli1 WITH cur_detalle.pDtoCli1 ADDITIVE
-	REPLACE cur_aux.pDtoCli2 WITH cur_detalle.pDtoCli2 ADDITIVE
-	REPLACE cur_aux.pDtoCli3 WITH cur_detalle.pDtoCli3 ADDITIVE
-	REPLACE cur_aux.pDtoCli4 WITH cur_detalle.pDtoCli4 ADDITIVE
-	REPLACE cur_aux.iDtoCli1 WITH cur_detalle.iDtoCli1 ADDITIVE
-	REPLACE cur_aux.iDtoCli2 WITH cur_detalle.iDtoCli2 ADDITIVE
-	REPLACE cur_aux.iDtoCli3 WITH cur_detalle.iDtoCli3 ADDITIVE
-	REPLACE cur_aux.iDtoCli4 WITH cur_detalle.iDtoCli4 ADDITIVE
-	REPLACE cur_aux.alicIVA WITH cur_detalle.alicIVA ADDITIVE
-	REPLACE cur_aux.impIVA WITH cur_detalle.impIVA ADDITIVE
-	REPLACE cur_aux.impNeto WITH cur_detalle.impNeto ADDITIVE
-	REPLACE cur_aux.totNeto WITH cur_detalle.totNeto ADDITIVE
-	REPLACE cur_aux.subTotal WITH cur_detalle.subTotal ADDITIVE
-	REPLACE cur_aux.prArtic WITH cur_detalle.prArtic ADDITIVE
-	REPLACE cur_aux.esOferta WITH cur_detalle.esOferta ADDITIVE
-	REPLACE cur_aux.pRecVta WITH cur_detalle.pRecVta ADDITIVE 
-	REPLACE cur_aux.iRecVta WITH cur_detalle.iRecVta ADDITIVE
-	REPLACE cur_aux.uniDesp WITH cur_detalle.uniDesp ADDITIVE
-	REPLACE cur_aux.cantPack WITH cur_detalle.cantPack ADDITIVE 
-	REPLACE cur_aux.uniMed WITH cur_detalle.uniMed ADDITIVE
-	
-	&& Agrego los recargos
-	REPLACE cur_aux.pRecItem WITH cur_detalle.pRecItem ADDITIVE
-	REPLACE cur_aux.iRecItem WITH cur_detalle.iRecItem ADDITIVE
-	
-	&& Agrego los campos de no gravados
-	REPLACE cur_aux.porNoGrav WITH cur_detalle.porNoGrav ADDITIVE
-	REPLACE cur_aux.baseGrav WITH cur_detalle.baseGrav ADDITIVE
-	REPLACE cur_aux.subtNoGrav WITH cur_detalle.subtNoGrav ADDITIVE
-	
-	&& Si lleva stock agrege los movimientos que hay que generar.
-	IF ALLTRIM(cur_detalle.nropart) == "" THEN
-		IF Thisform.Mov_stock.lleva_stock(cur_detalle.idArticulo) THEN
-			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
-				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
-						cur_detalle.Cantidad, "")
-			ENDIF
-		ENDIF
-	ELSE
-		IF Thisform.Mov_stock.lleva_stock(cur_detalle.idArticulo) THEN
-			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
-				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
-						cur_detalle.Cantidad, cur_detalle.nropart)
-			ENDIF
-		ENDIF
-	ENDIF	
-	
-	&& Cuando el contador llegue a 25 items grabo una factura nueva.
-	IF ln_cantitems = 25
-		&& tengo que hacer el calculo de los totales y el grabado		
-		Thisform.calc_subtot_cur_aux()
-		
-		IF !thisform.grabar_cbte_part()
-			RETURN .F.
-		ENDIF	
-		
-		&& Verifico que el comprobante haya sido grabado correctamente
-		IF !Thisform.verificar_cbte() THEN
-			MESSAGEBOX("Este comprobante no se encuentra grabado.", 0+48, Thisform.Caption)
-			RETURN .F.
-		ENDIF
-		
-		&& antes de enviar a autorizar
-		IF !thisform.enviar_wsafipfe() THEN
-			MESSAGEBOX(Thisform.error_message, 0+48, Thisform.Caption)
-			*RETURN .F.
-		ELSE
-			IF thisform.fe_set_cae() THEN
-				this.add_faccob(thisform.id_ventasc)
-				thisform.grabar_ctacte(thisform.id_ventasc)				
-				thisform.imprimir()
-				
-				&& Habilito la pregunta solo si está habilitada la impresión de remitos
-				IF getGlobalCFG("PRINT_RTO") THEN
-					&& Pregunto si quiere imprimir el remito por comprobante
-					IF llPreguntarPorComprobante THEN
-						lnResp = MESSAGEBOX("Desea imprimir remitos para esta factura", 4+32, Thisform.Caption)
-					ENDIF
-					
-					IF lnResp = 6 THEN
-						*thisform.imprimir_rtos()
-						Thisform.generar_remitos()
-					ENDIF
-				ENDIF
-			ENDIF
-		ENDIF
-		
-		ln_cantitems = 0
-		
-		SELECT cur_aux
-		ZAP
-		Thisform.mov_stock.limpiar()	
-	ENDIF 
-	
-	SELECT cur_detalle
-	SKIP  
-ENDDO 
-
-&& En el caso que la ultima factura no haya llegado a los 25 items
-&& tengo que hacer una nueva factura con los items restantes.
-IF ln_cantitems <> 0 
-	&& tengo que hacer el calculo de los totales y el grabado
-	Thisform.calc_subtot_cur_aux()
-		
-	IF !thisform.grabar_cbte_part()
-		RETURN .F.
-	ENDIF	
-	
-	IF !thisform.enviar_wsafipfe() THEN
-		MESSAGEBOX(Thisform.error_message, 0+48, Thisform.Caption)
-		RETURN .F.
-	ELSE
-		IF thisform.fe_set_cae() THEN
-			this.add_faccob(thisform.id_ventasc)
-			thisform.grabar_ctacte(thisform.id_ventasc)			
-			thisform.imprimir()
 			
-			&& Habilito la pregunta solo si está habilitada la emisión de remitos
-			IF getGlobalCFG("PRINT_RTO") THEN
-				&& Pregunto si quiere impimir el remito por comprobante
-				IF llPreguntarPorComprobante THEN
-					lnResp = MESSAGEBOX("Desea imprimir remitos para esta factura", 4+32, Thisform.Caption)
-				ENDIF
-				
-				IF lnResp = 6 .AND. getGlobalCFG("PRINT_RTO") THEN
-					*thisform.imprimir_rtos()
-					Thisform.generar_remitos()
-				ENDIF
-			ENDIF
-				
-			thisform.id_ventasc = 0
+				SELECT cur_x
+				SKIP
+			ENDDO
+			
+			loRes.Close_Query()
 		ENDIF
 	ENDIF
 	
-	Thisform.mov_stock.limpiar()
-ENDIF
-
-IF getglobalcfg("PAGCTDO") .AND. This.cp_cntdias = 0 THEN
-	IF getglobalcfg("USECOBMOS") THEN
-		Thisform.realizar_cobranza_mostrador()
-	ELSE
-		Thisform.realizar_cobranza()
+	&& Doy de baja la factura en la cuenta corriente del cliente
+	lcSql = "update cc_cli "
+	lcSql = lcSql + "set cc_cli.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "	fecBaja = " + IIF(INT(VAL(getConfig("SQLSRV"))) = 1, "getdate(), ", "current_timestamp, ")
+	lcSql = lcSql + "	idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+		goConn.Rollback()
+		RETURN .F.
 	ENDIF
-ENDIF
-
-&& Verifico si hay saldo a favor en la cuenta corriente y si lo hay
-&& lanzo una notificación.
-IF thisform.validar_saldos_a_compensar() THEN
-	MESSAGEBOX("La cuenta corriente de este cliente tiene comprobantes para compensar. " ;
-			+ "Se recomienda entrar a la misma y dejar ordenada la cuenta", 0+64, Thisform.Caption)
+	
+	goConn.Commit()
+		
 ENDIF
 
 RETURN .T.
-ENDPROC
-PROCEDURE verificar_cbte
-****************************************************************************
-* Verifica si el comprobante se grabó o no.
-* La validación se usa en particionar_cbte.
-****************************************************************************
-
-LOCAL loRes
-LOCAL lcSql
-
-loRes = CREATEOBJECT("odbc_result")
-lcSql = ""
-
-lcSql = "SELECT COUNT(*) AS cantReg "
-lcSql = lcSql + "FROM ventascab "
-lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-
-IF !loRes.OpenQuery(lcSql) THEN
-	Thisform.error_message = loRes.Error_Message
-	RETURN .F.
-ENDIF
-
-* Si el COUNT no devuelve nada entonces significa que no se
-* grabó el comprobante en la base de datos.
-SELECT cur_x
-IF INT(VAL(cur_x.cantReg)) = 0 THEN
-	loRes.Close_Query()
-	RETURN .F.
-ENDIF
-
-loRes.Close_Query()
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE Init
-DODEFAULT()
-Thisform.oTicket = CREATEOBJECT("cls_tickets")
-Thisform.oTicket.crear_cursor()
-
 ENDPROC
 
 
 ************************************************************
-OBJETO: fe
+OBJETO: btnCerrar
 ************************************************************
 *** PROPIEDADES ***
-Top = 492
-Left = 636
-Height = 24
-Width = 36
-Name = "fe"
+Top = 454
+Left = 969
+TabIndex = 13
+Name = "btnCerrar"
 
 *** METODOS ***
 
 
 ************************************************************
-OBJETO: clsformcbtes_fe
+OBJETO: Clsetiqueta5
+************************************************************
+*** PROPIEDADES ***
+Caption = "Comprobante:"
+Height = 15
+Left = 5
+Top = 62
+Width = 84
+TabIndex = 14
+Name = "Clsetiqueta5"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtptovta
+************************************************************
+*** PROPIEDADES ***
+Alignment = 3
+Value = 
+Height = 21
+Left = 208
+MaxLength = 4
+TabIndex = 5
+Top = 59
+Width = 45
+autocompleta = .T.
+ischaracter = .T.
+Name = "txtptovta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbCbte
+************************************************************
+*** PROPIEDADES ***
+Height = 24
+Left = 98
+TabIndex = 3
+Top = 58
+Width = 59
+cfieldname = 
+Name = "cmbCbte"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cmbTipo
+************************************************************
+*** PROPIEDADES ***
+Height = 24
+Left = 160
+TabIndex = 4
+Top = 58
+Width = 44
+Name = "cmbTipo"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtnumero
+************************************************************
+*** PROPIEDADES ***
+Alignment = 3
+Value = 
+Height = 21
+Left = 256
+MaxLength = 8
+TabIndex = 6
+Top = 59
+Width = 90
+ischaracter = .T.
+autocompleta = .T.
+Name = "txtnumero"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnVerDetalles
+************************************************************
+*** PROPIEDADES ***
+Top = 453
+Left = 5
+TabIndex = 10
+Name = "btnVerDetalles"
+
+*** METODOS ***
+PROCEDURE Click
+DO FORM "frmImagenCbte"
+ENDPROC
+
+
+************************************************************
+OBJETO: btnSeguimiento
+************************************************************
+*** PROPIEDADES ***
+Top = 454
+Left = 52
+Height = 44
+Width = 45
+Picture = ..\imagen\my-documents.ico
+TabIndex = 11
+ToolTipText = "Seguimiento de Comprobantes"
+Name = "btnSeguimiento"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL loForm
+
+loForm = CREATEOBJECT("cls_frm_linkedcbtes")
+
+SELECT cur_Cbtes
+loForm.idVentasC = cur_Cbtes.idVentasC
+loForm.nrocbte = cur_Cbtes.nrodoc
+
+loForm.leer_datos()
+
+loForm.show()
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta6
+************************************************************
+*** PROPIEDADES ***
+Caption = "Importe total de comprobantes:"
+Height = 15
+Left = 673
+Top = 432
+Width = 180
+Name = "Clsetiqueta6"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtTotal
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 865
+ReadOnly = .T.
+Top = 428
+Width = 149
+isnumeric = .T.
+Name = "txtTotal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: clsform_consbjacbte_sf
 ************************************************************
 *** PROPIEDADES ***
 Arial, 0, 9, 5, 15, 12, 32, 3, 0
 Arial, 1, 8, 5, 14, 11, 29, 3, 0
-Arial, 1, 9, 6, 15, 12, 32, 3, 0
 
 *** METODOS ***
 
@@ -31472,7 +22297,7 @@ ADDPROPERTY(loRtoData, "NroCbte", PADL(ALLTRIM(STR(This.o_remitos_dao.ptovtafc))
 
 ADDPROPERTY(loRtoData, "razSocTransp", Thisform.o_remitos_dao.razsoc)
 ADDPROPERTY(loRtoData, "direccionTransp", Thisform.o_remitos_dao.direcciontrn)
-ADDPROPERTY(loRtoData, "Total", lnTotFact)
+ADDPROPERTY(loRtoData, "Total", m.Total)
 
 loRes.Close_Query()
 
@@ -31772,6 +22597,503 @@ Thisform.imprimir_rtos()
 	
 
 RETURN llOk
+
+ENDPROC
+PROCEDURE Init
+LOCAL lnResp
+
+DODEFAULT()
+
+Thisform.mov_stock.circuito = "V"
+Thisform.mov_stock.crear_cursor()
+
+IF ALLTRIM(Thisform.cbte) == "PTO" THEN
+	Thisform.mov_stock.tipomov = "SAL"
+	Thisform.Contenido.btnAgregarCliente.Visible = .F.
+ELSE 
+	IF ALLTRIM(Thisform.cbte) == "NC" THEN
+		Thisform.Contenido.btnCbteOrigen.Visible = .T.
+		Thisform.contenido.txtdesc1.Enabled = .F.
+	    Thisform.contenido.txtdesc2.Enabled = .F.
+		Thisform.contenido.txtdesc3.Enabled = .F.
+		Thisform.contenido.txtdesc4.Enabled = .F.
+		Thisform.mov_stock.tipomov = "ENT"
+	ELSE
+		IF ALLTRIM(Thisform.cbte) == "FC" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN
+			Thisform.Contenido.btnCbteOrigen.Visible = .T.
+			Thisform.Contenido.btnCbteOrigen.Caption = "Leer Pedido"
+			Thisform.mov_stock.tipomov = "SAL"
+		ELSE
+			IF ALLTRIM(Thisform.cbte) == "PED" THEN
+				Thisform.Contenido.btnCbteOrigen.Visible = .T.
+				Thisform.Contenido.btnCbteOrigen.Caption = "Bajar Pedido"
+			ELSE
+				Thisform.Contenido.btnCbteOrigen.Visible = .F.
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+Thisform.saldo_fc = 0.00
+Thisform.idorigen = 0
+
+IF getGlobalCFG("STK_MODULE") THEN
+	Thisform.Contenido.lblExistencia.Visible = .T.
+	Thisform.Contenido.txtExistencia.Visible = .T.
+ELSE
+	Thisform.Contenido.lblExistencia.Visible = .F.
+	Thisform.Contenido.txtExistencia.Visible = .F.
+ENDIF
+
+SELECT cur_Deta_View
+thisform.contenido.grdDetalles.RecordSource = "cur_Deta_View"
+thisform.contenido.grdDetalles.alias_name = "cur_Deta_View"
+thisform.contenido.grdDetalles.list_controlsource = "codArt,descripcio,cantidad,prVta,pDtoVta1,pDtoVta2,pDtoVta3,pDtoVta4,totNeto,alicIVA,impIVA,subtNoGrav,subTotal"
+thisform.contenido.grdDetalles.lista_ancho_cols = "120,200,60,70,50,50,50,50,50,50,50,58,58"
+thisform.contenido.grdDetalles.titulos_cabeceras = "Código,Descripción,Cantidad,Pr. Vta.,Desc.1,Desc.2,Desc.3,Desc.4,Neto,I.V.A.,Imp.IVA,No. Grav.,Total"
+thisform.contenido.grdDetalles.generar_grid()
+thisform.contenido.grdDetalles.Columns[3].ReadOnly = .F.
+
+&& Seteo los inputmask de las columnas numericas que van desde la 4 hasta las 13
+thisform.contenido.grdDetalles.Columns[4].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[5].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[6].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[7].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[8].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[9].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[10].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[11].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[12].inputMask = "999999999.99"
+thisform.contenido.grdDetalles.Columns[13].inputMask = "999999999.99"
+
+thisform.pedido_automatica = .F.
+thisform.contenido.txtFecEmis.Value = DATE()
+IF ALLTRIM(Thisform.cbte) == "PED" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN
+	Thisform.Contenido.txtFecEmis.Enabled = .F.
+ENDIF
+Thisform.contenido.txtCantidad.Value = getGlobalCFG("FACITMCANT")
+Thisform.contenido.txtPrUnitFinal.Value = 0
+IF getGlobalCFG("CBTEACTPRE") THEN
+	Thisform.contenido.lblPrecioUnitFinal.Visible = .t.
+	Thisform.contenido.txtPrUnitFinal.Visible = .t.
+ELSE
+	Thisform.contenido.lblPrecioUnitFinal.Visible = .f.
+	Thisform.contenido.txtPrUnitFinal.Visible = .f.
+ENDIF
+
+IF ALLTRIM(Thisform.cbte) == "PED" THEN
+	Thisform.contenido.chkImprimirCbte.Visible = .f.
+EndIf
+
+* Levanto la configuración para habilitar / deshabilitar descuentos
+Thisform.contenido.txtDesc1.Enabled = GetGlobalCFG("FCDESC1")
+Thisform.contenido.txtDesc2.Enabled = GetGlobalCFG("FCDESC2")
+Thisform.contenido.txtDesc3.Enabled = GetGlobalCFG("FCDESC3")
+Thisform.contenido.txtDesc4.Enabled = GetGlobalCFG("FCDESC4")
+
+* Si es modo mostrador deshabilito la cantidad
+IF getGlobalCFG("MODOMOST") THEN
+	Thisform.contenido.cboUnidVta.Enabled = .F.
+	Thisform.contenido.txtCantidad.Enabled = .F.
+	Thisform.contenido.btnAgregar.Enabled = .F.
+ENDIF
+ENDPROC
+PROCEDURE Load
+**
+* Al instanciar el formulario creo los cursores que voy a necesitar.
+**
+
+DODEFAULT()
+
+&& Este cursor lo uso para confeccionar el pedido a partir de los
+&& que entran desde el catálogo digital.
+CREATE CURSOR cur_PedExt (	;
+	idPedExt		int,;
+	idArticulo		int,;
+	codArt			varchar(20),;
+	cantidad		int)
+
+&& Este cursor se utiliza para el grabado del detalle del comprobante
+&& en la base de datos.
+&& Agrego los campos no gravados
+CREATE CURSOR cur_Detalle (	;
+	idDetalle		int			,;
+	idArticulo		int 		,;
+	codArt			C(20)		,;
+	marca			C(60)		,;
+	descripcio		C(60)		,;
+	nroPart			varchar(30)	,;
+	cantidad		double	,;
+	prVta			double	,;
+	pDtoVta1		double	,;
+	pDtoVta2		double	,;
+	pDtoVta3		double	,;
+	pDtoVta4		double	,;
+	iDtoVta1		double	,;
+	iDtoVta2		double	,;
+	iDtoVta3		double	,;
+	iDtoVta4		double	,;
+	pDtoCli1		double	,;
+	pDtoCli2		double	,;
+	pDtoCli3		double	,;
+	pDtoCli4		double	,;
+	iDtoCli1		double	,;
+	iDtoCli2		double	,;
+	iDtoCli3		double	,;
+	iDtoCli4		double	,;
+	pRecItem		double	,;
+	iRecItem		double	,;	
+	alicIVA			double	,;
+	impIVA			double	,;
+	impNeto			double	,;	
+	totNeto			double	,;
+	subTotal		double	,;
+	porNoGrav		double DEFAULT 0,;
+	baseGrav		double DEFAULT 0,;
+	subtNoGrav		double DEFAULT 0,;	
+	stkDisp			double	,;
+	prArtic			double	,;
+	esOferta		l,;
+	pRecVta			double	,;
+	iRecVta			double	,;
+	uniDesp			double	,;
+	cantPack		double	,;
+	uniMed			varchar(3))
+
+&& Este cursor se utiliza para particionar el comprobante cada 25 ítems.
+&& Agrego los datos para no gravados
+CREATE CURSOR cur_Aux (	;
+	idDetalle		int			,;
+	idArticulo		int 		,;
+	codArt			C(20)		,;
+	descripcio		C(60)		,;
+	nroPart			varchar(30) ,;
+	cantidad		double	,;
+	prVta			double	,;
+	pDtoVta1		double	,;
+	pDtoVta2		double	,;
+	pDtoVta3		double	,;
+	pDtoVta4		double	,;
+	iDtoVta1		double	,;
+	iDtoVta2		double	,;
+	iDtoVta3		double	,;
+	iDtoVta4		double	,;
+	pDtoCli1		double	,;
+	pDtoCli2		double	,;
+	pDtoCli3		double	,;
+	pDtoCli4		double	,;
+	iDtoCli1		double	,;
+	iDtoCli2		double	,;
+	iDtoCli3		double	,;
+	iDtoCli4		double	,;	
+	pRecItem		double	,;
+	iRecItem		double	,;		
+	alicIVA			double	,;
+	impIVA			double	,;
+	impNeto			double	,;	
+	totNeto			double	,;
+	porNoGrav		double DEFAULT 0,;
+	baseGrav		double DEFAULT 0,;
+	subtNoGrav		double DEFAULT 0,;
+	subTotal		double	,;
+	prArtic			double	,;
+	esOferta		l,;
+	pRecVta			double ,;
+	iRecVta			double ,;
+	uniDesp			double ,;
+	cantPack		double ,;
+	uniMed			varchar(3))
+
+&& Ese cursor es para mostrar en la grilla el detalle sin importar
+&& de que partida se saque.
+&& Agrego los campos porNoGrav y baseNoGrav para los no gravados con default 0.
+CREATE CURSOR cur_Deta_View (	;
+	idDetalle		int			,;
+	idArticulo		int 		,;
+	codArt			C(20)		,;
+	descripcio		C(60)		,;
+	llevastk		l			,;
+	cantidad		double,;
+	prVta			double,;
+	pDtoVta1		double,;
+	pDtoVta2		double,;
+	pDtoVta3		double,;
+	pDtoVta4		double,;
+	iDtoVta1		double,;
+	iDtoVta2		double,;
+	iDtoVta3		double,;
+	iDtoVta4		double,;
+	pDtoCli1		double,;
+	pDtoCli2		double,;
+	pDtoCli3		double,;
+	pDtoCli4		double,;
+	iDtoCli1		double,;
+	iDtoCli2		double,;
+	iDtoCli3		double,;
+	iDtoCli4		double,;
+	pRecItem		double,;
+	iRecItem		double,;			
+	alicIVA			double,;
+	impIVA			double,;
+	impNeto			double,;	
+	totNeto			double,;
+	porNoGrav		double DEFAULT 0,;
+	baseGrav		double DEFAULT 0,;
+	subtNoGrav		double DEFAULT 0,;
+	subTotal		double,;
+	stkDisp			double,;
+	prArtic			double,;
+	esOferta		l,;
+	pRecVta			double,;
+	iRecVta			double,;
+	uniDesp			double,;
+	cantPack		double,;
+	uniMed			varchar(3),;
+	apli_PRG		l)	
+
+&& Creo el cursor para los totales de las facturas.
+&& Agrego el campo totalNoGrav para no gravados y le establezco
+&& un valor por defecto 0(cero) para que no sea obligatorio ya que
+&& solo lo necesito para la factura en principio.
+CREATE CURSOR cur_Subtotal(	;
+	impNeto			double,;
+	impFinal		double,;
+	porIVA21		double,;
+	impIVA21		double,;
+	porIVA105		double,;
+	impIVA105		double,;
+	porDesc1		double,;
+	porDesc2		double,;
+	porDesc3		double,;
+	porDesc4		double,;
+	impDesc1		double,;
+	impDesc2		double,;
+	impDesc3		double,;
+	impDesc4		double,;
+	totaNoGrav		double DEFAULT 0,;
+	totFact			double,;
+	porRec			double,;
+	impRec			double,;
+	porIIBB			double,;
+	impIIBB			double)
+	
+&& Agrego este cursor para llevar la cantidad de stock por partida
+CREATE CURSOR cur_DetPart (	;
+	idArticulo		int,;
+	nroPart			varchar(30),;
+	cantidad		double)
+	
+&& El siguiente cursor es para mostrar los stocks insuficiente
+CREATE CURSOR cur_StkInsu (	;
+	idArticulo		int,;
+	codArt			varchar(20),;
+	descripcio		varchar(60),;
+	stock_disp		double,;
+	cantFC			double)
+	
+&& Este cursor va a contener los pedidos pendientes de facturar para cuando
+&& se quiera levantar los mismos a partir de una factura.
+CREATE CURSOR cur_Cbtes (	;
+	sel			L,;
+	idVentasC	int,;
+	fecEmision	D NULL,;
+	numCbte		varchar(20),;
+	idCliente	int,;
+	razSoc		varchar(60) NULL,;
+	totFact		double,;
+	idTipoDoc	int NULL,;
+	nroDoc	varchar(20) NULL) 
+
+SELECT cur_Cbtes
+INDEX ON idVentasC TAG idVentasC ASCENDING
+INDEX ON fecEmision TAG fecEmision ASCENDING ADDITIVE
+INDEX ON numCbte TAG numCbte ASCENDING ADDITIVE
+INDEX ON idCliente TAG idCliente ASCENDING ADDITIVE
+INDEX ON razSoc TAG razSoc ASCENDING ADDITIVE
+INDEX ON totFact TAG totFact ASCENDING ADDITIVE
+
+SET ORDER TO TAG fecEmision ASCENDING
+
+&& Agrego el cursor que voy a administrar los faltantes
+CREATE CURSOR cur_faltantes (	;
+	idArticulo	int,;
+	idCliente	int,;
+	codArt		varchar(20),;
+	uniDesp		double,;
+	cantidad	double)
+	
+&& El siguiente cursor que agrego es para dar de baja los faltantes
+CREATE CURSOR cur_BajaFalt ( ;
+	idFaltante int)
+	
+&& El siguiente cursor que agrego permite seleccionar los idVentas que
+&& fueron generados
+
+CREATE CURSOR cur_faccob ( ;
+	idVentaC int NOT NULL)
+		
+&& Si usa impresora fiscal, agrego estas líneas para que el formulario
+&& tenga soporte a los eventos del control OCX que se inserto para el
+&& manejo de impresoras fiscales
+IF ALLTRIM(GetConfig("USA_FISCAL")) == "S" THEN
+	SYS(2333, 0)
+	_VFP.AutoYield = .F.
+	
+	RETURN
+ENDIF
+
+
+ENDPROC
+PROCEDURE validarcampos
+IF Thisform.Contenido.Sel_Cliente.estavacio() .AND. ALLTRIM(Thisform.Contenido.Sel_Cliente.txtDescripcion.Value) == ""
+	MESSAGEBOX("Debe ingresar el cliente", 0+48, Thisform.Caption)
+	Thisform.Contenido.sel_Cliente.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+&& Valido que los datos de identificacion del cliente estén bien
+&& cargados
+
+IF ALLTRIM(Thisform.cli_tipodoc) == "" THEN
+	MESSAGEBOX("Atención: El tipo de documento del cliente no tiene ningún valor, edite al cliente y corrija este dato para poder seguir", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+IF ALLTRIM(Thisform.cli_cuit) == "" THEN
+	MESSAGEBOX("Atención: No se encuentra cargado el número de DNI/CUIT del cliente. Por favor, edite el mismo para poder continuar", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+IF Thisform.Contenido.sel_FormaPago.EstaVacio()
+	MESSAGEBOX("Debe ingresar la forma de pago", 0+48, Thisform.Caption)
+	Thisform.Contenido.sel_FormaPago.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+
+SELECT cur_Deta_View
+IF RECCOUNT() = 0
+	MESSAGEBOX("Debe ingresar al menos un artículo", 0+48, Thisform.Caption)
+	Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF ALLTRIM(Thisform.cbte) == "NC" THEN
+	IF thisform.saldo_fc <> 0 THEN
+		IF Thisform.Contenido.txtTotFact.Value > thisform.saldo_fc THEN
+			MESSAGEBOX("No puede realizar una nota de crédito mayor al saldo de cuenta corriente de la factura", 0+48, Thisform.Caption)
+			RETURN .F.
+		ENDIF
+	ENDIF
+	
+	IF Thisform.idOrigen = 0 THEN
+		MESSAGEBOX("No se puede generar una nota de crédito por devolución sin Factura. Vaya a Cbte. Origen y seleccione la factura.", 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF 
+ENDIF
+
+IF ALLTRIM(Thisform.cbte) == "FC" THEN
+	IF Thisform.Contenido.txtTotFact.Value >= getGlobalCFG("FCIMPDNI") THEN
+		IF LEN(ALLTRIM(Thisform.contenido.txtCuit.Value)) < 7 THEN
+			MESSAGEBOX("Esta venta supera los $" + ALLTRIM(STR(getGlobalCFG("FCIMPDNI"))) + ", por favor solicite el número de documento", 0+48, Thisform.Caption)
+			Thisform.contenido.txtCuit.SetFocus()
+			RETURN .F.
+		ENDIF
+		
+		IF VAL(Thisform.contenido.txtCuit.Value) = 1 OR VAL(Thisform.contenido.txtCuit.Value) = 11111111 THEN
+			MESSAGEBOX("Esta venta supera los $" + ALLTRIM(STR(getGlobalCFG("FCIMPDNI"))) + ", por favor solicite el número de documento", 0+48, Thisform.Caption)
+			Thisform.Contenido.txtCuit.SetFocus()
+			RETURN .F.
+		ENDIF
+		
+		IF ALLTRIM(Thisform.Contenido.txtCuit.Value) == "" THEN
+			MESSAGEBOX("Esta venta supera los $" + ALLTRIM(STR(getGlobalCFG("FCIMPDNI"))) + ", por favor solicite el número de documento", 0+48, Thisform.Caption)
+			Thisform.Contenido.txtCuit.SetFocus()
+			RETURN .F.
+		ENDIF
+	ENDIF
+	
+	* Valido si es factura que no permita avanzar si el tipo de documento no está
+	* bien cargado
+	IF ALLTRIM(thisform.cbte) == "FC" THEN
+		IF (thisform.sitivacli = 1) .AND. (!(ALLTRIM(Thisform.cli_tipodoc)) == "CUIT") THEN
+			MESSAGEBOX("El tipo de documento ingresado en el cliente es incorrecto. " ;
+				+ "Antes de facturar corrija el tipo de documento en el cliente. Deberá volver a ingresar la factura.", 0+48, Thisform.Caption)
+			Thisform.blanquear()
+			DO FORM "frmabmclientes"			
+			RETURN .F.
+		ENDIF
+		
+		IF (thisform.sitivacli = 1) .AND. (LEN(ALLTRIM(Thisform.cli_cuit)) < 11) THEN
+			MESSAGEBOX("Verifique el número de CUIT que se encuentre bien cargado, en caso contrario esta factura " ;
+				+ "será rechazada. Deberá volver a ingresar la factura.", 0+48, Thisform.Caption)
+			Thisform.blanquear()
+			DO FORM "frmabmclientes"
+			RETURN .F.
+		ENDIF
+	ENDIF	
+ENDIF
+
+RETURN .T.
+
+ENDPROC
+PROCEDURE validardetalle
+IF ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value) == "" THEN
+	MESSAGEBOX("Debe ingresar el artículo", 0+48, Thisform.Caption)
+	Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.Contenido.txtCantidad.Value = 0 THEN
+	MESSAGEBOX("Falta ingresar la cantidad", 0+48, Thisform.Caption)
+	Thisform.Contenido.txtCantidad.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.Contenido.txtCantidad.Value < 0 THEN
+	MESSAGEBOX("La cantidad ingresada no puede ser un valor negativo", 0+48, Thisform.Caption)
+	Thisform.Contenido.txtCantidad.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) != "ARX" THEN
+	IF clientes.mayorista THEN
+		IF Thisform.contenido.txtPrMay.Value = 0 THEN
+			MESSAGEBOX("El precio del artículo se encuentra en cero, corregir artículo.", 0+48, Thisform.Caption)
+			Thisform.contenido.txtPrMay.SetFocus()
+			RETURN .F.
+		ENDIF
+	ELSE
+		IF Thisform.contenido.txtPrMinorista.Value = 0 THEN
+			MESSAGEBOX("El precio del artículo se encuentra en cero, corregir artículo.", 0+48, Thisform.Caption)
+			Thisform.contenido.txtPrMay.SetFocus()
+			RETURN .F.
+		ENDIF
+	ENDIF
+ENDIF
+
+IF (ALLTRIM(Thisform.cbte) != "COT") .AND. (ALLTRIM(Thisform.cbte) != "NC") THEN
+	&& Valido el stock solo en caso que no sea artículo X
+	IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) != "ARX" THEN
+		IF Thisform.Mov_Stock.lleva_stock(Thisform.Contenido.sel_Articulo.valcpoid) THEN
+			IF Thisform.mov_stock.get_exist_byart(Thisform.Contenido.sel_Articulo.valcpoid) <= 0 THEN
+				MESSAGEBOX("No hay stock disponible.", 0+48, Thisform.Caption)
+				Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
+				RETURN .T.
+			ENDIF
+			
+			&& Valido si está o no cubierto al 100%
+			IF Thisform.Contenido.txtCantidad.Value > Thisform.Contenido.txtExistencia.Value THEN
+				MESSAGEBOX("No hay stock suficiente para cubrir la cantidad ingresada.", 0+48, Thisform.Caption)
+				Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
+				RETURN .T.
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+RETURN .T.
+
 
 ENDPROC
 PROCEDURE grabar
@@ -32420,503 +23742,6 @@ Thisform.ptovta = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(
 Thisform.nrocbte = REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNroCbte)))) + ALLTRIM(STR(lnNroCbte))
 RETURN .T.
 ENDPROC
-PROCEDURE validardetalle
-IF ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value) == "" THEN
-	MESSAGEBOX("Debe ingresar el artículo", 0+48, Thisform.Caption)
-	Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.Contenido.txtCantidad.Value = 0 THEN
-	MESSAGEBOX("Falta ingresar la cantidad", 0+48, Thisform.Caption)
-	Thisform.Contenido.txtCantidad.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF Thisform.Contenido.txtCantidad.Value < 0 THEN
-	MESSAGEBOX("La cantidad ingresada no puede ser un valor negativo", 0+48, Thisform.Caption)
-	Thisform.Contenido.txtCantidad.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) != "ARX" THEN
-	IF clientes.mayorista THEN
-		IF Thisform.contenido.txtPrMay.Value = 0 THEN
-			MESSAGEBOX("El precio del artículo se encuentra en cero, corregir artículo.", 0+48, Thisform.Caption)
-			Thisform.contenido.txtPrMay.SetFocus()
-			RETURN .F.
-		ENDIF
-	ELSE
-		IF Thisform.contenido.txtPrMinorista.Value = 0 THEN
-			MESSAGEBOX("El precio del artículo se encuentra en cero, corregir artículo.", 0+48, Thisform.Caption)
-			Thisform.contenido.txtPrMay.SetFocus()
-			RETURN .F.
-		ENDIF
-	ENDIF
-ENDIF
-
-IF (ALLTRIM(Thisform.cbte) != "COT") .AND. (ALLTRIM(Thisform.cbte) != "NC") THEN
-	&& Valido el stock solo en caso que no sea artículo X
-	IF RIGHT(ALLTRIM(Thisform.Contenido.sel_Articulo.txtCodigo.Value), 3) != "ARX" THEN
-		IF Thisform.Mov_Stock.lleva_stock(Thisform.Contenido.sel_Articulo.valcpoid) THEN
-			IF Thisform.mov_stock.get_exist_byart(Thisform.Contenido.sel_Articulo.valcpoid) <= 0 THEN
-				MESSAGEBOX("No hay stock disponible.", 0+48, Thisform.Caption)
-				Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
-				RETURN .T.
-			ENDIF
-			
-			&& Valido si está o no cubierto al 100%
-			IF Thisform.Contenido.txtCantidad.Value > Thisform.Contenido.txtExistencia.Value THEN
-				MESSAGEBOX("No hay stock suficiente para cubrir la cantidad ingresada.", 0+48, Thisform.Caption)
-				Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
-				RETURN .T.
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-RETURN .T.
-
-
-ENDPROC
-PROCEDURE validarcampos
-IF Thisform.Contenido.Sel_Cliente.estavacio() .AND. ALLTRIM(Thisform.Contenido.Sel_Cliente.txtDescripcion.Value) == ""
-	MESSAGEBOX("Debe ingresar el cliente", 0+48, Thisform.Caption)
-	Thisform.Contenido.sel_Cliente.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-&& Valido que los datos de identificacion del cliente estén bien
-&& cargados
-
-IF ALLTRIM(Thisform.cli_tipodoc) == "" THEN
-	MESSAGEBOX("Atención: El tipo de documento del cliente no tiene ningún valor, edite al cliente y corrija este dato para poder seguir", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-IF ALLTRIM(Thisform.cli_cuit) == "" THEN
-	MESSAGEBOX("Atención: No se encuentra cargado el número de DNI/CUIT del cliente. Por favor, edite el mismo para poder continuar", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-
-IF Thisform.Contenido.sel_FormaPago.EstaVacio()
-	MESSAGEBOX("Debe ingresar la forma de pago", 0+48, Thisform.Caption)
-	Thisform.Contenido.sel_FormaPago.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-
-SELECT cur_Deta_View
-IF RECCOUNT() = 0
-	MESSAGEBOX("Debe ingresar al menos un artículo", 0+48, Thisform.Caption)
-	Thisform.Contenido.sel_Articulo.txtCodigo.SetFocus()
-	RETURN .F.
-ENDIF
-
-IF ALLTRIM(Thisform.cbte) == "NC" THEN
-	IF thisform.saldo_fc <> 0 THEN
-		IF Thisform.Contenido.txtTotFact.Value > thisform.saldo_fc THEN
-			MESSAGEBOX("No puede realizar una nota de crédito mayor al saldo de cuenta corriente de la factura", 0+48, Thisform.Caption)
-			RETURN .F.
-		ENDIF
-	ENDIF
-	
-	IF Thisform.idOrigen = 0 THEN
-		MESSAGEBOX("No se puede generar una nota de crédito por devolución sin Factura. Vaya a Cbte. Origen y seleccione la factura.", 0+48, Thisform.Caption)
-		RETURN .F.
-	ENDIF 
-ENDIF
-
-IF ALLTRIM(Thisform.cbte) == "FC" THEN
-	IF Thisform.Contenido.txtTotFact.Value >= getGlobalCFG("FCIMPDNI") THEN
-		IF LEN(ALLTRIM(Thisform.contenido.txtCuit.Value)) < 7 THEN
-			MESSAGEBOX("Esta venta supera los $" + ALLTRIM(STR(getGlobalCFG("FCIMPDNI"))) + ", por favor solicite el número de documento", 0+48, Thisform.Caption)
-			Thisform.contenido.txtCuit.SetFocus()
-			RETURN .F.
-		ENDIF
-		
-		IF VAL(Thisform.contenido.txtCuit.Value) = 1 OR VAL(Thisform.contenido.txtCuit.Value) = 11111111 THEN
-			MESSAGEBOX("Esta venta supera los $" + ALLTRIM(STR(getGlobalCFG("FCIMPDNI"))) + ", por favor solicite el número de documento", 0+48, Thisform.Caption)
-			Thisform.Contenido.txtCuit.SetFocus()
-			RETURN .F.
-		ENDIF
-		
-		IF ALLTRIM(Thisform.Contenido.txtCuit.Value) == "" THEN
-			MESSAGEBOX("Esta venta supera los $" + ALLTRIM(STR(getGlobalCFG("FCIMPDNI"))) + ", por favor solicite el número de documento", 0+48, Thisform.Caption)
-			Thisform.Contenido.txtCuit.SetFocus()
-			RETURN .F.
-		ENDIF
-	ENDIF
-	
-	* Valido si es factura que no permita avanzar si el tipo de documento no está
-	* bien cargado
-	IF ALLTRIM(thisform.cbte) == "FC" THEN
-		IF (thisform.sitivacli = 1) .AND. (!(ALLTRIM(Thisform.cli_tipodoc)) == "CUIT") THEN
-			MESSAGEBOX("El tipo de documento ingresado en el cliente es incorrecto. " ;
-				+ "Antes de facturar corrija el tipo de documento en el cliente. Deberá volver a ingresar la factura.", 0+48, Thisform.Caption)
-			Thisform.blanquear()
-			DO FORM "frmabmclientes"			
-			RETURN .F.
-		ENDIF
-		
-		IF (thisform.sitivacli = 1) .AND. (LEN(ALLTRIM(Thisform.cli_cuit)) < 11) THEN
-			MESSAGEBOX("Verifique el número de CUIT que se encuentre bien cargado, en caso contrario esta factura " ;
-				+ "será rechazada. Deberá volver a ingresar la factura.", 0+48, Thisform.Caption)
-			Thisform.blanquear()
-			DO FORM "frmabmclientes"
-			RETURN .F.
-		ENDIF
-	ENDIF	
-ENDIF
-
-RETURN .T.
-
-ENDPROC
-PROCEDURE Load
-**
-* Al instanciar el formulario creo los cursores que voy a necesitar.
-**
-
-DODEFAULT()
-
-&& Este cursor lo uso para confeccionar el pedido a partir de los
-&& que entran desde el catálogo digital.
-CREATE CURSOR cur_PedExt (	;
-	idPedExt		int,;
-	idArticulo		int,;
-	codArt			varchar(20),;
-	cantidad		int)
-
-&& Este cursor se utiliza para el grabado del detalle del comprobante
-&& en la base de datos.
-&& Agrego los campos no gravados
-CREATE CURSOR cur_Detalle (	;
-	idDetalle		int			,;
-	idArticulo		int 		,;
-	codArt			C(20)		,;
-	marca			C(60)		,;
-	descripcio		C(60)		,;
-	nroPart			varchar(30)	,;
-	cantidad		double	,;
-	prVta			double	,;
-	pDtoVta1		double	,;
-	pDtoVta2		double	,;
-	pDtoVta3		double	,;
-	pDtoVta4		double	,;
-	iDtoVta1		double	,;
-	iDtoVta2		double	,;
-	iDtoVta3		double	,;
-	iDtoVta4		double	,;
-	pDtoCli1		double	,;
-	pDtoCli2		double	,;
-	pDtoCli3		double	,;
-	pDtoCli4		double	,;
-	iDtoCli1		double	,;
-	iDtoCli2		double	,;
-	iDtoCli3		double	,;
-	iDtoCli4		double	,;
-	pRecItem		double	,;
-	iRecItem		double	,;	
-	alicIVA			double	,;
-	impIVA			double	,;
-	impNeto			double	,;	
-	totNeto			double	,;
-	subTotal		double	,;
-	porNoGrav		double DEFAULT 0,;
-	baseGrav		double DEFAULT 0,;
-	subtNoGrav		double DEFAULT 0,;	
-	stkDisp			double	,;
-	prArtic			double	,;
-	esOferta		l,;
-	pRecVta			double	,;
-	iRecVta			double	,;
-	uniDesp			double	,;
-	cantPack		double	,;
-	uniMed			varchar(3))
-
-&& Este cursor se utiliza para particionar el comprobante cada 25 ítems.
-&& Agrego los datos para no gravados
-CREATE CURSOR cur_Aux (	;
-	idDetalle		int			,;
-	idArticulo		int 		,;
-	codArt			C(20)		,;
-	descripcio		C(60)		,;
-	nroPart			varchar(30) ,;
-	cantidad		double	,;
-	prVta			double	,;
-	pDtoVta1		double	,;
-	pDtoVta2		double	,;
-	pDtoVta3		double	,;
-	pDtoVta4		double	,;
-	iDtoVta1		double	,;
-	iDtoVta2		double	,;
-	iDtoVta3		double	,;
-	iDtoVta4		double	,;
-	pDtoCli1		double	,;
-	pDtoCli2		double	,;
-	pDtoCli3		double	,;
-	pDtoCli4		double	,;
-	iDtoCli1		double	,;
-	iDtoCli2		double	,;
-	iDtoCli3		double	,;
-	iDtoCli4		double	,;	
-	pRecItem		double	,;
-	iRecItem		double	,;		
-	alicIVA			double	,;
-	impIVA			double	,;
-	impNeto			double	,;	
-	totNeto			double	,;
-	porNoGrav		double DEFAULT 0,;
-	baseGrav		double DEFAULT 0,;
-	subtNoGrav		double DEFAULT 0,;
-	subTotal		double	,;
-	prArtic			double	,;
-	esOferta		l,;
-	pRecVta			double ,;
-	iRecVta			double ,;
-	uniDesp			double ,;
-	cantPack		double ,;
-	uniMed			varchar(3))
-
-&& Ese cursor es para mostrar en la grilla el detalle sin importar
-&& de que partida se saque.
-&& Agrego los campos porNoGrav y baseNoGrav para los no gravados con default 0.
-CREATE CURSOR cur_Deta_View (	;
-	idDetalle		int			,;
-	idArticulo		int 		,;
-	codArt			C(20)		,;
-	descripcio		C(60)		,;
-	llevastk		l			,;
-	cantidad		double,;
-	prVta			double,;
-	pDtoVta1		double,;
-	pDtoVta2		double,;
-	pDtoVta3		double,;
-	pDtoVta4		double,;
-	iDtoVta1		double,;
-	iDtoVta2		double,;
-	iDtoVta3		double,;
-	iDtoVta4		double,;
-	pDtoCli1		double,;
-	pDtoCli2		double,;
-	pDtoCli3		double,;
-	pDtoCli4		double,;
-	iDtoCli1		double,;
-	iDtoCli2		double,;
-	iDtoCli3		double,;
-	iDtoCli4		double,;
-	pRecItem		double,;
-	iRecItem		double,;			
-	alicIVA			double,;
-	impIVA			double,;
-	impNeto			double,;	
-	totNeto			double,;
-	porNoGrav		double DEFAULT 0,;
-	baseGrav		double DEFAULT 0,;
-	subtNoGrav		double DEFAULT 0,;
-	subTotal		double,;
-	stkDisp			double,;
-	prArtic			double,;
-	esOferta		l,;
-	pRecVta			double,;
-	iRecVta			double,;
-	uniDesp			double,;
-	cantPack		double,;
-	uniMed			varchar(3),;
-	apli_PRG		l)	
-
-&& Creo el cursor para los totales de las facturas.
-&& Agrego el campo totalNoGrav para no gravados y le establezco
-&& un valor por defecto 0(cero) para que no sea obligatorio ya que
-&& solo lo necesito para la factura en principio.
-CREATE CURSOR cur_Subtotal(	;
-	impNeto			double,;
-	impFinal		double,;
-	porIVA21		double,;
-	impIVA21		double,;
-	porIVA105		double,;
-	impIVA105		double,;
-	porDesc1		double,;
-	porDesc2		double,;
-	porDesc3		double,;
-	porDesc4		double,;
-	impDesc1		double,;
-	impDesc2		double,;
-	impDesc3		double,;
-	impDesc4		double,;
-	totaNoGrav		double DEFAULT 0,;
-	totFact			double,;
-	porRec			double,;
-	impRec			double,;
-	porIIBB			double,;
-	impIIBB			double)
-	
-&& Agrego este cursor para llevar la cantidad de stock por partida
-CREATE CURSOR cur_DetPart (	;
-	idArticulo		int,;
-	nroPart			varchar(30),;
-	cantidad		double)
-	
-&& El siguiente cursor es para mostrar los stocks insuficiente
-CREATE CURSOR cur_StkInsu (	;
-	idArticulo		int,;
-	codArt			varchar(20),;
-	descripcio		varchar(60),;
-	stock_disp		double,;
-	cantFC			double)
-	
-&& Este cursor va a contener los pedidos pendientes de facturar para cuando
-&& se quiera levantar los mismos a partir de una factura.
-CREATE CURSOR cur_Cbtes (	;
-	sel			L,;
-	idVentasC	int,;
-	fecEmision	D NULL,;
-	numCbte		varchar(20),;
-	idCliente	int,;
-	razSoc		varchar(60) NULL,;
-	totFact		double,;
-	idTipoDoc	int NULL,;
-	nroDoc	varchar(20) NULL) 
-
-SELECT cur_Cbtes
-INDEX ON idVentasC TAG idVentasC ASCENDING
-INDEX ON fecEmision TAG fecEmision ASCENDING ADDITIVE
-INDEX ON numCbte TAG numCbte ASCENDING ADDITIVE
-INDEX ON idCliente TAG idCliente ASCENDING ADDITIVE
-INDEX ON razSoc TAG razSoc ASCENDING ADDITIVE
-INDEX ON totFact TAG totFact ASCENDING ADDITIVE
-
-SET ORDER TO TAG fecEmision ASCENDING
-
-&& Agrego el cursor que voy a administrar los faltantes
-CREATE CURSOR cur_faltantes (	;
-	idArticulo	int,;
-	idCliente	int,;
-	codArt		varchar(20),;
-	uniDesp		double,;
-	cantidad	double)
-	
-&& El siguiente cursor que agrego es para dar de baja los faltantes
-CREATE CURSOR cur_BajaFalt ( ;
-	idFaltante int)
-	
-&& El siguiente cursor que agrego permite seleccionar los idVentas que
-&& fueron generados
-
-CREATE CURSOR cur_faccob ( ;
-	idVentaC int NOT NULL)
-		
-&& Si usa impresora fiscal, agrego estas líneas para que el formulario
-&& tenga soporte a los eventos del control OCX que se inserto para el
-&& manejo de impresoras fiscales
-IF ALLTRIM(GetConfig("USA_FISCAL")) == "S" THEN
-	SYS(2333, 0)
-	_VFP.AutoYield = .F.
-	
-	RETURN
-ENDIF
-
-
-ENDPROC
-PROCEDURE Init
-LOCAL lnResp
-
-DODEFAULT()
-
-Thisform.mov_stock.circuito = "V"
-Thisform.mov_stock.crear_cursor()
-
-IF ALLTRIM(Thisform.cbte) == "PTO" THEN
-	Thisform.mov_stock.tipomov = "SAL"
-	Thisform.Contenido.btnAgregarCliente.Visible = .F.
-ELSE 
-	IF ALLTRIM(Thisform.cbte) == "NC" THEN
-		Thisform.Contenido.btnCbteOrigen.Visible = .T.
-		Thisform.contenido.txtdesc1.Enabled = .F.
-	    Thisform.contenido.txtdesc2.Enabled = .F.
-		Thisform.contenido.txtdesc3.Enabled = .F.
-		Thisform.contenido.txtdesc4.Enabled = .F.
-		Thisform.mov_stock.tipomov = "ENT"
-	ELSE
-		IF ALLTRIM(Thisform.cbte) == "FC" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN
-			Thisform.Contenido.btnCbteOrigen.Visible = .T.
-			Thisform.Contenido.btnCbteOrigen.Caption = "Leer Pedido"
-			Thisform.mov_stock.tipomov = "SAL"
-		ELSE
-			IF ALLTRIM(Thisform.cbte) == "PED" THEN
-				Thisform.Contenido.btnCbteOrigen.Visible = .T.
-				Thisform.Contenido.btnCbteOrigen.Caption = "Bajar Pedido"
-			ELSE
-				Thisform.Contenido.btnCbteOrigen.Visible = .F.
-			ENDIF
-		ENDIF
-	ENDIF
-ENDIF
-
-Thisform.saldo_fc = 0.00
-Thisform.idorigen = 0
-
-IF getGlobalCFG("STK_MODULE") THEN
-	Thisform.Contenido.lblExistencia.Visible = .T.
-	Thisform.Contenido.txtExistencia.Visible = .T.
-ELSE
-	Thisform.Contenido.lblExistencia.Visible = .F.
-	Thisform.Contenido.txtExistencia.Visible = .F.
-ENDIF
-
-SELECT cur_Deta_View
-thisform.contenido.grdDetalles.RecordSource = "cur_Deta_View"
-thisform.contenido.grdDetalles.alias_name = "cur_Deta_View"
-thisform.contenido.grdDetalles.list_controlsource = "codArt,descripcio,cantidad,prVta,pDtoVta1,pDtoVta2,pDtoVta3,pDtoVta4,totNeto,alicIVA,impIVA,subtNoGrav,subTotal"
-thisform.contenido.grdDetalles.lista_ancho_cols = "120,200,60,70,50,50,50,50,50,50,50,58,58"
-thisform.contenido.grdDetalles.titulos_cabeceras = "Código,Descripción,Cantidad,Pr. Vta.,Desc.1,Desc.2,Desc.3,Desc.4,Neto,I.V.A.,Imp.IVA,No. Grav.,Total"
-thisform.contenido.grdDetalles.generar_grid()
-thisform.contenido.grdDetalles.Columns[3].ReadOnly = .F.
-
-&& Seteo los inputmask de las columnas numericas que van desde la 4 hasta las 13
-thisform.contenido.grdDetalles.Columns[4].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[5].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[6].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[7].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[8].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[9].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[10].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[11].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[12].inputMask = "999999999.99"
-thisform.contenido.grdDetalles.Columns[13].inputMask = "999999999.99"
-
-thisform.pedido_automatica = .F.
-thisform.contenido.txtFecEmis.Value = DATE()
-IF ALLTRIM(Thisform.cbte) == "PED" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN
-	Thisform.Contenido.txtFecEmis.Enabled = .F.
-ENDIF
-Thisform.contenido.txtCantidad.Value = getGlobalCFG("FACITMCANT")
-Thisform.contenido.txtPrUnitFinal.Value = 0
-IF getGlobalCFG("CBTEACTPRE") THEN
-	Thisform.contenido.lblPrecioUnitFinal.Visible = .t.
-	Thisform.contenido.txtPrUnitFinal.Visible = .t.
-ELSE
-	Thisform.contenido.lblPrecioUnitFinal.Visible = .f.
-	Thisform.contenido.txtPrUnitFinal.Visible = .f.
-ENDIF
-
-IF ALLTRIM(Thisform.cbte) == "PED" THEN
-	Thisform.contenido.chkImprimirCbte.Visible = .f.
-EndIf
-
-* Levanto la configuración para habilitar / deshabilitar descuentos
-Thisform.contenido.txtDesc1.Enabled = GetGlobalCFG("FCDESC1")
-Thisform.contenido.txtDesc2.Enabled = GetGlobalCFG("FCDESC2")
-Thisform.contenido.txtDesc3.Enabled = GetGlobalCFG("FCDESC3")
-Thisform.contenido.txtDesc4.Enabled = GetGlobalCFG("FCDESC4")
-
-* Si es modo mostrador deshabilito la cantidad
-IF getGlobalCFG("MODOMOST") THEN
-	Thisform.contenido.cboUnidVta.Enabled = .F.
-	Thisform.contenido.txtCantidad.Enabled = .F.
-	Thisform.contenido.btnAgregar.Enabled = .F.
-ENDIF
-ENDPROC
 
 
 ************************************************************
@@ -33480,6 +24305,46 @@ Thisform.calc_item_desc()
 
 
 ENDPROC
+PROCEDURE txtCodigo.KeyPress
+**********************************************************************
+* El código de barra ya tiene el Enter incorporado, en ese caso
+* Recupero los datos del artículo y lo agrego a la grilla.
+**********************************************************************
+
+LPARAMETERS nKeyCode, nShiftAltCtrl
+
+IF getGlobalCFG("MODOMOST") THEN
+	IF nKeyCode = 13 THEN
+		This.LostFocus()
+		This.Parent.recuperar_datos()
+		Thisform.calc_item_desc()
+		Thisform.contenido.btnAgregar.Click()
+		Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+	ENDIF
+ELSE
+	DODEFAULT(nKeyCode, nShiftAltCtrl)
+ENDIF
+ENDPROC
+PROCEDURE txtCodigo.InteractiveChange
+***********************************************************************
+* Agrego la carga para MODOMOST.
+* Si MODOMOST está en true, entonces la carga es 10*[Código de barra]
+***********************************************************************
+
+IF getGlobalCFG("MODOMOST") THEN
+	IF ATC("*", This.Value) <> 0 THEN
+		IF VAL(This.Value) > 500 THEN
+			MESSAGEBOX("La cantidad no puede superar las 500 unidades", 0+64, Thisform.Caption)
+			This.Value = ""
+			RETURN
+		ENDIF
+	
+		Thisform.contenido.txtCantidad.Value = VAL(This.Value)
+		Thisform.contenido.sel_Articulo.blanquear()
+		This.SetFocus()
+	ENDIF
+ENDIF
+ENDPROC
 PROCEDURE txtCodigo.LostFocus
 LOCAL lcCodArt
 LOCAL loResult, lcSql
@@ -33556,46 +24421,6 @@ ENDIF
 
 RETURN .T.
 ENDPROC
-PROCEDURE txtCodigo.InteractiveChange
-***********************************************************************
-* Agrego la carga para MODOMOST.
-* Si MODOMOST está en true, entonces la carga es 10*[Código de barra]
-***********************************************************************
-
-IF getGlobalCFG("MODOMOST") THEN
-	IF ATC("*", This.Value) <> 0 THEN
-		IF VAL(This.Value) > 500 THEN
-			MESSAGEBOX("La cantidad no puede superar las 500 unidades", 0+64, Thisform.Caption)
-			This.Value = ""
-			RETURN
-		ENDIF
-	
-		Thisform.contenido.txtCantidad.Value = VAL(This.Value)
-		Thisform.contenido.sel_Articulo.blanquear()
-		This.SetFocus()
-	ENDIF
-ENDIF
-ENDPROC
-PROCEDURE txtCodigo.KeyPress
-**********************************************************************
-* El código de barra ya tiene el Enter incorporado, en ese caso
-* Recupero los datos del artículo y lo agrego a la grilla.
-**********************************************************************
-
-LPARAMETERS nKeyCode, nShiftAltCtrl
-
-IF getGlobalCFG("MODOMOST") THEN
-	IF nKeyCode = 13 THEN
-		This.LostFocus()
-		This.Parent.recuperar_datos()
-		Thisform.calc_item_desc()
-		Thisform.contenido.btnAgregar.Click()
-		Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
-	ENDIF
-ELSE
-	DODEFAULT(nKeyCode, nShiftAltCtrl)
-ENDIF
-ENDPROC
 
 
 ************************************************************
@@ -33627,28 +24452,6 @@ isnumeric = .T.
 Name = "txtCantidad"
 
 *** METODOS ***
-PROCEDURE GotFocus
-************************************************************
-* Si es MODOMOST, al recibir el foco lo vuelvo a artículos.
-************************************************************
-
-IF getGlobalCFG("MODOMOST") THEN
-	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
-ENDIF
-ENDPROC
-PROCEDURE LostFocus
-DODEFAULT()
-Thisform.calc_item_desc()
-
-IF RIGHT(ALLTRIM(This.Parent.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
-	Thisform.contenido.txtPrMinorista.SetFocus()
-ENDIF
-ENDPROC
-PROCEDURE KeyPress
-LPARAMETERS nKeyCode, nShiftAltCtrl
-
-
-ENDPROC
 PROCEDURE Valid
 LOCAL lnUnidVta
 
@@ -33666,6 +24469,28 @@ IF lnUnidVta <> 0 THEN
 ENDIF
 
 RETURN .T.
+ENDPROC
+PROCEDURE KeyPress
+LPARAMETERS nKeyCode, nShiftAltCtrl
+
+
+ENDPROC
+PROCEDURE LostFocus
+DODEFAULT()
+Thisform.calc_item_desc()
+
+IF RIGHT(ALLTRIM(This.Parent.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
+	Thisform.contenido.txtPrMinorista.SetFocus()
+ENDIF
+ENDPROC
+PROCEDURE GotFocus
+************************************************************
+* Si es MODOMOST, al recibir el foco lo vuelvo a artículos.
+************************************************************
+
+IF getGlobalCFG("MODOMOST") THEN
+	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+ENDIF
 ENDPROC
 
 
@@ -34057,17 +24882,6 @@ isnumeric = .T.
 Name = "txtPrMinorista"
 
 *** METODOS ***
-PROCEDURE KeyPress
-***************************************************************
-* Identifica si se cambia el precio para artículos X
-***************************************************************
-
-LPARAMETERS nKeyCode, nShiftAltCtrl
-
-IF nKeyCode <> 9 .AND. nKeyCode <> 13 THEN
-	Thisform.prartic_x_esta_modificado = .t.
-ENDIF
-ENDPROC
 PROCEDURE LostFocus
 LOCAL lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
 LOCAL lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4
@@ -34120,6 +24934,17 @@ IF RIGHT(ALLTRIM(This.Parent.sel_Articulo.txtCodigo.Value), 3) == "ARX" THEN
 	thisform.contenido.btnAgregar.SetFocus()
 ENDIF
 ENDPROC
+PROCEDURE KeyPress
+***************************************************************
+* Identifica si se cambia el precio para artículos X
+***************************************************************
+
+LPARAMETERS nKeyCode, nShiftAltCtrl
+
+IF nKeyCode <> 9 .AND. nKeyCode <> 13 THEN
+	Thisform.prartic_x_esta_modificado = .t.
+ENDIF
+ENDPROC
 
 
 ************************************************************
@@ -34166,11 +24991,6 @@ TabIndex = 10
 Name = "btnEliminar"
 
 *** METODOS ***
-PROCEDURE GotFocus
-IF getGlobalCFG("MODOMOST") THEN
-	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
-ENDIF
-ENDPROC
 PROCEDURE Click
 LOCAL lnResp
 
@@ -34199,6 +25019,11 @@ IF lnResp = 6 THEN
 	Thisform.recalcular_renglones()
 ENDIF
 
+ENDPROC
+PROCEDURE GotFocus
+IF getGlobalCFG("MODOMOST") THEN
+	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+ENDIF
 ENDPROC
 
 
@@ -35100,6 +25925,12 @@ isnumeric = .T.
 Name = "txtPorRec"
 
 *** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+thisform.recalcular_todo()
+
+Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+ENDPROC
 PROCEDURE Valid
 IF this.Value < 0 THEN
 	MESSAGEBOX("Solo se puede cargar recargos no descuentos", 0+48, Thisform.Caption)
@@ -35107,12 +25938,6 @@ IF this.Value < 0 THEN
 ENDIF
 
 RETURN .T.
-ENDPROC
-PROCEDURE LostFocus
-DODEFAULT()
-thisform.recalcular_todo()
-
-Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
 ENDPROC
 
 
@@ -35245,15 +26070,6 @@ Width = 59
 Name = "cboUnidVta"
 
 *** METODOS ***
-PROCEDURE InteractiveChange
-LOCAL lnUnidVta
-
-lnUnidVta = 0.00
-
-lnUnidVta = VAL(this.Parent.cboUnidVta.Value)
-
-this.Parent.txtCantidad.Value = ROUND(lnUnidVta * this.Parent.txtCantPack.Value, 2)
-ENDPROC
 PROCEDURE GotFocus
 ************************************************************
 * Si es MODOMOST, al recibir el foco lo vuelvo a artículos.
@@ -35262,6 +26078,15 @@ PROCEDURE GotFocus
 IF getGlobalCFG("MODOMOST") THEN
 	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
 ENDIF
+ENDPROC
+PROCEDURE InteractiveChange
+LOCAL lnUnidVta
+
+lnUnidVta = 0.00
+
+lnUnidVta = VAL(this.Parent.cboUnidVta.Value)
+
+this.Parent.txtCantidad.Value = ROUND(lnUnidVta * this.Parent.txtCantPack.Value, 2)
 ENDPROC
 
 
@@ -35456,14 +26281,12 @@ isnumeric = .T.
 Name = "txtPrUnitFinal"
 
 *** METODOS ***
-PROCEDURE GotFocus
-DODEFAULT()
-Thisform.prFinalAnt = 0.00
-Thisform.prFinalAnt = This.Value
-ENDPROC
-PROCEDURE KeyPress
-LPARAMETERS nKeyCode, nShiftAltCtrl
-
+PROCEDURE Valid
+IF this.Value = 0 then
+	MESSAGEBOX("El valor no puede ser cero", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+RETURN .T.
 
 ENDPROC
 PROCEDURE calcular
@@ -35502,13 +26325,15 @@ IF !(RIGHT(ALLTRIM(This.Parent.sel_Articulo.txtCodigo.Value), 3) == "ARX") THEN
 	ENDIF
 ENDIF
 ENDPROC
-PROCEDURE Valid
-IF this.Value = 0 then
-	MESSAGEBOX("El valor no puede ser cero", 0+48, Thisform.Caption)
-	RETURN .F.
-ENDIF
-RETURN .T.
+PROCEDURE KeyPress
+LPARAMETERS nKeyCode, nShiftAltCtrl
 
+
+ENDPROC
+PROCEDURE GotFocus
+DODEFAULT()
+Thisform.prFinalAnt = 0.00
+Thisform.prFinalAnt = This.Value
 ENDPROC
 
 
@@ -35542,6 +26367,11 @@ ToolTipText = "Dar de alta un cliente nuevo"
 Name = "btnAgregarCliente"
 
 *** METODOS ***
+PROCEDURE GotFocus
+IF getGlobalCFG("MODOMOST") THEN
+	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
+ENDIF
+ENDPROC
 PROCEDURE Click
 LOCAL loForm
 
@@ -35559,11 +26389,6 @@ ENDIF
 
 loForm.Release()
 
-ENDPROC
-PROCEDURE GotFocus
-IF getGlobalCFG("MODOMOST") THEN
-	Thisform.contenido.sel_Articulo.txtCodigo.SetFocus()
-ENDIF
 ENDPROC
 
 
@@ -35644,89 +26469,1634 @@ Arial, 1, 9, 6, 15, 12, 32, 3, 0
 
 
 ************************************************************
-OBJETO: clsform_consbjacbte_sf
+OBJETO: cls_form_wsafip_autoriza
 ************************************************************
 *** PROPIEDADES ***
 BorderStyle = 2
-Height = 500
-Width = 1020
+Height = 571
+Width = 946
 DoCreate = .T.
-Caption = "Consulta y Baja de Comprobantes"
-list_cbtes = 
-consulta = .T.
-tipo_consulta = 
-Name = "clsform_consbjacbte_sf"
-CONTENIDO.Top = 0
-CONTENIDO.Left = 0
-CONTENIDO.Width = 1021
-CONTENIDO.Height = 505
-CONTENIDO.Name = "CONTENIDO"
+Caption = "Autorización diferida de comprobantes"
+aut_cae = 
+aut_cae_vto = 
+aut_motivo = 
+aut_numero = 
+aut_resultado = 
+cbte = 
+ptovta = 
+nrocbte = 
+saldodeudor = 0.00
+cbte_por_cpto = .F.
+idventasc = 0
+rto_numero = 0
+rto_printer = 
+rto_cantcpias = 0
+qr_image = 
+mailfc = 
+saldodeudor_c2 = 0.00
+oticket = 
+codigo_cbte = 
+Name = "cls_form_wsafip_autoriza"
+contenido.TabIndex = 1
+contenido.Name = "contenido"
 
 *** METODOS ***
-PROCEDURE cargar_combos
-&& Cargo los combobox de cbte y tipo de acuerdo a los comprobante seteados en la propiedad list_cbtes
+PROCEDURE calc_digito_verificador
+&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
 
-LOCAL lc_cbtes, ln, lc_cantcbtes, ln_cargoAB
-DIMENSION la_vector[10]
+PARAMETERS tcCodigo
 
-lc_cbtes = thisform.list_cbtes
-lc_cantcbtes = ALINES(la_vector,lc_cbtes,5,",")
-ln_cargoAB = 0
+LOCAL lnDigito
+LOCAL lnSumaE1
+LOCAL lnSumaE3
+LOCAL lnProductoE2
+LOCAL lnSumaE4
+LOCAL lnMin
+LOCAL lnPos
 
-Thisform.contenido.cmbTipo.AddItem("Todos")
+lnDigito = 0
+lnSumaE1 = 0
+lnSumaE3 = 0
+lnSumaE4 = 0
+lnMin = 0
 
-FOR ln=1 TO lc_cantcbtes 
-	IF ln == 1 THEN 
-		IF lc_cantcbtes > 1
-			Thisform.contenido.cmbCbte.AddItem("Todos")
-		ENDIF 
-	ENDIF 
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
 	
-	Thisform.contenido.cmbCbte.AddItem(STRTRAN(la_vector(ln),"'",""))
-	
-	IF STRTRAN(la_vector(ln),"'","") == "FC" OR STRTRAN(la_vector(ln),"'","") == "NC" OR STRTRAN(la_vector(ln),"'","") == "ND"
-		IF ln_cargoAB = 0 THEN 
-			Thisform.contenido.cmbTipo.AddItem("A")
-			Thisform.contenido.cmbTipo.AddItem("B")
-			ln_cargoAB = 1
-		ENDIF 
-	ELSE 
-		IF STRTRAN(la_vector(ln),"'","") == "PED"
-			Thisform.contenido.cmbTipo.AddItem("P")
-		ENDIF 
-	ENDIF 
-ENDFOR 
+	IF MOD(i, 2) <> 0 THEN
+		&& Etapa 1 (posiciones impares)
+		lnSumaE1 = lnSumaE1 + lnDigito
+	ELSE
+		&& Etapa 3 (posiciones pares)
+		lnSumaE3 = lnSumaE3 + lnDigito
+	ENDIF
+NEXT i
 
-IF INT(VAL(getConfig("SQLSRV"))) = 2 THEN
-	THisform.contenido.cmbTipo.AddItem("X")
+lnProductoE2 = lnSumaE1 * 3 && Etapa 2
+lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
+
+&& Etapa 5
+lnPos = 0
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
+		IF lnPos = 0 THEN
+			lnMin = lnDigito
+		ELSE
+			IF lnDigito < lnMin THEN
+				lnMin = lnDigito
+			ENDIF
+		ENDIF
+		
+		lnPos = lnPos + 1
+	ENDIF
+NEXT i
+
+RETURN lnMin
+ENDPROC
+PROCEDURE fe_convertir_tipodoc
+PARAMETERS tcTipoDoc
+LOCAL lnResultado
+
+lnResultado = 99 && Código que corresponde a sin identificación en el diccionario
+
+DO CASE
+	CASE ALLTRIM(tcTipoDoc) == "CUIT"
+		lnResultado = 80
+	CASE ALLTRIM(tcTipoDoc) == "CUIL"
+		lnResultado = 86
+	CASE ALLTRIM(tcTipoDoc) == "CI"
+		lnResultado = 87
+	CASE ALLTRIM(tcTipoDoc) == "LE"
+		lnResultado = 89
+	CASE ALLTRIM(tcTipoDoc) == "LC"
+		lnResultado = 90
+	CASE ALLTRIM(tcTipoDoc) == "CIE"
+		lnResultado = 91
+	CASE ALLTRIM(tcTipoDoc) == "PAS"
+		lnResultado = 94
+	CASE ALLTRIM(tcTipoDoc) == "DNI"
+		lnResultado = 96
+ENDCASE
+
+RETURN lnResultado
+ENDPROC
+PROCEDURE fe_get_tipocbte_afip
+PARAMETERS tc_letra
+
+DO CASE
+	CASE ALLTRIM(thisform.cbte) == "FC"
+		DO CASE
+			CASE ALLTRIM(tc_letra) == "A"
+				RETURN 1
+			CASE ALLTRIM(tc_letra) == "B"
+				RETURN 6
+			CASE ALLTRIM(tc_letra) == "C" 
+				RETURN 11
+		ENDCASE
+	CASE ALLTRIM(thisform.cbte) == "ND"
+		DO CASE
+			CASE ALLTRIM(tc_letra) == "A"
+				RETURN 2
+			CASE ALLTRIM(tc_letra) == "B"
+				RETURN 7
+			CASE ALLTRIM(tc_letra) == "C"
+				RETURN 12
+		ENDCASE
+	CASE ALLTRIM(thisform.cbte) == "NC"
+		DO CASE
+			CASE ALLTRIM(tc_letra) == "A"
+				RETURN 3
+			CASE ALLTRIM(tc_letra) == "B"
+				RETURN 8
+			CASE ALLTRIM(tc_letra) == "C"
+				RETURN 13
+		ENDCASE	
+ENDCASE
+
+RETURN -1
+ENDPROC
+PROCEDURE fe_set_cae
+LOCAL loCommand, lcSql
+LOCAL loDT, ldFecVto
+LOCAL lcAnio, lcMes, lcDia
+
+loDT = CREATEOBJECT("datetime")
+loCommand = CREATEOBJECT("odbc_command")
+lcSql = ""
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+lcSql = "UPDATE ventascab "
+lcSql = lcSql + "SET "
+lcSql = lcSql + "	fecEmision = CAST(" + loDT.getDateTime() + " AS DATE), "
+
+* Verifico si es pago al contado para que incluya la fecha de vencimiento
+* igual a la fecha de emisión debido a los errores de iva digital que están
+* surgiendo en el autoservicio.
+IF cur_CbtePendi.cntDias = 0 THEN
+	lcSql = lcSql + "fecVto = CAST(" + loDT.getDateTime() + " AS DATE), "
 ENDIF
 
-Thisform.contenido.cmbCbte.ListIndex = 1
-Thisform.contenido.cmbTipo.ListIndex = 1
+lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
+lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
+lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
+lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
+lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
+lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
+lcSql = lcsql + "	aut_tipoCbte = '" + ALLTRIM(Thisform.codigo_cbte) + "', "
+lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+
+goConn.BeginTransaction()
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "UPDATE cc_cli SET nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
+lcSql = lcSql + "	fecEmis = CAST(" + loDT.getDateTime() + " AS DATE) "
+
+IF cur_CbtePendi.cntDias = 0 THEN
+	lcSql = lcSql + ", fecVto = CAST(" + loDT.getDateTime() + " AS DATE) "
+ENDIF
+
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+goConn.Commit()
+
+Thisform.imprimir()
+
+RETURN .T.
+ENDPROC
+PROCEDURE imprimir
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4, m.porRec
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.porIIBB, m.impIIBB, m.observ, m.vendedor
+LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
+LOCAL m.condPago
+LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
+LOCAL m.cae, m.caevto, lcDia, lcMes, lcAnio
+LOCAL m.codigoCbte, m.barcode, m.code
+LOCAL m.saldoDeudor, m.saldodeudor_total
+LOCAL loRsCab, loRsDet, lcSql
+LOCAL lnIdNum, lnResp, m.NroRto, m.nroOC
+LOCAL lcFileName
+LOCAL lcNomEmp, lcRepName, lcRepNameCP
+LOCAL m.qr, m.motivo, m.totanograv, llUsaTicket
+
+lcNomEmp = getconfig("NOMEMP")
+loRsCab = CREATEOBJECT("odbc_result")
+loRsDet = CREATEOBJECT("odbc_result")
+loNumerador = CREATEOBJECT("odbc_result")
+lcSql = ""
+lnIdNum = 0
+lcRepName = ""
+lcRepNameCP = ""
+lcFileName = ""
+m.qr = thisform.qr_image
+
+* Recupero la cabecera del comprobante a autorizar que se encuentra
+* seleccionado.
+TEXT TO lcSql NOSHOW
+	SELECT ventascab.*,
+	tipodoc.TipoDoc,
+	clientes.telefono,
+	clientes.direccion,
+	clientes.envCbte,
+	clientes.mailFC,
+	clientes.printCbte,
+	localidad.codPostal,
+	localidad.descripcio AS descLoc,
+	provincias.descripcio AS descPcia,
+	sitiva.descripcio AS descSIVA,
+	condpagos.cntDias,
+	vendedores.nombre,
+	ventascab.idCondPago
+	FROM ventascab 
+		INNER JOIN clientes ON clientes.idCliente = ventascab.idCliente
+		INNER JOIN tipodoc ON tipodoc.idTipoDoc = clientes.idTipoDoc
+		INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid
+		INNER JOIN provincias ON provincias.idProvin = localidad.idProvin
+		INNER JOIN sitiva ON sitiva.idSitIVA = clientes.idSitIVA
+		INNER JOIN condpagos ON condpagos.idCondPago = clientes.idCondPago
+		INNER JOIN vendedores ON vendedores.idVendedor = ventascab.idVendedor
+	WHERE idVentasC = ?idVentaCab
+ENDTEXT
+lcSql = loRsCab.AddParameter(lcSql, "idVentaCab", ALLTRIM(STR(cur_CbtePendi.idVentasC)), .F., .F.)
+loRsCab.ActiveConnection = goConn.ActiveConnection
+loRsCab.Cursor_Name = "cur_cabecera"
+
+IF !loRsCab.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRsCab.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+&& Calculo los saldos para imprimir. Solo lo calculo si la condición de pago
+&& no es contado
+SELECT cur_cabecera
+GO TOP
+
+IF cur_cabecera.idCondPago <> 1 THEN
+	thisform.calcular_saldo_deudor_c1()
+	thisform.calcular_saldo_deudor_c2()
+ELSE
+	thisform.saldodeudor = 0.00
+	thisform.saldodeudor_c2 = 0.00
+ENDIF
+
+m.NroCli = cur_cabecera.idCliente
+m.RazSoc = ALLTRIM(cur_cabecera.razSoc)
+m.Telefono = ALLTRIM(cur_cabecera.telefono)
+m.direccion = ALLTRIM(cur_cabecera.direccion)
+m.localidad = ALLTRIM(cur_cabecera.descLoc)
+m.codPostal = ALLTRIM(cur_cabecera.codPostal)
+m.pcia = ALLTRIM(cur_cabecera.descPcia)
+m.nroCUIT = ALLTRIM(cur_cabecera.nroDoc)
+m.TipoIVA = ALLTRIM(cur_cabecera.descSIVA)
+m.totanograv = 0.00
+m.Total = 0.00
+m.ptoVta = ""
+m.NroCbte = ""
+m.leyenda = ""
+m.Fecha = DATETIME()
+m.porIVA105 = 0.00
+m.porIVA21 = 0.00
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.fecVto = DATE() + cur_cabecera.cntDias
+m.tipoDoc = cur_cabecera.tipoDoc
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+lnCantCpia = 0
+m.observ = ""
+m.vendedor = cur_cabecera.usualta
+m.cae = thisform.aut_cae
+m.codigoCbte = Thisform.codigo_cbte
+m.barcode = ""
+m.saldoDeudor = Thisform.saldodeudor
+m.code = "" 
+m.NroRto = ""
+m.nroOC = ALLTRIM(STR(cur_cabecera.nroOC))
+m.condPago = IIF(cur_cabecera.cntDias = 0, "CONTADO", "CUENTAS CORRIENTES")
+Thisform.mailfc = ALLTRIM(IIF(ISNULL(cur_cabecera.mailFC), "", cur_cabecera.mailFC))
+
+m.saldodeudor_total = thisform.saldodeudor + thisform.saldodeudor_c2
+
+IF !Thisform.cbte_por_cpto THEN
+	&& Entra por acá si el comprobante es por detalle
+	
+	lcSql = "SELECT	"
+	IF ALLTRIM(thisform.cbte) == "NC" THEN 
+		lcSql = lcSql + "ventasdet.cantidad AS cantNC, "
+	ELSE 
+		lcSql = lcSql + "ventasdet.cantidad, "
+	ENDIF 
+	
+	lcSql = lcSql + "articulos.codArt, "
+	lcSql = lcSql + "ventasdet.descripcio, "
+	lcSql = lcSql + "ventasdet.cantidad, "
+	lcSql = lcSql + "ventasdet.prArtic, "
+	lcSql = lcSql + "ventasdet.alicIVA, "
+	lcSql = lcSql + "ventasdet.pDtoVta1, "
+	lcSql = lcSql + "ventasdet.pDtoVta2, "
+	lcSql = lcSql + "ventasdet.pDtoVta3, "
+	lcSql = lcSql + "ventasdet.pDtoVta4, "
+	lcSql = lcSql + "ventasdet.subTotal, "
+	lcSql = lcSql + "ventasdet.impNeto, "
+	lcSql = lcSql + "ventasdet.totNeto "
+	lcSql = lcSql + "FROM ventasdet "
+	lcSql = lcSql + "	INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo "
+	lcSql = lcSql + "WHERE ventasdet.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+
+	loRsDet.ActiveConnection = goConn.ActiveConnection
+	loRsDet.Cursor_Name = "cur_aux"
+
+	IF !loRsDet.OpenQuery(lcSql) THEN
+		MESSAGEBOX(loRsDet.Error_Message, 0+48, Thisform.Caption)
+		RETURN
+	ENDIF
+	
+	&& Thisform.calc_saldo_deudor(cur_cabecera.idCliente)
+ELSE
+	&& Entra por aca si el comprobante es por concepto.
+	lcSql = "SELECT vtadcp.*, "
+	lcSql = lcSql + " planctas.codPlanCta, "
+	lcSql = lcSql + " planctas.descripcio AS descPlan "
+	lcSql = lcSql + "FROM	vtadcp "
+	lcSql = lcSql + "	INNER JOIN planctas ON planctas.idPlanCta = vtadcp.idPlanCta "
+	lcSql = lcSql + "WHERE	idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+	
+	loRsDet.ActiveConnection = goConn.ActiveConnection
+	loRsDet.Cursor_Name = "vtadcp"
+	
+	IF !loRsDet.OpenQuery(lcSql) THEN
+		MESSAGEBOX(loRsDet.Error_Message, 0+48, Thisform.Caption)
+		RETURN
+	ENDIF	
+ENDIF
+
+&& Si es monotributo extraigo la leyenda.
+IF cur_cabecera.idSitIVA = 6 THEN
+	m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
+		+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
+ELSE
+	m.motivo = ""
+ENDIF
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
+m.ptovta = cur_cabecera.ptoVta
+
+&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
+lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+lnIdNum = cur_num.idNum
+lcRepName = IIF(ISNULL(cur_num.repname), "", cur_num.repname)
+lcRepNameCP = IIF(ISNULL(cur_num.repnamecp), "", cur_num.repnamecp)
+loNumerador.close_query()
+
+
+&& Levanto la impresora configurada en el puesto de trabajo actual.
+lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND idNum = " + ALLTRIM(STR(lnIdNum))
+
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_x"
+
+IF !loNumerador.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loNumerador.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_x
+IF RECCOUNT("cur_x") = 0 THEN
+	MESSAGEBOX("La impresora no se encuentra configurada en este puesto de trabajo.", 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+lcPrinterName = ALLTRIM(cur_x.impresora)
+lnCantCpia = cur_x.copias
+llUsaTicket = cur_x.usa_ticket
+
+loNumerador.Close_Query()
+
+m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
+
+IF ALLTRIM(Thisform.cbte) == "COT"
+	m.leyenda = "COTIZACION"
+	m.tipoDoc = "X"
+	m.Total = cur_cabecera.totFact
+ELSE 
+	IF ALLTRIM(Thisform.cbte) == "PTO"
+		m.leyenda = "PRESUPUESTO"
+		m.tipoDoc = "X"
+		m.Total = cur_cabecera.impFinal
+	ELSE
+		IF ALLTRIM(Thisform.cbte) == "PED"
+			m.leyenda = "NOTA DE PEDIDO"
+			m.tipoDoc = "P"
+			m.Total = cur_cabecera.totFact
+		ELSE
+			IF ALLTRIM(Thisform.Cbte) == "FC"
+				m.leyenda = "FACTURA"
+				m.Total = cur_cabecera.totFact
+			ELSE
+				IF ALLTRIM(Thisform.Cbte) == "NC"
+					m.Leyenda = "NOTA DE CREDITO"
+					m.Total = cur_cabecera.totFact
+				ELSE
+					IF ALLTRIM(Thisform.Cbte) == "ND"
+						m.leyenda = "NOTA DE DEBITO"
+						m.Total = cur_cabecera.totFact
+					ENDIF
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+m.porDesc1 = cur_cabecera.porDesc1
+m.porDesc2 = cur_cabecera.porDesc2
+m.porDesc3 = cur_cabecera.porDesc3
+m.porDesc4 = cur_cabecera.porDesc4
+m.impDesc1 = cur_cabecera.impDesc1
+m.impDesc2 = cur_cabecera.impDesc2
+m.impDesc3 = cur_cabecera.impDesc3
+m.impDesc4 = cur_cabecera.impDesc4
+m.porRec = cur_cabecera.porRec
+m.porIVA105 = cur_cabecera.porIVA105
+m.poIVA21 = cur_cabecera.porIVA21
+m.impIVA105 = cur_cabecera.impIVA105
+m.impIVA21 = cur_cabecera.impIVA21
+m.impNeto = cur_cabecera.impFinal
+m.impFinal = cur_cabecera.impFinal
+m.porIIBB = cur_cabecera.porIIBB
+m.impIIBB = cur_cabecera.impIIBB
+m.totanograv = cur_cabecera.totaNoGrav
+m.observ = cur_cabecera.observ
+
+&& Mando a imprimir los remitos
+IF getglobalcfg("PRINT_RTO") THEN
+	IF This.cbte <> "COT" THEN
+		lnResp = MESSAGEBOX("¿Desea emitir remito?", 32+4, Thisform.Caption)
+		IF lnResp = 6 THEN
+			IF Thisform.getprinterrto() THEN
+				m.NroRto = Thisform.rto_numero
+				SET PRINTER TO NAME ALLTRIM(Thisform.rto_printer)
+				SELECT cur_aux
+			
+				FOR i = 1 TO This.rto_cantcpias
+					REPORT FORM "rep_rtos.frx" TO PRINTER NOCONSOLE
+				NEXT i
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+&& Generación del código de barra
+m.barcode = ALLTRIM(cur_cabecera.nroDoc)
+m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
+m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
+m.barcode = m.barcode + ALLTRIM(m.cae)
+m.barcode = m.barcode + ALLTRIM(lcAnio)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
+m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
+m.code = m.barcode
+m.barcode = getcodbarras(m.barcode)
+
+IF cur_cabecera.printCbte THEN
+	
+	FOR i = 1 TO lnCantCpia
+		IF !llUsaTicket THEN
+			***** Paso por acá si la impresión es en A4
+			SET PRINTER TO NAME ALLTRIM(lcPrinterName)
+			
+			* Agrego nueva modalidad de impresión de comprobante por parámetro
+			IF Thisform.cbte_por_cpto THEN
+				* Paso por acá si el comprobante es por concepto
+				SELECT vtadcp
+				REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
+			ELSE
+				* Paso por acá si el comprobante tiene detalle de artículos
+				m.observ = cur_cabecera.observ
+				SELECT cur_aux
+				REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+			ENDIF
+		ELSE
+			****************************************************************************
+			* Envío a imprimir el ticket
+			****************************************************************************
+			SET PRINTER TO NAME ALLTRIM(lcPrinterName)
+			
+			Thisform.oticket = CREATEOBJECT("cls_tickets")
+			Thisform.oticket.crear_cursor()
+			Thisform.oticket.limpiar_datos()
+			Thisform.oticket.codigo_cbte = m.codigoCbte
+			Thisform.oticket.leyenda = m.leyenda
+			Thisform.oticket.letra = m.tipoDoc
+			Thisform.oticket.nro_cbte = m.nroCbte
+			Thisform.oticket.fecha_cbte = m.fecha
+			Thisform.oticket.fecha_vencimiento = m.fecVto
+			Thisform.oticket.numero_cliente = m.NroCli
+			Thisform.oticket.razon_social = m.razSoc
+			Thisform.oticket.direccion = m.direccion
+			Thisform.oticket.codigo_postal = m.codPostal 
+			Thisform.oticket.localidad = m.localidad
+			Thisform.oticket.provincia = m.pcia
+			Thisform.oticket.tipo_iva = m.TipoIVA
+			Thisform.oticket.condicion_pago = m.condPago
+			SELECT cur_aux
+			GO TOP
+			DO WHILE !EOF("cur_aux")
+				Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+						cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+				SELECT cur_aux
+				SKIP
+			ENDDO
+			Thisform.oticket.total_neto = m.impNeto
+			Thisform.oticket.total_imp_iva21 = m.impIVA21
+			Thisform.oticket.total_imp_iva105 = m.impIVA105
+			Thisform.oticket.total_nograv = m.totanograv
+			Thisform.oticket.total = m.Total
+			Thisform.oticket.qr_image = Thisform.qr_image
+			Thisform.oticket.nro_cae = m.cae
+			Thisform.oticket.vto_cae = m.caevto
+			Thisform.oticket.motivo = m.motivo
+			Thisform.oticket.imprimir()						
+		ENDIF
+	NEXT
+ENDIF
+
+IF cur_cabecera.envCbte THEN
+	lcFileName = SYS(5) + SYS(2003) + "\wsafip\ComprobantesPDF\" + this.cbte + "_" + m.NroCbte + ".pdf"
+	
+	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
+		loPDF.SetValue('output', lcFileName)
+		loPDF.SetValue('DisableOptionDialog', 'no') 
+		loPDF.SetValue('ConfirmOverwrite', 'no')
+		loPDF.SetValue('Showsettings', 'never') 
+		loPDF.SetValue('ShowSaveAS', 'nofile') 
+		loPDF.SetValue('ShowPdf', 'no') 
+		loPDF.WriteSettings(.t.)
+	
+	SET CONSOLE OFF
+	SET PRINTER TO NAME("Bullzip PDF Printer")
+	
+	** Agrego nueva modalidad de generar PDF por parámetro.
+	IF !Thisform.cbte_por_cpto THEN
+		SELECT cur_aux
+		REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+	ELSE
+		SELECT vtadcp
+		REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
+	ENDIF	
+	
+	SET PRINTER TO DEFAULT
+	SET CONSOLE ON
+	
+	DO WHILE !FILE(lcFileName)
+		WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
+	ENDDO
+	
+	MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, Thisform.Caption)
+	
+	TEXT TO lcMailMsg NOSHOW
+	Estimado cliente,
+	Le adjuntamos el comprobante electrónico emitido en formato PDF.
+	
+	Desde ya muchas gracias por la compra!!!
+	
+	Saludos cordiales,
+	
+	ENDTEXT
+	lcMailMsg = lcMailMsg + lcNomEmp
+		
+	&& Procedo a hacer el envío de mail
+	DO LOCFILE("FoxyPreviewer.App")
+	WITH _screen.oFoxyPreviewer	
+		.cEmailType = "PDF"
+		.nEmailMode = 2
+		.cEMailTo = thisform.mailfc
+		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
+		.cSMTPServer = getGlobalCFG("EMAILSMTP")
+		.cEmailFrom = getGlobalCFG("EMAILEMP") + "<" + getGlobalCFG("EMAILADDR") + ">"
+		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
+		.nSMTPPort = getGlobalCFG("EMAILPORT")
+		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
+		.cSMTPUserName = getGlobalCFG("EMAILUSR")
+		.cSMTPPassword = getGlobalCFG("EMAILPWD")
+		.lReadReceipt  = .F.
+		.lPriority = .F.
+		.cEmailBody = lcMailMsg
+		.SendEmailUsingCDO(lcFileName)
+	ENDWITH
+	DO FoxyPreviewer.App WITH "Release"
+ENDIF
+
+loRsCab.Close_Query()
+loRsDet.Close_Query()
 
 ENDPROC
+PROCEDURE enviar_wsafipfe
+LOCAL loArcaService, llAutorizado
+
+&& Inicializo el resultado de autorización
+llAutorizado = .F.
+
+&& Se verifica que el id de venta a autorizar sea válido.
+IF EMPTY(cur_CbtePendi.idVentasC) THEN
+	MESSAGEBOX("No se encontró el registro del comprobante a autorizar", 0+16, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loArcaService = CREATEOBJECT("cls_arca_service")
+loArcaService.id_ventasc = cur_CbtePendi.idVentasC
+
+WAIT WINDOW "Autorizando en ARCA y ejecutando procesos pos-autorización... Aguarde." NOWAIT
+llAutorizado = loArcaService.obtener_cae()
+
+IF llAutorizado THEN
+	&& Si se autorizó todo correctamente, entonces, envío a imprimir el comprobante.
+	Thisform.cbte = loArcaService.cbte
+	Thisform.ptovta = loArcaService.ptovta
+	Thisform.nrocbte = loArcaService.nrocbte
+	Thisform.aut_cae = loArcaService.aut_cae
+	Thisform.aut_cae_vto = loArcaService.aut_cae_vto
+	Thisform.aut_motivo = loArcaService.aut_motivo
+	Thisform.aut_numero = loArcaService.aut_numero
+	Thisform.aut_resultado = loArcaService.aut_resultado
+	Thisform.codigo_cbte = loArcaService.aut_tipocbte
+	Thisform.qr_image = loArcaService.aut_qr
+	
+	IF !EMPTY(loArcaService.error_message) THEN
+		MESSAGEBOX("Error de sistema: " + loArcaService.error_message, 0+48, Thisform.Caption)
+	ENDIF
+	
+	MESSAGEBOX("Comprobante aprobado y procesado correctamente." + CHR(13) + CHR(10) ;
+		+ "Resultados: " + CHR(13) + CHR(10) ;
+		+ loArcaService.arca_message, 0+64, Thisform.Caption)
+ELSE
+	MESSAGEBOX("Atención: No se pudo autorizar el comprobante (Intente más tarde)." + CHR(13) + CHR(10) ;
+		+ "MOTIVO: " + loArcaService.arca_message + CHR(13) + CHR(10) ;
+		+ loArcaService.error_message, 0+48, Thisform.Caption)
+ENDIF
+
+loArcaService = NULL
+
+RETURN llAutorizado
+ENDPROC
+PROCEDURE calc_saldo_deudor
+PARAMETERS lnIdCliente
+LOCAL loRes, lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+lcSql = "SELECT		ventascab.idVentasC, "
+lcSql = lcSql + "	ventascab.cbte, "
+lcSql = lcSql + "	ventascab.tipoDoc, "
+lcSql = lcSql + "	ventascab.ptoVta, "
+lcSql = lcSql + "	ventascab.numCbte, "
+lcSql = lcSql + "	ventascab.fecEmision, "
+lcSql = lcSql + "	ventascab.fecVto,  "
+lcSql = lcSql + "	ventascab.saldo "
+lcSql = lcSql + "FROM	ventascab "
+lcSql = lcSql + "WHERE ventascab.idCliente = " + ALLTRIM(STR(lnIdCliente))
+lcSql = lcSql + "	AND ventascab.idVentasC IN ( "
+lcSql = lcSql + "			SELECT	MAX(idVentasC) "
+lcSql = lcSql + "			FROM	cc_cli  "
+lcSql = lcSql + "			WHERE	idCliente = " + ALLTRIM(STR(lnIdCliente)) + " "
+lcSql = lcSql + "			GROUP BY idOper "
+lcSql = lcSql + "			HAVING (SUM(impDebe) - SUM(impHaber)) <> 0) "
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_moro"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+
+thisform.saldodeudor = 0.00
+
+SELECT cur_moro
+IF RECCOUNT("cur_moro") > 0 THEN
+	GO TOP
+ENDIF
+
+DO WHILE !EOF("cur_moro")
+	
+	thisform.saldodeudor = thisform.saldodeudor + cur_moro.saldo
+
+	SELECT cur_moro
+	SKIP
+ENDDO
+
+loRes.Close_Query()
+
+RETURN .T.
+ENDPROC
+PROCEDURE leer_cbtes_pendi
+LOCAL loResult, lcSql
+
+SELECT cur_CbtePendi
+ZAP
+
+*!*	lcSql = "SELECT idVentasC, fecEmision, cbte, tipoDoc, ptoVta, numCbte, totFact, "
+*!*	lcSql = lcSql + "idCliente, razSoc "
+*!*	lcSql = lcSql + "FROM ventascab "
+*!*	lcSql = lcSql + "WHERE (ventascab.aut_cae IS NULL OR ventascab.aut_Resultado = 'R') "
+*!*	lcSql = lcSql + "	AND ventascab.cbte IN ('FC', 'NC', 'ND') "
+*!*	lcSql = lcSql + "	AND ventascab.idHostAlta = '" + ALLTRIM(SYS(0)) + "' "
+*!*	lcSql = lcSql + "	AND ventascab.fecBaja IS NULL "
+*!*	lcSql = lcSql + "ORDER BY fecEmision DESC "
+
+loResult = CREATEOBJECT("odbc_result")
+TEXT TO lcSql NOSHOW
+	SELECT 
+		idVentasC, fecEmision, cbte, tipoDoc, 
+		ptoVta, numCbte, totFact, idCliente, 
+		razSoc, ventascab.idCondPago, cp.cntDias 
+	 FROM ventascab 
+		INNER JOIN condpagos cp ON cp.idCondPago = ventascab.idCondPago
+	 WHERE (ventascab.aut_cae IS NULL OR ventascab.aut_Resultado = 'R')
+	 	AND ventascab.cbte IN ('FC', 'NC', 'ND') 
+	 	AND ventascab.idHostAlta = ?xHost
+	 	AND ventascab.fecBaja IS NULL
+	 ORDER BY ventascab.fecEmision DESC
+ENDTEXT
+lcSql = loResult.AddParameter(lcSql, "xHost", ALLTRIM(SYS(0)), .t., .f.)
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_x"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_x
+DO WHILE !EOF("cur_x")
+	SELECT cur_CbtePendi
+	APPEND BLANK
+	REPLACE cur_CbtePendi.idVentasC WITH cur_x.idVentasC
+	REPLACE cur_CbtePendi.idCondPago WITH cur_x.idCondPago ADDITIVE
+	REPLACE cur_CbtePendi.cntDias WITH cur_x.cntDias ADDITIVE
+	REPLACE cur_CbtePendi.fecEmision WITH cur_x.fecEmision ADDITIVE
+	REPLACE cur_CbtePendi.cbte WITH cur_x.cbte ADDITIVE
+	REPLACE cur_CbtePendi.tipoDoc WITH cur_x.tipoDoc ADDITIVE
+	REPLACE cur_CbtePendi.ptoVta WITH REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_x.ptoVta)))) + ALLTRIM(STR(cur_x.ptoVta)) ADDITIVE
+	REPLACE cur_CbtePendi.numCbte WITH REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_x.numCbte)))) + ALLTRIM(STR(cur_x.numCbte)) ADDITIVE
+	REPLACE cur_CbtePendi.totFact WITH cur_x.totFact ADDITIVE
+	REPLACE cur_CbtePendi.idCliente WITH cur_x.idCliente ADDITIVE
+	REPLACE cur_CbtePendi.razSoc WITH cur_x.razSoc ADDITIVE
+	
+	SELECT cur_x
+	SKIP
+ENDDO
+
+loResult.Close_Query()
+
+SELECT cur_CbtePendi
+GO TOP
+Thisform.Contenido.grdCbtes.Refresh()
+
+ENDPROC
+PROCEDURE ticket_valido
+LOCAL llTkValido
+LOCAL lcTicket
+LOCAL lcFileTicket
+LOCAL lcTK
+LOCAL hndFile
+LOCAL llModoLocal
+
+llTkValido = .F.
+lcTicket = ""
+lcTK = ""
+lcFileTicket = getGlobalCFG("FE_TICKACC")
+llModoLocal = getGlobalCFG("FELOCAL")
+
+IF !llModoLocal THEN
+	** Si el ticket se está transfiriendo al cloud server, entonces,
+	** Descargo el último ticket que está en el server para validar luego
+	** si es válido o no.
+	IF DATE() > FDATE(lcFileTicket) THEN
+		* Si la fecha del archivo no coincide entonces descargo del FTP
+		descargar_ticket_acceso(lcFileTicket)
+	ENDIF
+ENDIF
+
+IF FILE(ALLTRIM(lcFileTicket)) THEN
+	hndFile = FOPEN(lcFileTicket, 12)
+	IF hndFile < 0 THEN
+		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
+		=FCLOSE(hndFile)
+	ELSE
+		=FCLOSE(hndFile)
+		
+		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
+		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
+		
+		IF Thisform.fe.f1TicketEsValido THEN
+			llTkValido = .T.
+		ELSE
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+	
+	IF !llTkValido THEN
+		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
+		** generar con los nuevos datos.
+		DELETE FILE ALLTRIM(lcFileTicket)
+		
+		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+			lcTK = Thisform.fe.f1GuardarTicketAcceso()
+			hndFile = FCREATE(lcFileTicket)
+			
+			IF hndFile < 0 THEN
+				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
+			ELSE
+				=FWRITE(hndFile, lcTK)
+				llTkValido = .T.
+			ENDIF
+			
+			=FCLOSE(hndFile)
+			
+			IF !llModoLocal THEN
+				* Envío el ticket de acceso al FTP
+				enviar_ticket_acceso(lcFileTicket)
+			ENDIF
+		ELSE
+			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+ELSE
+	** Si no existe el archivo entonces lo creo y lo envío al servidor.
+	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+		lcTK = Thisform.fe.f1GuardarTicketAcceso()
+		hndFile = FCREATE(lcFileTicket)
+		
+		IF hndFile < 0 THEN
+			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
+		ELSE
+			=FWRITE(hndFile, lcTK)
+			llTkValido = .T.
+		ENDIF
+		
+		=FCLOSE(hndFile)
+
+		IF !llModoLocal THEN
+			* Envío el ticket de acceso al FTP
+			enviar_ticket_acceso(lcFileTicket)
+		ENDIF
+	ELSE
+		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+		llTkValido = .F.			
+	ENDIF	
+ENDIF
+
+RETURN llTkValido
+ENDPROC
+PROCEDURE corregir_iva
+LOCAL loCommand
+LOCAL loRes
+LOCAL lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+loCommand = CREATEOBJECT("odbc_command")
+lcSql = ""
+
+goConn.BeginTransaction()
+
+&& Paso 1: Corrijo las diferencias de centavos de IVA
+&& en el detalle.
+
+lcSql = "UPDATE ventasdet SET impIVA = (totNeto * (alicIVA / 100)) "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "SELECT idVentasC, "
+lcSql = lcSql + " totNeto, "
+lcSql = lcSql + " alicIVA, "
+lcSql = lcSql + " SUM(totNeto) AS totNeto, "
+lcSql = lcSql + " SUM(totNeto * (alicIVA / 100)) AS impIVA "
+lcSql = lcSql + "FROM	ventasdet "
+lcSql = lcSql + "WHERE	ventasdet.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + " "
+lcSql = lcSql + " 	AND ventasdet.alicIVA = 21 "
+lcSql = lcSql + "GROUP BY idVentasC "
+lcSql = lcSql + "UNION "
+lcSql = lcSql + "	SELECT 	idVentasC, "
+lcSql = lcSql + "			totNeto, "
+lcSql = lcSql + "			alicIVA, "
+lcSql = lcSql + "			SUM(totNeto) AS totNeto, "
+lcSql = lcSql + "			SUM(totNeto * (alicIVA / 100)) AS impIVA "
+lcSql = lcSql + "	FROM ventasdet "
+lcSql = lcSql + "	WHERE ventasdet.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC)) + " "
+lcSql = lcSql + "		AND ventasdet.alicIVA = 10.5 "
+lcSql = lcSql + "	GROUP BY idVentasC "
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_tempo"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	goConn.Rollback()
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_tempo
+GO TOP
+DO WHILE !EOF("cur_tempo")
+	IF cur_tempo.alicIVA = 21 THEN
+		lcSql = "UPDATE ventascab "
+		lcSql = lcSql + "SET ventascab.impIVA21 = " + ALLTRIM(STR(cur_tempo.impIVA, 10, 2)) + " "
+		lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_tempo.idVentasC))
+	ELSE
+		lcSql = "UPDATE ventascab "
+		lcSql = lcSql + "SET ventascab.impIVA105 = " + ALLTRIM(STR(cur_tempo.impIVA, 10, 2)) + " "
+		lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_tempo.idVentasC))	
+	ENDIF
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		goConn.Rollback()
+		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF
+
+	SELECT cur_tempo
+	SKIP
+ENDDO
+
+loRes.Close_Query()
+
+RETURN .T.
+ENDPROC
+PROCEDURE getprinterrto
+LOCAL loRes
+LOCAL loCommand
+LOCAL lcSql
+LOCAL lnPtoVta
+LOCAL lnIdNum
+LOCAL lnNro
+
+loRes = CREATEOBJECT("odbc_result")
+loCommand = CREATEOBJECT("odbc_command")
+lcSql = ""
+lnPtoVta = INT(VAL(getConfig("PTOVTA")))
+lnIdNum = 0
+
+lcSql = "SELECT * FROM numerador "
+lcSql = lcSql + "WHERE cbte = 'RTO' "
+lcSql = lcSql + "	AND ptoVta = " + ALLTRIM(STR(lnPtoVta))
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_num"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+IF RECCOUNT("cur_num") > 0 THEN
+	lnNro = cur_num.numActual + 1
+	Thisform.rto_numero = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) ;
+			+ "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNro)))) + ALLTRIM(STR(lnNro))
+	
+	lnIdNum = cur_num.idNum
+ELSE
+	MESSAGEBOX("El numerador no se encuentra configurado", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+
+lcSql = "SELECT * FROM impresoras "
+lcSql = lcSql + "WHERE hostName = '" + ALLTRIM(SYS(0)) + "' "
+lcSql = lcSql + "	AND impresoras.idNum = " + ALLTRIM(STR(lnIdNum))
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_printer"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_printer
+IF RECCOUNT("cur_printer") > 0 THEN
+	Thisform.rto_printer = ALLTRIM(cur_printer.impresora)
+	Thisform.rto_cantcpias = cur_printer.copias
+ELSE
+	MESSAGEBOX("El remito no tiene impresora configurada", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+
+&& Actualizo el numero de remito
+goConn.BeginTransaction()
+lcSql = "UPDATE numerador "
+lcSql = lcSql + "SET numActual = " + ALLTRIM(STR(lnNro)) + " "
+lcSql = lcSql + "WHERE idNum = " + ALLTRIM(STR(lnIdNum))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+goConn.Commit()
+
+RETURN .T.
+ENDPROC
+PROCEDURE validar_cbte
+LOCAL loRes
+LOCAL lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = "SELECT aut_Resultado "
+lcSql = lcSql + "FROM ventascab "
+lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_x
+IF ALLTRIM(cur_x.aut_Resultado) == "A" THEN
+	loRes.Close_Query()
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+RETURN .T.
+ENDPROC
+PROCEDURE grabar_ctacte
+PARAMETERS tnIdVentasC
+
+LOCAL loCommand
+LOCAL loRes
+LOCAL oDT
+LOCAL lcSql
+LOCAL lnIdCliente, lcCbte, lnNroCbte, lcTipoDoc, lnPtoVta, lnIdCondPago
+LOCAL lnIdSitIVA, lnIdVendedor, ldFecVto, lnTotFact, lnIdOper
+LOCAL lcObserv, lnIdCC_CliOrig
+LOCAL lnIdOper
+
+loCommand = CREATEOBJECT("odbc_command")
+loRes = CREATEOBJECT("odbc_result")
+oDT = CREATEOBJECT("datetime")
+lcSql = ""
+lnIdCliente = 0
+lcCbte = ""
+lnNroCbte = 0
+lcTipoDoc = ""
+lnPtoVta = 0
+lnIdCondPago = 0
+lnIdSitIVA = 0
+lnIdVendedor = 0
+ldFecVto = {}
+lnTotFact = 0.00
+lnIdOper = 0
+lcObserv = ""
+lnIdCC_CliOrig = 0
+lnIdOper = 0
+
+lcSql = "SELECT * "
+lcSql = lcSql + "FROM ventascab "
+lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(tnIdVentasC))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_vtas"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_vtas
+IF RECCOUNT("cur_vtas") > 0 THEN
+	lnIdCliente = cur_vtas.idCliente
+	lcCbte = cur_vtas.cbte
+	lnNroCbte = cur_vtas.numCbte
+	lcTipoDoc = cur_vtas.tipoDoc
+	lnPtoVta = cur_vtas.ptoVta
+	lnIdCondPago = cur_vtas.idCondPago
+	lnIdSitIVA = cur_vtas.idSitIVA
+	lnIdVendedor = cur_vtas.idVendedor
+	ldFecVto = cur_vtas.fecVto
+	lnTotFact = cur_vtas.totFact
+	*lnIdCC_CliOrig = cur_vtas.idCC_CliO
+ENDIF
+
+loRes.Close_Query()
+
+lnProxID = goConn.GetNextId("cc_cli", "idCC_Cli")
+
+DO CASE
+	CASE ALLTRIM(lcCbte) == "FC"
+		lnIdOper = goConn.GetNextID("cc_cli", "idOper")
+		
+		lcSql = "INSERT INTO cc_cli ("
+		lcSql = lcSql + "idCC_Cli, "
+		lcSql = lcSql + "idCliente, "
+		lcSql = lcSql + "idCC_Orig, "
+		lcSql = lcSql + "idVentasC, "
+		lcSql = lcSql + "cbte, "
+		lcSql = lcSql + "tipoDoc, "
+		lcSql = lcSql + "ptoVta, "
+		lcSql = lcSql + "nroCbte, "
+		lcSql = lcSql + "fecEmis, "
+		lcSql = lcSql + "fecVto, "
+		lcSql = lcSql + "idCondPago, "
+		lcSql = lcSql + "idSitIVA, "
+		lcSql = lcSql + "idVendedor, "
+		lcSql = lcSql + "impDebe, "
+		lcSql = lcSql + "impHaber, "
+		lcSql = lcSql + "idOper, "
+		lcSql = lcSql + "observ, "
+		lcSql = lcSql + "usuAlta, "
+		lcSql = lcSql + "fecAlta, "
+		lcSql = lcSql + "idHostAlta) "
+		lcSql = lcSql + "VALUES ("
+		lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
+				ALLTRIM(STR(lnIdCliente)) + ;
+				", null, " + ;
+				ALLTRIM(STR(tnIdVentasC)) + ", " + ;
+				"'" + ALLTRIM(lcCbte) + "', " + ;
+				"'" + ALLTRIM(lcTipoDoc) + "', " + ;
+				ALLTRIM(STR(lnPtoVta)) + ", " + ;
+				ALLTRIM(STR(lnNroCbte)) + ", " + ;
+				oDT.getDateTime() + ", " + ;
+				oDT.toMySql(ldFecVto) + ", " + ; 
+				ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+				ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+				ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+				ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
+				"0, " + ;
+				ALLTRIM(STR(lnIdOper)) + ", " + ;
+				"'" + ALLTRIM(lcObserv) + "', " + ;
+				"'" + ALLTRIM(gcCodUsu) + "', " + ;
+				oDT.getDateTime() + ", '" + ;
+				ALLTRIM(SYS(0)) + "')"
+	CASE ALLTRIM(lcCbte) == "NC"
+		IF lnIdCC_CliOrig = 0 THEN
+			lnIdOper = goConn.GetNextID("cc_cli", "idOper")
+
+			lcSql = "SELECT ventascab.cbte, ventascab.tipoDoc, ventascab.ptoVta, ventascab.numCbte "
+			lcSql = lcSql + "FROM ventascab "
+			lcSql = lcSql + " INNER JOIN ventasrel ON ventasrel.idVtaCO = ventascab.idVentasC "
+			lcSql = lcSql + "WHERE ventasrel.idVtaCD = " + ALLTRIM(STR(tnIdVentasC))
+			loRes.ActiveConnection = goConn.ActiveConnection
+			loRes.Cursor_Name = "cur_x"
+			IF !loRes.OpenQuery(lcSql) THEN
+				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+				RETURN .F.
+			ENDIF
+			lcObserv = "Devolución de " + ALLTRIM(cur_x.cbte) + " " + ;
+				ALLTRIM(cur_x.tipoDoc) + " " + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_x.ptoVta)))) + ALLTRIM(STR(cur_x.ptovta)) + ;
+				"-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_x.numCbte)))) + ALLTRIM(STR(cur_x.numCbte))
+			loRes.Close_Query()
+			
+			lcSql = "INSERT INTO cc_cli ("
+			lcSql = lcSql + "idCC_Cli, "
+			lcSql = lcSql + "idCliente, "
+			lcSql = lcSql + "idCC_Orig, "
+			lcSql = lcSql + "idVentasC, "
+			lcSql = lcSql + "cbte, "
+			lcSql = lcSql + "tipoDoc, "
+			lcSql = lcSql + "ptoVta, "
+			lcSql = lcSql + "nroCbte, "
+			lcSql = lcSql + "fecEmis, "
+			lcSql = lcSql + "fecVto, "
+			lcSql = lcSql + "idCondPago, "
+			lcSql = lcSql + "idSitIVA, "
+			lcSql = lcSql + "idVendedor, "
+			lcSql = lcSql + "impDebe, "
+			lcSql = lcSql + "impHaber, "
+			lcSql = lcSql + "idOper, "
+			lcSql = lcSql + "observ, "
+			lcSql = lcSql + "usuAlta, "
+			lcSql = lcSql + "fecAlta, "
+			lcSql = lcSql + "idHostAlta) "
+			lcSql = lcSql + "VALUES ("
+			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
+					ALLTRIM(STR(lnIdCliente)) + ;
+					", null, " + ;
+					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
+					"'" + ALLTRIM(lcCbte) + "', " + ;
+					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
+					ALLTRIM(STR(lnPtoVta)) + ", " + ;
+					ALLTRIM(STR(lnNroCbte)) + ", " + ;
+					oDT.getDateTime() + ", " + ;
+					oDT.toMySql(ldFecVto) + ", " + ; 
+					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+					"0, " + ;
+					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
+					ALLTRIM(STR(lnIdOper)) + ", " + ;
+					"'" + ALLTRIM(lcObserv) + "', " + ;
+					"'" + ALLTRIM(gcCodUsu) + "', " + ;
+					oDT.getDateTime() + ", '" + ;
+					ALLTRIM(SYS(0)) + "')"
+		ELSE
+			lcSql = "SELECT idOper "
+			lcSql = lcSql + "FROM cc_cli "
+			lcSql = lcSql + "WHERE cc_cli.idCC_Cli = " + ALLTRIM(STR(lnIdCC_CliOrig))
+			loRes.ActiveConnection = goConn.ActiveConnection
+			loRes.Cursor_Name = "cur_x"
+			IF !loRes.OpenQuery(lcSql) THEN
+				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+				RETURN .F.
+			ENDIF
+			SELECT cur_x
+			lnIDOper = cur_x.idOper
+			loRes.Close_Query()
+			
+			lcSql = "INSERT INTO cc_cli ("
+			lcSql = lcSql + "idCC_Cli, "
+			lcSql = lcSql + "idCliente, "
+			lcSql = lcSql + "idCC_Orig, "
+			lcSql = lcSql + "idVentasC, "
+			lcSql = lcSql + "cbte, "
+			lcSql = lcSql + "tipoDoc, "
+			lcSql = lcSql + "ptoVta, "
+			lcSql = lcSql + "nroCbte, "
+			lcSql = lcSql + "fecEmis, "
+			lcSql = lcSql + "fecVto, "
+			lcSql = lcSql + "idCondPago, "
+			lcSql = lcSql + "idSitIVA, "
+			lcSql = lcSql + "idVendedor, "
+			lcSql = lcSql + "impDebe, "
+			lcSql = lcSql + "impHaber, "
+			lcSql = lcSql + "idOper, "
+			lcSql = lcSql + "observ, "
+			lcSql = lcSql + "usuAlta, "
+			lcSql = lcSql + "fecAlta, "
+			lcSql = lcSql + "idHostAlta) "
+			lcSql = lcSql + "VALUES ("
+			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
+					ALLTRIM(STR(lnIdCliente)) + ;
+					", null, " + ;
+					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
+					"'" + ALLTRIM(lcCbte) + "', " + ;
+					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
+					ALLTRIM(STR(lnPtoVta)) + ", " + ;
+					ALLTRIM(STR(lnNroCbte)) + ", " + ;
+					oDT.getDateTime() + ", " + ;
+					oDT.toMySql(ldFecVto) + ", " + ; 
+					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+					"0, " + ;
+					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
+					ALLTRIM(STR(lnIdOper)) + ", " + ;
+					"'" + ALLTRIM(lcObserv) + "', " + ;
+					"'" + ALLTRIM(gcCodUsu) + "', " + ;
+					oDT.getDateTime() + ", '" + ;
+					ALLTRIM(SYS(0)) + "')"
+		ENDIF
+	CASE ALLTRIM(lcCbte) == "ND"
+		IF lnIdCC_CliOrig = 0 THEN
+			lnIdOper = goConn.GetNextID("cc_cli", "idOper")
+
+			lcSql = "SELECT ventascab.cbte, ventascab.tipoDoc, ventascab.ptoVta, ventascab.numCbte "
+			lcSql = lcSql + "FROM ventascab "
+			lcSql = lcSql + " INNER JOIN ventasrel ON ventasrel.idVtaCO = ventascab.idVentasC "
+			lcSql = lcSql + "WHERE ventasrel.idVtaCD = " + ALLTRIM(STR(tnIdVentasC))
+			loRes.ActiveConnection = goConn.ActiveConnection
+			loRes.Cursor_Name = "cur_x"
+			IF !loRes.OpenQuery(lcSql) THEN
+				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+				RETURN .F.
+			ENDIF
+			lcObserv = "Devolución de " + ALLTRIM(cur_x.cbte) + " " + ;
+				ALLTRIM(cur_x.tipoDoc) + " " + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_x.ptoVta)))) + ALLTRIM(STR(cur_x.ptovta)) + ;
+				"-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_x.numCbte)))) + ALLTRIM(STR(cur_x.numCbte))
+			loRes.Close_Query()
+		
+			lcSql = "INSERT INTO cc_cli ("
+			lcSql = lcSql + "idCC_Cli, "
+			lcSql = lcSql + "idCliente, "
+			lcSql = lcSql + "idCC_Orig, "
+			lcSql = lcSql + "idVentasC, "
+			lcSql = lcSql + "cbte, "
+			lcSql = lcSql + "tipoDoc, "
+			lcSql = lcSql + "ptoVta, "
+			lcSql = lcSql + "nroCbte, "
+			lcSql = lcSql + "fecEmis, "
+			lcSql = lcSql + "fecVto, "
+			lcSql = lcSql + "idCondPago, "
+			lcSql = lcSql + "idSitIVA, "
+			lcSql = lcSql + "idVendedor, "
+			lcSql = lcSql + "impDebe, "
+			lcSql = lcSql + "impHaber, "
+			lcSql = lcSql + "idOper, "
+			lcSql = lcSql + "observ, "
+			lcSql = lcSql + "usuAlta, "
+			lcSql = lcSql + "fecAlta, "
+			lcSql = lcSql + "idHostAlta) "
+			lcSql = lcSql + "VALUES ("
+			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
+					ALLTRIM(STR(lnIdCliente)) + ;
+					", null, " + ;
+					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
+					"'" + ALLTRIM(lcCbte) + "', " + ;
+					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
+					ALLTRIM(STR(lnPtoVta)) + ", " + ;
+					ALLTRIM(STR(lnNroCbte)) + ", " + ;
+					oDT.getDateTime() + ", " + ;
+					oDT.toMySql(ldFecVto) + ", " + ; 
+					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
+					"0, " + ;
+					ALLTRIM(STR(lnIdOper)) + ", " + ;
+					"'" + ALLTRIM(lcObserv) + "', " + ;
+					"'" + ALLTRIM(gcCodUsu) + "', " + ;
+					oDT.getDateTime() + ", '" + ;
+					ALLTRIM(SYS(0)) + "')"
+		ELSE
+			lcSql = "SELECT idOper "
+			lcSql = lcSql + "FROM cc_cli "
+			lcSql = lcSql + "WHERE cc_cli.idCC_Cli = " + ALLTRIM(STR(lnIdCC_CliOrig))
+			loRes.ActiveConnection = goConn.ActiveConnection
+			loRes.Cursor_Name = "cur_x"
+			IF !loRes.OpenQuery(lcSql) THEN
+				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+				RETURN .F.
+			ENDIF
+			SELECT cur_x
+			lnIDOper = cur_x.idOper
+			loRes.Close_Query()
+		
+			lcSql = "INSERT INTO cc_cli ("
+			lcSql = lcSql + "idCC_Cli, "
+			lcSql = lcSql + "idCliente, "
+			lcSql = lcSql + "idCC_Orig, "
+			lcSql = lcSql + "idVentasC, "
+			lcSql = lcSql + "cbte, "
+			lcSql = lcSql + "tipoDoc, "
+			lcSql = lcSql + "ptoVta, "
+			lcSql = lcSql + "nroCbte, "
+			lcSql = lcSql + "fecEmis, "
+			lcSql = lcSql + "fecVto, "
+			lcSql = lcSql + "idCondPago, "
+			lcSql = lcSql + "idSitIVA, "
+			lcSql = lcSql + "idVendedor, "
+			lcSql = lcSql + "impDebe, "
+			lcSql = lcSql + "impHaber, "
+			lcSql = lcSql + "idOper, "
+			lcSql = lcSql + "observ, "
+			lcSql = lcSql + "usuAlta, "
+			lcSql = lcSql + "fecAlta, "
+			lcSql = lcSql + "idHostAlta) "
+			lcSql = lcSql + "VALUES ("
+			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ;
+					ALLTRIM(STR(lnIdCliente)) + ;
+					", null, " + ;
+					ALLTRIM(STR(tnIdVentasC)) + ", " + ;
+					"'" + ALLTRIM(lcCbte) + "', " + ;
+					"'" + ALLTRIM(lcTipoDoc) + "', " + ;
+					ALLTRIM(STR(lnPtoVta)) + ", " + ;
+					ALLTRIM(STR(lnNroCbte)) + ", " + ;
+					oDT.getDateTime() + ", " + ;
+					oDT.toMySql(ldFecVto) + ", " + ; 
+					ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+					ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+					ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+					ALLTRIM(STR(lnTotFact, 10, 2)) + ", " + ;
+					"0, " + ;
+					ALLTRIM(STR(lnIdOper)) + ", " + ;
+					"'" + ALLTRIM(lcObserv) + "', " + ;
+					"'" + ALLTRIM(gcCodUsu) + "', " + ;
+					oDT.getDateTime() + ", '" + ;
+					ALLTRIM(SYS(0)) + "')"
+		ENDIF
+ENDCASE
+
+IF ALLTRIM(lcCbte) == "FC" .OR. ALLTRIM(lcCbte) == "ND" THEN
+ELSE
+ENDIF
+
+goConn.BeginTransaction()
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute()
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+goConn.Commit()
+RETURN .T.
+ENDPROC
+PROCEDURE calcular_saldo_deudor_c1
+* ***********************************************************************
+* Calculo el saldo deudor desde la tabla de cuentas corrientes para
+* lograr mayor exactitud.
+* ***********************************************************************
+
+LOCAL loRes, lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+TEXT TO lcSql NOSHOW
+	SELECT
+		ROUND(SUM(cc_cli.impDebe) - SUM(cc_cli.impHaber), 2) AS saldo
+	FROM
+		cc_cli
+	WHERE
+		idCliente = ?idCliente;
+ENDTEXT
+lcSql = loRes.AddParameter(lcSql, "idCliente", ALLTRIM(STR(cur_CbtePendi.idCliente)), .f., .f.)
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+
+thisform.saldodeudor = 0.00
+
+SELECT cur_x
+IF RECCOUNT("cur_x") > 0 THEN
+	GO TOP
+ENDIF
+thisform.saldodeudor = cur_x.saldo
+
+loRes.Close_Query()
+
+RETURN .T.
+ENDPROC
+PROCEDURE calcular_saldo_deudor_c2
+LOCAL loRes, lcSql, loConDMO
+
+loConDMO = CREATEOBJECT("odbc_connect")
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+loConDMO.ConnectionString = ALLTRIM(getConfig("DMO_CC"))
+
+IF !loConDMO.Open() THEN
+	MESSAGEBOX(loConDMO.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+TEXT TO lcSql NOSHOW
+	SELECT
+		ROUND(SUM(cc_cli.impDebe) - SUM(cc_cli.impHaber), 2) AS saldo
+	FROM
+		cc_cli
+	WHERE
+		idCliente = ?idCliente;
+ENDTEXT
+lcSql = loRes.AddParameter(lcSql, "idCliente", ALLTRIM(STR(cur_CbtePendi.idCliente)), .f., .f.)
+
+loRes.ActiveConnection = loConDMO.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+thisform.saldodeudor_c2 = 0.00
+
+SELECT cur_x
+IF RECCOUNT("cur_x") > 0 THEN
+	GO TOP
+ENDIF
+thisform.saldodeudor_c2 = cur_x.saldo
+
+loRes.Close_Query()
+loConDMO.close()
+
+RETURN .T.
+ENDPROC
+PROCEDURE validar_saldo_a_compensar
+* **********************************************
+* Valido si hay saldos a compensar para 
+* notificar al usuario de que ni bien termine
+* la factura acomode la cuenta corriente.
+* Fecha: 06/07/2021
+* **********************************************
+
+LOCAL loRes
+LOCAL lcSql
+LOCAL llResult
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = "CALL cccli_validar_saldos_a_favor (?idCliente)"
+lcSql = loRes.AddParameter(lcSql, "idCliente", ALLTRIM(STR(cur_CbtePendi.idCliente)), .f., .f.)
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+loRes.OpenQuery(lcSql)
+SELECT cur_x
+IF !(TYPE("cur_x.hay_cbte") == "N") THEN
+	llResult = IIF(INT(VAL(cur_x.hay_cbte)) = 1, .T., .F.)
+ELSE
+	llResult = IIF(cur_x.hay_cbte = 1, .T., .F.)
+ENDIF
+loRes.Close_Query()
+RETURN llResult
+ENDPROC
+PROCEDURE grabar_stock
+*************************************************
+* Permite grabar el movimiento de stock
+*************************************************
+SELECT cur_CbtePendi
+
+Thisform.mov_stock.circuito = "V"
+Thisform.mov_stock.idcliente = cur_CbtePendi.idCliente
+Thisform.mov_stock.idprov = 0
+Thisform.mov_stock.tipodoc = cur_CbtePendi.tipodoc
+Thisform.mov_stock.cbte = cur_CbtePendi.cbte
+
+&& Hago la carga de los artículos del comprobante a Stock
+Thisform.cargar_stock()
+
+Thisform.mov_stock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ;
+		ALLTRIM(STR(Thisform.Ptovta)) + "-" + ;
+		REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
+	
+IF !Thisform.mov_stock.grabar2() THEN
+	MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+ENDPROC
 PROCEDURE anular_cantnc_factura
-**********************************************************************
-* Método para actualizar cantNC de una factura con nota de crédito por devolución anulada.
-**********************************************************************
+*****************************************************************
+* Método para anular cantNC de una factura
+*****************************************************************
 local lcSql, loRes
 local loCommand
 LOCAL idArticulo, idNotaCredito, idFacturaOrigen, cantidadArticulo
 
-&& Variables que utilizo para la busqueda de articulos en la factura origen,
 idArticulo = 0
 cantidadArticulo = 0
 idNotaCredito = 0
 idFacturaOrigen = 0
-
 lcSql = ""
 loRes = createobject("odbc_result")
 loCommand = createobject("odbc_command")
 
 && Busco la factura de origen de la NC.
-select cur_cbtes
-idNotaCredito = cur_cbtes.idVentasC
-lcSql = "select * from ventasrel where idvtacd = " + alltrim(str(idNotaCredito))
+select cur_cbtePendi
+idNotaCredito = cur_cbtePendi.idVentasC
+lcSql = "select * from ventasrel where idvtacd = " + alltrim(STR(idNotaCredito))
 loRes.ActiveConnection = goConn.ActiveConnection
 loRes.Cursor_name = "cur_vr"
 
@@ -35734,121 +28104,4313 @@ if !loRes.OpenQuery(lcSql) then
 	messagebox(loRes.Error_message, 0+48, thisform.caption)
 	goConn.rollback()
 	return .f.
-endif
+ENDIF
+
 idFacturaOrigen = cur_vr.idvtaco
 
+SELECT cur_cbtePendi
 lcSql = "select idArticulo, cantidad from ventasdet where idVentasC = " + ALLTRIM(STR(idNotaCredito))
 loRes.ActiveConnection = goConn.ActiveConnection
 loRes.Cursor_name = "cur_x"
 loRes.close_query()
 
-IF !loRes.OpenQuery(lcSql) then
-	MESSAGEBOX(loRes.error_message, 0+48, thisform.Caption)
+if !loRes.OpenQuery(lcSql) then
+	messagebox(loRes.Error_message, 0+48, thisform.caption)
 	goConn.rollback()
-	RETURN .f.
-ENDIF
+	return .f.
+endif
 
 && Actualizo cantNC a 0
 goConn.beginTransaction()
-select cur_x
-DO WHILE !EOF("cur_x") 
+SELECT cur_x	
+DO WHILE !EOF("cur_x")
 	idArticulo = cur_x.idArticulo
 	cantidadArticulo = cur_x.cantidad
-		
+	
 	lcSql = "UPDATE ventasdet "
 	lcSql = lcSql + "SET cantNC = cantNC - " + ALLTRIM(STR(cantidadArticulo))
-	lcSql = lcSql + " WHERE idventasc = " + alltrim(str(idFacturaOrigen))
-	lcSql = lcSql + " AND ventasdet.idArticulo = " + ALLTRIM(STR(idArticulo))
-	
+	lcSql = lcSql + " WHERE idventasc = " + alltrim(STR(idFacturaOrigen))
+	lcSql = lcSql + " and ventasdet.idArticulo = " + ALLTRIM(STR(idArticulo))
 	
 	loCommand.ActiveConnection = goConn.ActiveConnection
 	loCommand.CommandText = lcSql
-
+	
 	if !loCommand.execute()
 		MessageBox("No se ha podido actualizar la cantidad de la factura", 0+48, thisform.caption)
 		goConn.rollback()
 		return .f.
 	endif
-
-
+	
 	SELECT cur_x
-	SKIP 	
+	SKIP 
 ENDDO
 
 
+
+ENDPROC
+PROCEDURE cargar_stock
+*******************************************************************************
+* Permite cargar los artículos en el cursor de stock para llevar a cabo
+* los movimientos.
+* Fecha: 28/01/2026
+*******************************************************************************
+LOCAL loRes, lcSql, llOk
+
+llOk = .F.
+
+TRY
+	loRes = CREATEOBJECT("odbc_result")
+	
+	&& Limpio el cursor de movimientos de stock para evitar duplicaciones.
+	Thisform.mov_stock.limpiar_cursor()
+	Thisform.mov_stock.limpiar()
+
+	TEXT TO lcSql PRETEXT 15 NOSHOW
+		SELECT
+			ventasdet.idArticulo,
+			ventasdet.cantidad,
+			ventasdet.nroPart,
+			articulos.codArt
+		FROM
+			ventasdet
+				INNER JOIN articulos ON articulos.idArticulo = ventasdet.idArticulo
+		WHERE
+			ventasdet.idVentasC = ?xid
+	ENDTEXT
+	
+	lcSql = loRes.AddParameter(lcSql, "xid", ALLTRIM(STR(cur_CbtePendi.idVentasC)), .F., .F.)
+	
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.cursor_name = "cur_detalle_stk"
+	loRes.OpenQuery(lcSql)
+	
+	SELECT cur_detalle_stk
+	GO TOP
+	DO WHILE !EOF("cur_detalle_stk")
+		IF ALLTRIM(cur_CbtePendi.cbte) == "NC" THEN
+			Thisform.mov_stock.tipomov = "ENT"
+		ELSE
+			Thisform.mov_stock.tipomov = "SAL"
+		ENDIF
+		
+		&& Verifico si el artículo está tildado para que lleve movimientos de stock y que no sea un artículo genérico.
+		IF Thisform.mov_stock.lleva_stock(cur_detalle_stk.idArticulo) .AND. !(RIGHT(ALLTRIM(cur_detalle_stk.codArt), 3) == "ARX") THEN
+			This.mov_stock.agregar_articulo(cur_detalle_stk.idArticulo, cur_detalle_stk.cantidad, cur_detalle_stk.nroPart)
+		ENDIF
+	
+		SELECT cur_detalle_stk
+		SKIP
+	ENDDO
+	
+	llOk = .T.
+CATCH TO oException
+	MESSAGEBOX("Error al cargar movimientos de stock: " + getErrorForCatch(oException), 0+48, Thisform.Caption)
+	llOk = .F.
+FINALLY
+	loRes.Close_Query()
+	loRes = NULL
+ENDTRY
+
+RETURN llOk
+ENDPROC
+PROCEDURE validardetalle
+LOCAL loRes
+LOCAL lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+
+SELECT cur_CbtePendi
+lcSql = "SELECT * "
+lcSql = lcSql + "FROM ventascab "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+IF ALLTRIM(cur_x.aut_Resultado) == 'A' THEN
+	MESSAGEBOX("El comprobante ya se encuentra autorizado.", 0+48, thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+
+RETURN .T.
+ENDPROC
+PROCEDURE Init
+Thisform.Contenido.grdCbtes.RecordSource = "cur_CbtePendi"
+Thisform.Contenido.grdCbtes.Alias_name = "cur_CbtePendi"
+Thisform.Contenido.grdCbtes.list_controlsource = "fecEmision,cbte,tipoDoc,ptoVta,numCbte,totFact,idCliente,razSoc"
+Thisform.Contenido.grdCbtes.lista_ancho_cols = "100,70,70,70,100,70,70,250"
+Thisform.Contenido.grdCbtes.titulos_cabeceras = "Fecha,Cbte,Letra,Pto Vta,Número,Total,Cliente,Raz. Social"
+Thisform.Contenido.grdCbtes.generar_grid()
+
+Thisform.leer_cbtes_pendi()
+Thisform.Mov_stock.crear_cursor()
 ENDPROC
 PROCEDURE Load
 DODEFAULT()
 
-CREATE CURSOR cur_Cbtes( 	;
+CREATE CURSOR cur_CbtePendi (;
 	idVentasC	int,;
+	idCondPago  int,;
+	cntDias		int,;
+	fecEmision 	date,;
+	cbte		varchar(3),;
+	tipoDoc		varchar(1),;
+	ptoVta		varchar(4),;
+	numCbte		varchar(8),;
+	totFact		float(10,2),;
 	idCliente	int,;
-	razSoc		C(60),;
-	fecEmis		date,;
-	nroDoc		C(20),;
-	impFinal	N(20,2),;
-	usualta		C(5),;
-	fecAlta		datetime,;
-	idhostalta	C(50),;
-	Observ		M)
+	razSoc		varchar(60))
 	
-	
-SELECT cur_Cbtes
-INDEX on idVentasC TAG idVentasC ASCENDING
-INDEX on idCliente TAG idCliente ASCENDING ADDITIVE 
-INDEX on razSoc TAG razSoc ASCENDING ADDITIVE 
-INDEX on fecEmis TAG fecEmis ASCENDING ADDITIVE 
-INDEX on nroDoc TAG nroDoc ASCENDING ADDITIVE 
-INDEX on impFinal TAG impFinal ASCENDING ADDITIVE
-INDEX on usualta TAG usualta ASCENDING ADDITIVE
-INDEX on idhostalta TAG idhostalta ASCENDING ADDITIVE 
-	
-SELECT cur_Cbtes
-SET ORDER TO TAG fecEmis ASCENDING
+
 ENDPROC
-PROCEDURE Init
-&& Configuro según la funcionalidad del formulario
+PROCEDURE eliminar
+LOCAL loCommand, lcSql, lnResp
+LOCAL loRes, llTieneCC
 
-Thisform.cargar_combos()
+loCommand = CREATEOBJECT("odbc_command")
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+lnResp = 0
+llTieneCC = .F.
 
-IF thisform.consulta
-	thisform.contenido.btnEliminar.Visible = .F.
-ELSE
-	thisform.contenido.btnEliminar.Visible = .T.
+lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el comprobante?", 4+32, Thisform.Caption)
+IF lnResp = 6 THEN
+	goConn.BeginTransaction()
+	
+	&& Rastreo a ver si tiene algún registro vinculado en
+	&& cuentas corrientes.
+	SELECT cur_CbtePendi
+	lcSql = "SELECT * FROM cc_cli WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_ctacte"
+	
+	IF !loRes.OpenQuery(lcSql) THEN
+		MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+		RETURN
+	ENDIF
+	
+	IF RECCOUNT("cur_ctacte") > 0 THEN
+		llTieneCC = .T.
+	ENDIF
+	
+	loRes.Close_Query()
+	
+	IF llTieneCC THEN
+		&& Procedo a la eliminación del comprobante
+		lcSql = "UPDATE cc_cli "
+		lcSql = lcSql + "SET cc_cli.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
+		lcSql = lcSql + "	cc_cli.fecBaja = current_timestamp, "
+		lcSql = lcSql + "	cc_cli.idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
+		lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+		
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		loCommand.CommandText = lcSql
+		
+		IF !loCommand.Execute() THEN
+			goConn.Rollback()
+			MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+			RETURN
+		ENDIF
+	ENDIF
+	
+	lcSql = "UPDATE ventascab "
+	lcSql = lcSql + "SET ventascab.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "	ventascab.fecBaja = current_timestamp, "
+	lcSql = lcSql + "	ventascab.idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(cur_CbtePendi.idVentasC))
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		goConn.Rollback()
+		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+		RETURN
+	ENDIF
+	
+	&& Verifico que sea una Nota de crédito a eliminar y 
+	&& seteo cantNC en 0 al eliminar la nota de crédito, antes de limpiar el cursor_cbtes.
+	IF SUBSTR(cur_CbtePendi.cbte, 1, 2) == "NC" then
+		thisform.anular_cantnc_factura()
+	ENDIF 
+	&& Valido si el módulo de stock está o no habilitado
+	IF getGlobalCFG("STK_MODULE") THEN
+		Thisform.mov_stock.idVentasC = cur_CbtePendi.idVentasC
+		IF !Thisform.mov_stock.dar_baja_byvta() THEN
+			goConn.Rollback()
+			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
+			RETURN
+		ENDIF
+	ENDIF
+	
+	goConn.Commit()
+	
+	Thisform.leer_cbtes_pendi()
+	SELECT cur_CbtePendi
+	Thisform.Contenido.grdCbtes.Refresh()	
 ENDIF
 
-thisform.contenido.txtFecDesde.Value = DATE() - 30
-thisform.contenido.txtFecHasta.Value = DATE()
-thisform.contenido.txtptovta.Value = "0000"
-thisform.contenido.txtnumero.Value = "00000000"
-thisform.ShowTips = .T.
 
 ENDPROC
 
 
 ************************************************************
-OBJETO: stock
+OBJETO: mov_stock
 ************************************************************
 *** PROPIEDADES ***
-Top = 468
-Left = 384
+Top = 540
+Left = 111
 Height = 17
-Width = 36
-Name = "stock"
+Width = 29
+Name = "mov_stock"
 
 *** METODOS ***
 
 
 ************************************************************
-OBJETO: CLSETIQUETA1
+OBJETO: fe
 ************************************************************
 *** PROPIEDADES ***
-Caption = "Cliente Desde:"
+Top = 528
+Left = 648
+Height = 24
+Width = 36
+Name = "fe"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: grdCbtes
+************************************************************
+*** PROPIEDADES ***
+Height = 496
+Left = 18
+TabIndex = 1
+Top = 21
+Width = 922
+permitir_busqueda = .F.
+permitir_ordenamiento = .F.
+Name = "grdCbtes"
+COLUMN1.Header1.Name = "Header1"
+COLUMN1.Text1.Name = "Text1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.Header1.Name = "Header1"
+COLUMN2.Text1.Name = "Text1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.Header1.Name = "Header1"
+COLUMN3.Text1.Name = "Text1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.Header1.Name = "Header1"
+COLUMN4.Text1.Name = "Text1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.Header1.Name = "Header1"
+COLUMN5.Text1.Name = "Text1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.Header1.Name = "Header1"
+COLUMN6.Text1.Name = "Text1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.Header1.Name = "Header1"
+COLUMN7.Text1.Name = "Text1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.Header1.Name = "Header1"
+COLUMN8.Text1.Name = "Text1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.Header1.Name = "Header1"
+COLUMN9.Text1.Name = "Text1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.Header1.Name = "Header1"
+COLUMN10.Text1.Name = "Text1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.Header1.Name = "Header1"
+COLUMN11.Text1.Name = "Text1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.Header1.Name = "Header1"
+COLUMN12.Text1.Name = "Text1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.Header1.Name = "Header1"
+COLUMN13.Text1.Name = "Text1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.Header1.Name = "Header1"
+COLUMN14.Text1.Name = "Text1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.Header1.Name = "Header1"
+COLUMN15.Text1.Name = "Text1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.Header1.Name = "Header1"
+COLUMN16.Text1.Name = "Text1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.Header1.Name = "Header1"
+COLUMN17.Text1.Name = "Text1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.Header1.Name = "Header1"
+COLUMN18.Text1.Name = "Text1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.Header1.Name = "Header1"
+COLUMN19.Text1.Name = "Text1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.Header1.Name = "Header1"
+COLUMN20.Text1.Name = "Text1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnAutorizar
+************************************************************
+*** PROPIEDADES ***
+Top = 522
+Left = 850
+TabIndex = 2
+Name = "btnAutorizar"
+
+*** METODOS ***
+PROCEDURE Click
+IF thisform.validar_cbte() THEN
+	SELECT cur_CbtePendi
+
+	IF !thisform.corregir_iva() THEN
+		RETURN
+	ENDIF
+
+	SELECT cur_CbtePendi
+
+	WAIT WINDOW "Esperando respuesta de AFIP..." NOWAIT
+	IF Thisform.enviar_wsafipfe() THEN
+		IF Thisform.fe_set_cae() THEN
+			* Hago los movimientos de stock solo si el módulo de stock está habilitado
+			IF getGlobalCfg("STK_MODULE") then
+				Thisform.grabar_stock()
+			ENDIF 
+			
+			* Grabo el movimiento de cuentas corrientes
+			IF !Thisform.grabar_ctacte(cur_CbtePendi.idVentasC) THEN
+				MESSAGEBOX("Atención, por algún motivo no se ha generado el registro en la tabla de cuentas corrientes.", 0+48, Thisform.Caption)
+				RETURN .F.
+			ENDIF
+		ENDIF
+		Thisform.saldodeudor = 0.00
+		Thisform.leer_cbtes_pendi()
+	ENDIF
+	
+	&& Verifico si hay saldo a favor en la cuenta corriente y si lo hay
+	&& lanzo una notificación.
+	IF thisform.validar_saldo_a_compensar() THEN
+		MESSAGEBOX("La cuenta corriente de este cliente tiene comprobantes para compensar. " ;
+				+ "Se recomienda entrar a la misma y dejar ordenada la cuenta", 0+64, Thisform.Caption)
+	ENDIF	
+ELSE
+	MESSAGEBOX("El comprobante ya se encuentra autorizado", 0+64, thisform.Caption)
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: btnCerrar
+************************************************************
+*** PROPIEDADES ***
+Top = 522
+Left = 897
+TabIndex = 3
+Name = "btnCerrar"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Los siguientes comprobnates se encuentran pendientes de autorizar. Seleccione el que desee autorizar:"
 Height = 15
-Left = 5
-Top = 13
-TabIndex = 12
-Name = "CLSETIQUETA1"
+Left = 20
+Top = 7
+Width = 593
+TabIndex = 6
+Name = "Clsetiqueta1"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnRefrescar
+************************************************************
+*** PROPIEDADES ***
+Top = 522
+Left = 803
+TabIndex = 4
+Name = "btnRefrescar"
+
+*** METODOS ***
+PROCEDURE Click
+Thisform.leer_cbtes_pendi()
+ENDPROC
+
+
+************************************************************
+OBJETO: btnEliminar
+************************************************************
+*** PROPIEDADES ***
+Top = 522
+Left = 723
+TabIndex = 5
+Name = "btnEliminar"
+
+*** METODOS ***
+PROCEDURE Click
+IF !thisform.validar_cbte() THEN
+	MESSAGEBOX("El comprobante no se puede eliminar por ya se encuentra autorizado", 0+64, thisform.Caption)
+ELSE
+	Thisform.eliminar()
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: cls_form_wsafip_autoriza
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: clsformcbtes_fe
+************************************************************
+*** PROPIEDADES ***
+DoCreate = .T.
+aut_cae = 
+aut_cae_vto = 
+aut_resultado = 
+aut_motivo = 
+aut_numero = 
+codigo_cbte = 0
+error_message = 
+qr_image = 
+emitir_ticket = .F.
+oticket = 
+id_ventasc = 0
+nrocbte = 
+cbte = FC
+mailfc = 
+Name = "clsformcbtes_fe"
+contenido.Clsetiqueta1.TabIndex = 42
+contenido.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.sel_Cliente.txtCodigo.Name = "txtCodigo"
+contenido.sel_Cliente.txtDescripcion.Name = "txtDescripcion"
+contenido.sel_Cliente.TabIndex = 1
+contenido.sel_Cliente.Name = "sel_Cliente"
+contenido.Clsetiqueta2.TabIndex = 44
+contenido.Clsetiqueta2.Name = "Clsetiqueta2"
+contenido.Clsetiqueta3.TabIndex = 45
+contenido.Clsetiqueta3.Name = "Clsetiqueta3"
+contenido.txtSitIVA.TabIndex = 33
+contenido.txtSitIVA.Name = "txtSitIVA"
+contenido.sel_FormaPago.txtCodigo.Name = "txtCodigo"
+contenido.sel_FormaPago.txtDescripcion.Name = "txtDescripcion"
+contenido.sel_FormaPago.TabIndex = 3
+contenido.sel_FormaPago.Name = "sel_FormaPago"
+contenido.Clslinea1.Name = "Clslinea1"
+contenido.Clsetiqueta4.TabIndex = 46
+contenido.Clsetiqueta4.Name = "Clsetiqueta4"
+contenido.sel_Articulo.txtCodigo.Name = "txtCodigo"
+contenido.sel_Articulo.txtDescripcion.Name = "txtDescripcion"
+contenido.sel_Articulo.TabIndex = 6
+contenido.sel_Articulo.Name = "sel_Articulo"
+contenido.Clsetiqueta5.TabIndex = 48
+contenido.Clsetiqueta5.Name = "Clsetiqueta5"
+contenido.txtCantidad.TabIndex = 7
+contenido.txtCantidad.Name = "txtCantidad"
+contenido.btnAgregar.TabIndex = 9
+contenido.btnAgregar.Name = "btnAgregar"
+contenido.grdDetalles.COLUMN1.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN1.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN1.Name = "COLUMN1"
+contenido.grdDetalles.COLUMN2.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN2.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN2.Name = "COLUMN2"
+contenido.grdDetalles.COLUMN3.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN3.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN3.Name = "COLUMN3"
+contenido.grdDetalles.COLUMN4.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN4.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN4.Name = "COLUMN4"
+contenido.grdDetalles.COLUMN5.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN5.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN5.Name = "COLUMN5"
+contenido.grdDetalles.COLUMN6.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN6.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN6.Name = "COLUMN6"
+contenido.grdDetalles.COLUMN7.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN7.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN7.Name = "COLUMN7"
+contenido.grdDetalles.COLUMN8.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN8.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN8.Name = "COLUMN8"
+contenido.grdDetalles.COLUMN9.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN9.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN9.Name = "COLUMN9"
+contenido.grdDetalles.COLUMN10.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN10.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN10.Name = "COLUMN10"
+contenido.grdDetalles.COLUMN11.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN11.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN11.Name = "COLUMN11"
+contenido.grdDetalles.COLUMN12.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN12.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN12.Name = "COLUMN12"
+contenido.grdDetalles.COLUMN13.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN13.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN13.Name = "COLUMN13"
+contenido.grdDetalles.COLUMN14.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN14.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN14.Name = "COLUMN14"
+contenido.grdDetalles.COLUMN15.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN15.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN15.Name = "COLUMN15"
+contenido.grdDetalles.COLUMN16.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN16.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN16.Name = "COLUMN16"
+contenido.grdDetalles.COLUMN17.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN17.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN17.Name = "COLUMN17"
+contenido.grdDetalles.COLUMN18.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN18.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN18.Name = "COLUMN18"
+contenido.grdDetalles.COLUMN19.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN19.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN19.Name = "COLUMN19"
+contenido.grdDetalles.COLUMN20.Header1.Name = "Header1"
+contenido.grdDetalles.COLUMN20.Text1.Name = "Text1"
+contenido.grdDetalles.COLUMN20.Name = "COLUMN20"
+contenido.grdDetalles.TabIndex = 49
+contenido.grdDetalles.Name = "grdDetalles"
+contenido.btnGrabar.TabIndex = 12
+contenido.btnGrabar.Name = "btnGrabar"
+contenido.btnCancelar.TabIndex = 14
+contenido.btnCancelar.Name = "btnCancelar"
+contenido.Clscerrar1.TabIndex = 13
+contenido.Clscerrar1.Name = "Clscerrar1"
+contenido.Clsetiqueta10.TabIndex = 72
+contenido.Clsetiqueta10.Name = "Clsetiqueta10"
+contenido.txtPrMay.TabIndex = 31
+contenido.txtPrMay.Name = "txtPrMay"
+contenido.Clsetiqueta11.TabIndex = 74
+contenido.Clsetiqueta11.Name = "Clsetiqueta11"
+contenido.txtPrMinorista.TabIndex = 30
+contenido.txtPrMinorista.Name = "txtPrMinorista"
+contenido.Clsetiqueta12.TabIndex = 81
+contenido.Clsetiqueta12.Name = "Clsetiqueta12"
+contenido.txtAlicIVA.TabIndex = 82
+contenido.txtAlicIVA.Name = "txtAlicIVA"
+contenido.btnEliminar.TabIndex = 10
+contenido.btnEliminar.Name = "btnEliminar"
+contenido.chkImprimeDup.Alignment = 0
+contenido.chkImprimeDup.TabIndex = 89
+contenido.chkImprimeDup.Name = "chkImprimeDup"
+contenido.btnCbteOrigen.TabIndex = 32
+contenido.btnCbteOrigen.Name = "btnCbteOrigen"
+contenido.txtObserv.TabIndex = 29
+contenido.txtObserv.Name = "txtObserv"
+contenido.Clsetiqueta6.TabIndex = 51
+contenido.Clsetiqueta6.Name = "Clsetiqueta6"
+contenido.Clsetiqueta7.TabIndex = 55
+contenido.Clsetiqueta7.Name = "Clsetiqueta7"
+contenido.Clsetiqueta8.TabIndex = 57
+contenido.Clsetiqueta8.Name = "Clsetiqueta8"
+contenido.Clsetiqueta9.TabIndex = 58
+contenido.Clsetiqueta9.Name = "Clsetiqueta9"
+contenido.txtTotNeto.TabIndex = 60
+contenido.txtTotNeto.Name = "txtTotNeto"
+contenido.txtPorIVA21.TabIndex = 63
+contenido.txtPorIVA21.Name = "txtPorIVA21"
+contenido.txtPorIVA105.TabIndex = 64
+contenido.txtPorIVA105.Name = "txtPorIVA105"
+contenido.txtImpIVA21.TabIndex = 66
+contenido.txtImpIVA21.Name = "txtImpIVA21"
+contenido.txtImpIVA105.TabIndex = 67
+contenido.txtImpIVA105.Name = "txtImpIVA105"
+contenido.txtTotal.TabIndex = 68
+contenido.txtTotal.Name = "txtTotal"
+contenido.Clsetiqueta14.TabIndex = 84
+contenido.Clsetiqueta14.Name = "Clsetiqueta14"
+contenido.txtDesc1.ReadOnly = .F.
+contenido.txtDesc1.TabIndex = 16
+contenido.txtDesc1.Name = "txtDesc1"
+contenido.txtDesc2.ReadOnly = .F.
+contenido.txtDesc2.TabIndex = 19
+contenido.txtDesc2.Name = "txtDesc2"
+contenido.txtDesc3.ReadOnly = .F.
+contenido.txtDesc3.TabIndex = 20
+contenido.txtDesc3.Name = "txtDesc3"
+contenido.txtDesc4.ReadOnly = .F.
+contenido.txtDesc4.TabIndex = 21
+contenido.txtDesc4.Name = "txtDesc4"
+contenido.txtImpDesc1.TabIndex = 37
+contenido.txtImpDesc1.Visible = .F.
+contenido.txtImpDesc1.Name = "txtImpDesc1"
+contenido.txtImpDesc2.TabIndex = 38
+contenido.txtImpDesc2.Visible = .F.
+contenido.txtImpDesc2.Name = "txtImpDesc2"
+contenido.txtImpDesc3.TabIndex = 39
+contenido.txtImpDesc3.Visible = .F.
+contenido.txtImpDesc3.Name = "txtImpDesc3"
+contenido.txtImpDesc4.TabIndex = 40
+contenido.txtImpDesc4.Visible = .F.
+contenido.txtImpDesc4.Name = "txtImpDesc4"
+contenido.Clsetiqueta15.TabIndex = 83
+contenido.Clsetiqueta15.Name = "Clsetiqueta15"
+contenido.Clsetiqueta16.TabIndex = 86
+contenido.Clsetiqueta16.Name = "Clsetiqueta16"
+contenido.Clsetiqueta17.TabIndex = 59
+contenido.Clsetiqueta17.Name = "Clsetiqueta17"
+contenido.txtTotFact.TabIndex = 69
+contenido.txtTotFact.Name = "txtTotFact"
+contenido.Clsetiqueta18.TabIndex = 56
+contenido.Clsetiqueta18.Name = "Clsetiqueta18"
+contenido.txtPorIIBB.TabIndex = 62
+contenido.txtPorIIBB.Name = "txtPorIIBB"
+contenido.txtImpIIBB.TabIndex = 65
+contenido.txtImpIIBB.Name = "txtImpIIBB"
+contenido.Clsetiqueta19.TabIndex = 85
+contenido.Clsetiqueta19.Name = "Clsetiqueta19"
+contenido.txtST.TabIndex = 61
+contenido.txtST.Name = "txtST"
+contenido.Clsetiqueta20.TabIndex = 71
+contenido.Clsetiqueta20.Name = "Clsetiqueta20"
+contenido.txtPorDesc1.ReadOnly = .F.
+contenido.txtPorDesc1.TabIndex = 25
+contenido.txtPorDesc1.Name = "txtPorDesc1"
+contenido.txtImpDescItem1.TabIndex = 90
+contenido.txtImpDescItem1.Name = "txtImpDescItem1"
+contenido.txtPorDesc2.ReadOnly = .F.
+contenido.txtPorDesc2.TabIndex = 26
+contenido.txtPorDesc2.Name = "txtPorDesc2"
+contenido.txtImpDescItem2.TabIndex = 91
+contenido.txtImpDescItem2.Name = "txtImpDescItem2"
+contenido.txtPorDesc3.ReadOnly = .F.
+contenido.txtPorDesc3.TabIndex = 27
+contenido.txtPorDesc3.Name = "txtPorDesc3"
+contenido.txtImpDescItem3.TabIndex = 92
+contenido.txtImpDescItem3.Name = "txtImpDescItem3"
+contenido.txtPorDesc4.ReadOnly = .F.
+contenido.txtPorDesc4.TabIndex = 28
+contenido.txtPorDesc4.Name = "txtPorDesc4"
+contenido.txtImpDescItem4.TabIndex = 93
+contenido.txtImpDescItem4.Name = "txtImpDescItem4"
+contenido.Clsetiqueta21.TabIndex = 80
+contenido.Clsetiqueta21.Name = "Clsetiqueta21"
+contenido.txtImpIVA.TabIndex = 94
+contenido.txtImpIVA.Name = "txtImpIVA"
+contenido.Clsetiqueta22.TabIndex = 76
+contenido.Clsetiqueta22.Name = "Clsetiqueta22"
+contenido.txtSTNeto.TabIndex = 78
+contenido.txtSTNeto.Name = "txtSTNeto"
+contenido.Clsetiqueta13.TabIndex = 87
+contenido.Clsetiqueta13.Name = "Clsetiqueta13"
+contenido.txtSubTotal.TabIndex = 88
+contenido.txtSubTotal.Name = "txtSubTotal"
+contenido.Clsetiqueta23.TabIndex = 73
+contenido.Clsetiqueta23.Name = "Clsetiqueta23"
+contenido.txtPrNeto.TabIndex = 77
+contenido.txtPrNeto.Name = "txtPrNeto"
+contenido.lblExistencia.TabIndex = 79
+contenido.lblExistencia.Name = "lblExistencia"
+contenido.txtExistencia.TabIndex = 95
+contenido.txtExistencia.Name = "txtExistencia"
+contenido.Clsetiqueta24.TabIndex = 53
+contenido.Clsetiqueta24.Name = "Clsetiqueta24"
+contenido.txtPorRec.TabIndex = 15
+contenido.txtPorRec.Name = "txtPorRec"
+contenido.txtImpRec.TabIndex = 96
+contenido.txtImpRec.Name = "txtImpRec"
+contenido.txtRecItem.TabIndex = 41
+contenido.txtRecItem.Visible = .F.
+contenido.txtRecItem.Name = "txtRecItem"
+contenido.Clsetiqueta25.TabIndex = 43
+contenido.Clsetiqueta25.Name = "Clsetiqueta25"
+contenido.txtTelefono.TabIndex = 34
+contenido.txtTelefono.Name = "txtTelefono"
+contenido.Clsetiqueta26.TabIndex = 23
+contenido.Clsetiqueta26.Name = "Clsetiqueta26"
+contenido.txtcuit.TabIndex = 2
+contenido.txtcuit.Name = "txtcuit"
+contenido.Clsetiqueta27.TabIndex = 47
+contenido.Clsetiqueta27.Name = "Clsetiqueta27"
+contenido.cboUnidVta.TabIndex = 11
+contenido.cboUnidVta.Name = "cboUnidVta"
+contenido.txtCantPack.TabIndex = 24
+contenido.txtCantPack.Name = "txtCantPack"
+contenido.Clsetiqueta28.TabIndex = 52
+contenido.Clsetiqueta28.Name = "Clsetiqueta28"
+contenido.txtOC.TabIndex = 36
+contenido.txtOC.Name = "txtOC"
+contenido.Clsetiqueta29.TabIndex = 70
+contenido.Clsetiqueta29.Name = "Clsetiqueta29"
+contenido.txtPorRecItem.TabIndex = 22
+contenido.txtPorRecItem.Name = "txtPorRecItem"
+contenido.Clsetiqueta30.TabIndex = 50
+contenido.Clsetiqueta30.Name = "Clsetiqueta30"
+contenido.TXTFECEMIS.TabIndex = 4
+contenido.TXTFECEMIS.Name = "TXTFECEMIS"
+contenido.Clsetiqueta31.TabIndex = 54
+contenido.Clsetiqueta31.Name = "Clsetiqueta31"
+contenido.txtMailFC.TabIndex = 5
+contenido.txtMailFC.Name = "txtMailFC"
+contenido.chkEnviarMail.Alignment = 0
+contenido.chkEnviarMail.TabIndex = 18
+contenido.chkEnviarMail.Name = "chkEnviarMail"
+contenido.lblPrecioUnitFinal.TabIndex = 75
+contenido.lblPrecioUnitFinal.Name = "lblPrecioUnitFinal"
+contenido.txtPrUnitFinal.TabIndex = 8
+contenido.txtPrUnitFinal.Name = "txtPrUnitFinal"
+contenido.chkImprimirCbte.Alignment = 0
+contenido.chkImprimirCbte.TabIndex = 17
+contenido.chkImprimirCbte.Name = "chkImprimirCbte"
+contenido.btnAgregarCliente.Name = "btnAgregarCliente"
+contenido.Clsetiqueta32.Name = "Clsetiqueta32"
+contenido.txt_subtotal_no_grav.Name = "txt_subtotal_no_grav"
+contenido.Clsetiqueta33.Name = "Clsetiqueta33"
+contenido.txt_total_no_grav.Name = "txt_total_no_grav"
+contenido.TabIndex = 1
+contenido.Name = "contenido"
+mov_stock.Name = "mov_stock"
+faltantes.Name = "faltantes"
+
+*** METODOS ***
+PROCEDURE enviar_wsafipfe
+************************************************************************
+* Permite obtener el CAE de facturación electrónica.
+* Fecha: 28/01/2026
+************************************************************************
+LOCAL loArcaService, llAutorizado
+
+&& Inicializo el resultado de autorización
+llAutorizado = .F.
+
+&& Se verifica que el id de venta a autorizar sea válido.
+IF EMPTY(Thisform.id_ventasc) THEN
+	MESSAGEBOX("No se encontró el registro del comprobante a autorizar", 0+16, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loArcaService = CREATEOBJECT("cls_arca_service")
+loArcaService.id_ventasc = Thisform.id_ventasc
+
+WAIT WINDOW "Autorizando en ARCA y ejecutando procesos pos-autorización... Aguarde." NOWAIT
+llAutorizado = loArcaService.obtener_cae()
+
+IF llAutorizado THEN
+	&& Si se autorizó todo correctamente, entonces, envío a imprimir el comprobante.
+	Thisform.cbte = loArcaService.cbte
+	Thisform.ptovta = loArcaService.ptovta
+	Thisform.nrocbte = loArcaService.nrocbte
+	Thisform.aut_cae = loArcaService.aut_cae
+	Thisform.aut_cae_vto = loArcaService.aut_cae_vto
+	Thisform.aut_motivo = loArcaService.aut_motivo
+	Thisform.aut_numero = loArcaService.aut_numero
+	Thisform.aut_resultado = loArcaService.aut_resultado
+	Thisform.codigo_cbte = loArcaService.aut_tipocbte
+	Thisform.qr_image = loArcaService.aut_qr
+	
+	IF !EMPTY(loArcaService.error_message) THEN
+		MESSAGEBOX("Error de sistema: " + loArcaService.error_message, 0+48, Thisform.Caption)
+	ENDIF
+	
+	MESSAGEBOX("Comprobante aprobado y procesado correctamente." + CHR(13) + CHR(10) ;
+		+ "Resultados: " + CHR(13) + CHR(10) ;
+		+ loArcaService.arca_message, 0+64, Thisform.Caption)
+ELSE
+	MESSAGEBOX("Atención: No se pudo completar la operación." + CHR(13) + CHR(10) ;
+		+ "MOTIVO: " + loArcaService.arca_message + CHR(13) + CHR(10) ;
+		+ loArcaService.error_message, 0+48, Thisform.Caption)
+ENDIF
+
+loArcaService = NULL
+
+RETURN llAutorizado
+ENDPROC
+PROCEDURE fe_convertir_tipodoc
+PARAMETERS tcTipoDoc
+LOCAL lnResultado
+
+lnResultado = 99 && Código que corresponde a sin identificación en el diccionario
+
+DO CASE
+	CASE ALLTRIM(tcTipoDoc) == "CUIT"
+		lnResultado = 80
+	CASE ALLTRIM(tcTipoDoc) == "CUIL"
+		lnResultado = 86
+	CASE ALLTRIM(tcTipoDoc) == "CI"
+		lnResultado = 87
+	CASE ALLTRIM(tcTipoDoc) == "LE"
+		lnResultado = 89
+	CASE ALLTRIM(tcTipoDoc) == "LC"
+		lnResultado = 90
+	CASE ALLTRIM(tcTipoDoc) == "CIE"
+		lnResultado = 91
+	CASE ALLTRIM(tcTipoDoc) == "PAS"
+		lnResultado = 94
+	CASE ALLTRIM(tcTipoDoc) == "DNI"
+		lnResultado = 96
+ENDCASE
+
+RETURN lnResultado
+ENDPROC
+PROCEDURE fe_get_tipocbte_afip
+PARAMETERS tc_letra
+
+DO CASE
+	CASE ALLTRIM(thisform.cbte) == "FC"
+		DO CASE
+			CASE ALLTRIM(tc_letra) == "A"
+				RETURN 1
+			CASE ALLTRIM(tc_letra) == "B"
+				RETURN 6
+			CASE ALLTRIM(tc_letra) == "C" 
+				RETURN 11
+		ENDCASE
+	CASE ALLTRIM(thisform.cbte) == "ND"
+		DO CASE
+			CASE ALLTRIM(tc_letra) == "A"
+				RETURN 2
+			CASE ALLTRIM(tc_letra) == "B"
+				RETURN 7
+			CASE ALLTRIM(tc_letra) == "C"
+				RETURN 12
+		ENDCASE
+	CASE ALLTRIM(thisform.cbte) == "NC"
+		DO CASE
+			CASE ALLTRIM(tc_letra) == "A"
+				RETURN 3
+			CASE ALLTRIM(tc_letra) == "B"
+				RETURN 8
+			CASE ALLTRIM(tc_letra) == "C"
+				RETURN 13
+		ENDCASE	
+ENDCASE
+
+RETURN -1
+ENDPROC
+PROCEDURE fe_set_cae
+LOCAL loCommand, lcSql
+LOCAL loDT, ldFecVto
+LOCAL lcAnio, lcMes, lcDia
+
+loDT = CREATEOBJECT("datetime")
+loCommand = CREATEOBJECT("odbc_command")
+lcSql = ""
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+lcSql = "update ventascab "
+lcSql = lcSql + "set "
+lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
+lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
+lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
+lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
+lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
+lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
+lcSql = lcsql + "	aut_tipoCbte = '" + REPLICATE("0", 2 - LEN(ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)))) + ALLTRIM(STR(Thisform.fe.F1CabeceraCbteTipo)) + "', "
+lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
+lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
+
+goConn.BeginTransaction()
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "update cc_cli set nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + " "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+&& Si el sistema está configurado para llevar el stock, entonces,
+&& una vez autorizado el comprobante genero los movimientos de stock
+&& asginando el número de comprobante devuelto por el AFIP. 
+IF getGlobalCFG("stk_module") then
+	IF ALLTRIM(Thisform.cbte) == "FC" THEN
+		Thisform.mov_stock.circuito = "V"
+		Thisform.mov_stock.idcliente = thisform.contenido.sel_Cliente.valcpoid
+		Thisform.mov_stock.idprov = 0
+		Thisform.mov_stock.tipodoc = Thisform.tipodoc
+		Thisform.mov_stock.cbte = IIF(ALLTRIM(Thisform.cbte) == "PTO", "SAL", Thisform.cbte )
+		Thisform.mov_stock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ;
+				ALLTRIM(STR(Thisform.Ptovta)) + "-" + ;
+				REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))		
+		IF !Thisform.mov_stock.grabar2() THEN
+			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
+			thisform.desbloq_numerador()
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ENDIF
+ENDIF
+goConn.Commit()
+
+RETURN .T.
+ENDPROC
+PROCEDURE calc_digito_verificador
+&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
+
+PARAMETERS tcCodigo
+
+LOCAL lnDigito
+LOCAL lnSumaE1
+LOCAL lnSumaE3
+LOCAL lnProductoE2
+LOCAL lnSumaE4
+LOCAL lnMin
+LOCAL lnPos
+
+lnDigito = 0
+lnSumaE1 = 0
+lnSumaE3 = 0
+lnSumaE4 = 0
+lnMin = 0
+
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(i, 2) <> 0 THEN
+		&& Etapa 1 (posiciones impares)
+		lnSumaE1 = lnSumaE1 + lnDigito
+	ELSE
+		&& Etapa 3 (posiciones pares)
+		lnSumaE3 = lnSumaE3 + lnDigito
+	ENDIF
+NEXT i
+
+lnProductoE2 = lnSumaE1 * 3 && Etapa 2
+lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
+
+&& Etapa 5
+lnPos = 0
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
+		IF lnPos = 0 THEN
+			lnMin = lnDigito
+		ELSE
+			IF lnDigito < lnMin THEN
+				lnMin = lnDigito
+			ENDIF
+		ENDIF
+		
+		lnPos = lnPos + 1
+	ENDIF
+NEXT i
+
+RETURN lnMin
+ENDPROC
+PROCEDURE ticket_valido
+LOCAL llTkValido
+LOCAL lcTicket
+LOCAL lcFileTicket
+LOCAL lcTK
+LOCAL hndFile
+LOCAL llModoLocal
+
+llTkValido = .F.
+lcTicket = ""
+lcTK = ""
+lcFileTicket = getGlobalCFG("FE_TICKACC")
+llModoLocal = getGlobalCFG("FELOCAL")
+
+IF !llModoLocal THEN
+	** Si el ticket se está transfiriendo al cloud server, entonces,
+	** Descargo el último ticket que está en el server para validar luego
+	** si es válido o no.
+	IF DATE() > FDATE(lcFileTicket) THEN
+		* Si la fecha del archivo no coincide entonces descargo del FTP
+		descargar_ticket_acceso(lcFileTicket)
+	ENDIF
+ENDIF
+
+IF FILE(ALLTRIM(lcFileTicket)) THEN
+	hndFile = FOPEN(lcFileTicket, 12)
+	IF hndFile < 0 THEN
+		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
+		=FCLOSE(hndFile)
+	ELSE
+		=FCLOSE(hndFile)
+		
+		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
+		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
+		
+		IF Thisform.fe.f1TicketEsValido THEN
+			llTkValido = .T.
+		ELSE
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+	
+	IF !llTkValido THEN
+		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
+		** generar con los nuevos datos.
+		DELETE FILE ALLTRIM(lcFileTicket)
+		
+		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+			lcTK = Thisform.fe.f1GuardarTicketAcceso()
+			hndFile = FCREATE(lcFileTicket)
+			
+			IF hndFile < 0 THEN
+				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
+			ELSE
+				=FWRITE(hndFile, lcTK)
+				llTkValido = .T.
+			ENDIF
+			
+			=FCLOSE(hndFile)
+			
+			IF !llModoLocal THEN
+				* Envío el ticket de acceso al FTP
+				enviar_ticket_acceso(lcFileTicket)
+			ENDIF
+		ELSE
+			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+ELSE
+	** Si no existe el archivo entonces lo creo y lo envío al servidor.
+	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+		lcTK = Thisform.fe.f1GuardarTicketAcceso()
+		hndFile = FCREATE(lcFileTicket)
+		
+		IF hndFile < 0 THEN
+			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
+		ELSE
+			=FWRITE(hndFile, lcTK)
+			llTkValido = .T.
+		ENDIF
+		
+		=FCLOSE(hndFile)
+
+		IF !llModoLocal THEN
+			* Envío el ticket de acceso al FTP
+			enviar_ticket_acceso(lcFileTicket)
+		ENDIF
+	ELSE
+		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+		llTkValido = .F.			
+	ENDIF	
+ENDIF
+
+RETURN llTkValido
+ENDPROC
+PROCEDURE imprimir_ticket
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4, m.porRec
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.porIIBB, m.impIIBB, m.observ, m.vendedor
+LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
+LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
+LOCAL m.cae, m.caevto, lcDia, lcMes, lcAnio
+LOCAL m.codigoCbte, m.barcode, m.code, m.condPago, m.qr
+LOCAL lnIdNum, lnResp, m.NroRto, m.nroOC
+LOCAL loPDF, lcMailMsg
+LOCAL lcNomEmp, loTicket, m.motivo
+
+loNumerador = CREATEOBJECT("odbc_result")
+lcSql = ""
+m.NroCli = Thisform.contenido.sel_Cliente.txtCodigo.Value
+m.RazSoc = Thisform.contenido.sel_Cliente.txtDescripcion.Value
+m.Telefono = ALLTRIM(Thisform.cli_telefono)
+m.direccion = ALLTRIM(Thisform.cli_calle)
+m.localidad = ALLTRIM(Thisform.cli_localidad)
+m.codPostal = ALLTRIM(Thisform.cli_codPostal)
+m.pcia = ALLTRIM(Thisform.cli_Pcia)
+m.nroCUIT = ALLTRIM(Thisform.contenido.txtCuit.Value)
+m.TipoIVA = Thisform.Contenido.txtSitIVA.Value
+m.Total = 0.00
+m.tipoDoc = ""
+m.ptoVta = ""
+m.NroCbte = ""
+m.leyenda = ""
+m.Fecha = Thisform.Contenido.txtFecEmis.Value
+m.porIVA105 = 0.00
+m.porIVA21 = 0.00
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.fecVto = Thisform.Contenido.txtFecEmis.Value + thisform.cp_cntdias
+m.tipoDoc = Thisform.tipodoc
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+lnCantCpia = 0
+m.observ = ""
+m.vendedor = thisform.nombre_usuario
+m.cae = thisform.aut_cae
+m.codigoCbte = ALLTRIM(This.codigo_cbte)
+m.barcode = ""
+m.code = ""
+lnIdNum = 0
+lnResp = 0
+m.NroRto = ""
+m.nroOC = Thisform.contenido.txtoc.Value
+lcNomEmp = getconfig("NOMEMP")
+m.condPago = IIF(This.idCondPago = 1, "CONTADO", "CUENTAS CORRIENTES")
+m.qr = Thisform.qr_image
+
+IF Thisform.sitivacli = 6 THEN
+	&& Solo extraigo el motivo si es monotributista
+	m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
+		+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
+ELSE
+	m.motivo = ""
+ENDIF
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
+m.ptovta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
+
+&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
+lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+GO TOP
+lnIdNum = cur_num.idNum
+
+loNumerador.close_query()
+
+&& Levanto la impresora configurada en el puesto de trabajo actual
+lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND "
+lcSql = lcSql + "idNum = " + ALLTRIM(STR(lnIdNum))
+
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_imp"
+
+IF !loNumerador.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loNumerador.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_imp
+IF RECCOUNT("cur_imp") = 0 THEN
+	MESSAGEBOX("La impresora no se encuentra configurada en el puesto de trabajo actual", 0+48, Thisform.Caption)
+	loNumerador.Close_Query()
+	RETURN
+ENDIF
+
+lcPrinterName = ALLTRIM(cur_imp.impresora)
+lnCantCpia = cur_imp.copias
+
+loNumerador.Close_Query()
+
+m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
+
+IF ALLTRIM(Thisform.cbte) == "COT"
+	m.leyenda = "COTIZACION"
+	m.tipoDoc = "X"
+	m.Total = cur_Subtotal.totFact
+ELSE 
+	IF ALLTRIM(Thisform.cbte) == "PTO"
+		m.leyenda = "PRESUPUESTO"
+		m.tipoDoc = "X"
+		m.Total = cur_Subtotal.impFinal
+	ELSE
+		IF ALLTRIM(Thisform.cbte) == "PED"
+			m.leyenda = "NOTA DE PEDIDO"
+			m.tipoDoc = "P"
+			m.Total = Thisform.contenido.txtTotFact.Value
+		ELSE
+			IF ALLTRIM(Thisform.Cbte) == "FC"
+				m.leyenda = "FACTURA"
+				m.Total = cur_Subtotal.totFact
+			ELSE
+				IF ALLTRIM(Thisform.Cbte) == "NC"
+					m.Leyenda = "NOTA DE CREDITO"
+					m.Total = cur_Subtotal.totFact
+				ELSE
+					IF ALLTRIM(Thisform.Cbte) == "ND"
+						m.leyenda = "NOTA DE DEBITO"
+						m.Total = cur_Subtotal.totFact
+					ENDIF
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+IF (ALLTRIM(Thisform.cbte) == "NC") .OR. (ALLTRIM(Thisform.cbte) == "FC") .OR. (ALLTRIM(Thisform.cbte) == "PTO") .OR. (ALLTRIM(Thisform.cbte) == "COT") THEN
+	m.porDesc1 = cur_Subtotal.porDesc1 
+	m.porDesc2 = cur_Subtotal.porDesc2 
+	m.porDesc3 = cur_Subtotal.porDesc3 
+	m.porDesc4 = cur_Subtotal.porDesc4 
+	m.impDesc1 = cur_Subtotal.impDesc1
+	m.impDesc2 = cur_Subtotal.impDesc2
+	m.impDesc3 = cur_Subtotal.impDesc3
+	m.impDesc4 = cur_Subtotal.impDesc4
+	m.porIVA105 = cur_Subtotal.porIVA105
+	m.porIVA21 = cur_Subtotal.porIVA21
+	m.impIVA105 = cur_Subtotal.impIVA105
+	m.impIVA21 = cur_Subtotal.impIVA21
+	m.impNeto = cur_Subtotal.impFinal
+	m.impFinal = cur_Subtotal.impFinal
+	m.porIIBB = cur_Subtotal.porIIBB
+	m.impIIBB = cur_Subtotal.impIIBB
+	m.porRec = cur_Subtotal.porRec
+	
+	SELECT cur_aux
+ELSE 
+	m.porDesc1 = Thisform.Contenido.txtDesc1.Value
+	m.porDesc2 = Thisform.Contenido.txtDesc2.Value
+	m.porDesc3 = Thisform.Contenido.txtDesc3.Value
+	m.porDesc4 = Thisform.Contenido.txtDesc4.Value
+	m.impDesc1 = Thisform.Contenido.txtImpDesc1.Value
+	m.impDesc2 = Thisform.Contenido.txtImpDesc2.Value
+	m.impDesc3 = Thisform.Contenido.txtImpDesc3.Value
+	m.impDesc4 = Thisform.Contenido.txtImpDesc4.Value
+	m.porIVA105 = Thisform.contenido.txtPorIVA105.Value
+	m.porIVA21 = Thisform.Contenido.txtPorIVA21.value
+	m.impIVA105 = Thisform.Contenido.txtImpIVA105.Value
+	m.impIVA21 = Thisform.Contenido.txtImpIVA21.Value
+	m.impNeto = Thisform.Contenido.txtST.Value
+	m.impFinal = Thisform.Contenido.txtTotFact.Value
+	m.porIIBB = Thisform.Contenido.txtPorIIBB.Value
+	m.impIIBB = Thisform.Contenido.txtImpIIBB.Value
+	m.porRec = Thisform.contenido.txtPorRec.Value
+	
+	SELECT cur_detalle
+ENDIF 
+
+m.observ = thisform.contenido.txtObserv.Value + ""
+
+&& Generación del código de barra
+m.barcode = ALLTRIM(Thisform.cli_cuit)
+m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
+m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
+m.barcode = m.barcode + ALLTRIM(m.cae)
+m.barcode = m.barcode + ALLTRIM(lcAnio)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
+m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
+m.code = m.barcode
+m.barcode = getcodbarras(m.barcode)
+
+****************************************************************************
+* Envío a imprimir el ticket
+****************************************************************************
+Thisform.oticket.limpiar_datos()
+Thisform.oticket.codigo_cbte = m.codigoCbte
+Thisform.oticket.leyenda = m.leyenda
+Thisform.oticket.letra = m.tipoDoc
+Thisform.oticket.nro_cbte = m.nroCbte
+Thisform.oticket.fecha_cbte = m.fecha
+Thisform.oticket.fecha_vencimiento = m.fecVto
+Thisform.oticket.numero_cliente = m.NroCli
+Thisform.oticket.razon_social = m.razSoc
+Thisform.oticket.direccion = m.direccion
+Thisform.oticket.codigo_postal = m.codPostal 
+Thisform.oticket.localidad = m.localidad
+Thisform.oticket.provincia = m.pcia
+Thisform.oticket.tipo_iva = m.TipoIVA
+SELECT cur_aux
+GO TOP
+DO WHILE !EOF("cur_aux")
+	Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+			cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+	SELECT cur_aux
+	SKIP
+ENDDO
+Thisform.oticket.total_neto = m.impNeto
+Thisform.oticket.total_imp_iva21 = m.impIVA21
+Thisform.oticket.total_imp_iva105 = m.impIVA105
+Thisform.oticket.total = m.Total
+Thisform.oticket.qr_image = Thisform.qr_image
+Thisform.oticket.nro_cae = m.cae
+Thisform.oticket.vto_cae = m.caevto
+Thisform.oticket.motivo = m.motivo
+Thisform.oticket.imprimir()
+
+ENDPROC
+PROCEDURE validarcampos
+LOCAL lnDiasDif
+LOCAL loRes
+LOCAL lcSql
+LOCAL loDT
+LOCAL lnPtoVta
+
+lnDiasDif = 0
+loRes = CREATEOBJECT("odbc_result")
+loDT = CREATEOBJECT("datetime")
+lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
+
+IF !DODEFAULT() THEN
+	RETURN .F.
+ENDIF
+
+IF thisform.id_ventasc <> 0 THEN
+	MESSAGEBOX("El comprobante ya se ha grabado, dirijase a autorización de comprobantes.", 0+64, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lnDiasDif = DATE() - Thisform.Contenido.txtFecEmis.Value
+IF lnDiasDif > 5 THEN
+	MESSAGEBOX("Fecha de emisión fuera de rango.", 0+48, Thisform.Caption)
+	Thisform.Contenido.txtFecEmis.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF lnDiasDif < 0 THEN
+	MESSAGEBOX("Está intentado emitir facturas con fecha superior a la actual", 0+48, Thisform.Caption)
+	Thisform.Contenido.txtFecEmis.SetFocus()
+	RETURN .F.
+ENDIF
+
+lcSql = "SELECT fecEmision FROM ventascab "
+lcSql = lcSql + "WHERE CAST(fecEmision AS DATE) > " + loDT.ToMySql(Thisform.Contenido.txtFecEmis.Value) + " "
+lcSql = lcSql + " AND ventascab.ptoVta = " + ALLTRIM(STR(lnPtoVta)) + " "
+lcSql = lcSql + " AND ventascab.cbte = 'FC' "
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_tmp"
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_tmp
+IF RECCOUNT("cur_tmp") > 0 THEN
+	MESSAGEBOX("Hay facturas emitidas posterior a la fecha ingresada en el punto de venta: " + ;
+		ALLTRIM(STR(lnPtoVta)), 0+48, Thisform.Caption)
+	Thisform.Contenido.txtFecEmis.SetFocus()
+	loRes.Close_Query()
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+
+RETURN .T.
+
+ENDPROC
+PROCEDURE imprimir
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4, m.porRec
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.porIIBB, m.impIIBB, m.observ, m.vendedor
+LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
+LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
+LOCAL m.cae, m.caevto, lcDia, lcMes, lcAnio
+LOCAL m.codigoCbte, m.barcode, m.code, m.condPago, m.qr
+LOCAL lnIdNum, lnResp, m.NroRto, m.nroOC
+LOCAL loPDF, lcMailMsg
+LOCAL lcNomEmp, llUsaTicket, m.motivo, m.totaNoGrav
+LOCAL lcRepName
+LOCAL m.saldodeudor_total
+
+&& Calculo los saldos para imprimir. Solo lo calculo si la condición de pago
+&& no es contado
+IF Thisform.contenido.sel_FormaPago.valcpoid <> 1 THEN
+	thisform.calcular_saldo_deudor_c1()
+	thisform.calcular_saldo_deudor_c2()
+ELSE
+	thisform.saldodeudor = 0.00
+	thisform.saldodeudor_c2 = 0.00
+ENDIF
+
+loNumerador = CREATEOBJECT("odbc_result")
+lcSql = ""
+m.NroCli = Thisform.contenido.sel_Cliente.txtCodigo.Value
+m.RazSoc = Thisform.contenido.sel_Cliente.txtDescripcion.Value
+m.Telefono = ALLTRIM(Thisform.cli_telefono)
+m.direccion = ALLTRIM(Thisform.cli_calle)
+m.localidad = ALLTRIM(Thisform.cli_localidad)
+m.codPostal = ALLTRIM(Thisform.cli_codPostal)
+m.pcia = ALLTRIM(Thisform.cli_Pcia)
+m.nroCUIT = ALLTRIM(Thisform.contenido.txtCuit.Value)
+m.TipoIVA = Thisform.Contenido.txtSitIVA.Value
+m.totaNoGrav = 0.00 && Agrego el no gravado
+m.Total = 0.00
+m.tipoDoc = ""
+m.ptoVta = ""
+m.NroCbte = ""
+m.leyenda = ""
+m.Fecha = Thisform.Contenido.txtFecEmis.Value
+m.porIVA105 = 0.00
+m.porIVA21 = 0.00
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.fecVto = Thisform.Contenido.txtFecEmis.Value + thisform.cp_cntdias
+m.tipoDoc = Thisform.tipodoc
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+lnCantCpia = 0
+m.observ = ""
+m.vendedor = thisform.nombre_usuario
+m.cae = thisform.aut_cae
+m.codigoCbte = ALLTRIM(Thisform.codigo_cbte)
+m.barcode = ""
+m.code = ""
+lnIdNum = 0
+lnResp = 0
+m.NroRto = ""
+m.nroOC = Thisform.contenido.txtoc.Value
+lcNomEmp = getconfig("NOMEMP")
+m.condPago = IIF(This.idCondPago = 1, "CONTADO", "CUENTAS CORRIENTES")
+m.qr = Thisform.qr_image
+llUsaTicket = .T.
+m.saldodeudor_total = thisform.saldodeudor + thisform.saldodeudor_c2
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
+m.ptovta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
+
+&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
+lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+GO TOP
+lnIdNum = cur_num.idNum
+lcRepName = ALLTRIM(cur_num.repname)
+
+loNumerador.close_query()
+
+&& Levanto la impresora configurada en el puesto de trabajo actual
+lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND "
+lcSql = lcSql + "idNum = " + ALLTRIM(STR(lnIdNum))
+
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_imp"
+
+IF !loNumerador.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loNumerador.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_imp
+IF RECCOUNT("cur_imp") = 0 THEN
+	MESSAGEBOX("La impresora no se encuentra configurada en el puesto de trabajo actual", 0+48, Thisform.Caption)
+	loNumerador.Close_Query()
+	RETURN
+ENDIF
+
+lcPrinterName = ALLTRIM(cur_imp.impresora)
+lnCantCpia = cur_imp.copias
+llUsaTicket = cur_imp.usa_ticket
+
+loNumerador.Close_Query()
+
+&& Lo pongo aca porque tengo que saber si usa o no el ticket
+IF Thisform.sitivacli = 6 THEN
+	&& Solo extraigo el motivo si es monotributista
+	IF !llUsaTicket THEN
+		m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
+			+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
+	ELSE
+		m.motivo =   "El crédito fiscal discriminado en el presente" + CHR(13) + CHR(10) ;
+				   + "comprobante, sólo podrá ser computado a " + CHR(13) + CHR(10) ;
+				   + "efectos del Régimen de Sostenimiento e " + CHR(13) + CHR(10) ;
+				   + "Inclusión Fiscal para Pequeños Contri-" + CHR(13) + CHR(10) ;
+				   + "buyentes de la Ley Nº 27.618"
+	ENDIF
+ELSE
+	m.motivo = ""
+ENDIF
+
+m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
+
+IF ALLTRIM(Thisform.cbte) == "COT"
+	m.leyenda = "COTIZACION"
+	m.tipoDoc = "X"
+	m.Total = cur_Subtotal.totFact
+ELSE 
+	IF ALLTRIM(Thisform.cbte) == "PTO"
+		m.leyenda = "PRESUPUESTO"
+		m.tipoDoc = "X"
+		m.Total = cur_Subtotal.impFinal
+	ELSE
+		IF ALLTRIM(Thisform.cbte) == "PED"
+			m.leyenda = "NOTA DE PEDIDO"
+			m.tipoDoc = "P"
+			m.Total = Thisform.contenido.txtTotFact.Value
+		ELSE
+			IF ALLTRIM(Thisform.Cbte) == "FC"
+				m.leyenda = "FACTURA"
+				m.Total = cur_Subtotal.totFact
+			ELSE
+				IF ALLTRIM(Thisform.Cbte) == "NC"
+					m.Leyenda = "NOTA DE CREDITO"
+					m.Total = cur_Subtotal.totFact
+				ELSE
+					IF ALLTRIM(Thisform.Cbte) == "ND"
+						m.leyenda = "NOTA DE DEBITO"
+						m.Total = cur_Subtotal.totFact
+					ENDIF
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+
+IF (ALLTRIM(Thisform.cbte) == "NC") .OR. (ALLTRIM(Thisform.cbte) == "FC") .OR. (ALLTRIM(Thisform.cbte) == "PTO") .OR. (ALLTRIM(Thisform.cbte) == "COT") THEN
+	m.porDesc1 = cur_Subtotal.porDesc1 
+	m.porDesc2 = cur_Subtotal.porDesc2 
+	m.porDesc3 = cur_Subtotal.porDesc3 
+	m.porDesc4 = cur_Subtotal.porDesc4 
+	m.impDesc1 = cur_Subtotal.impDesc1
+	m.impDesc2 = cur_Subtotal.impDesc2
+	m.impDesc3 = cur_Subtotal.impDesc3
+	m.impDesc4 = cur_Subtotal.impDesc4
+	m.porIVA105 = cur_Subtotal.porIVA105
+	m.porIVA21 = cur_Subtotal.porIVA21
+	m.impIVA105 = cur_Subtotal.impIVA105
+	m.impIVA21 = cur_Subtotal.impIVA21
+	m.impNeto = cur_Subtotal.impFinal
+	m.impFinal = cur_Subtotal.impFinal
+	m.porIIBB = cur_Subtotal.porIIBB
+	m.impIIBB = cur_Subtotal.impIIBB
+	m.porRec = cur_Subtotal.porRec
+	
+	&& Agrego el no gravado
+	m.totaNoGrav = cur_Subtotal.totaNoGrav
+	
+	SELECT cur_aux
+ELSE 
+	m.porDesc1 = Thisform.Contenido.txtDesc1.Value
+	m.porDesc2 = Thisform.Contenido.txtDesc2.Value
+	m.porDesc3 = Thisform.Contenido.txtDesc3.Value
+	m.porDesc4 = Thisform.Contenido.txtDesc4.Value
+	m.impDesc1 = Thisform.Contenido.txtImpDesc1.Value
+	m.impDesc2 = Thisform.Contenido.txtImpDesc2.Value
+	m.impDesc3 = Thisform.Contenido.txtImpDesc3.Value
+	m.impDesc4 = Thisform.Contenido.txtImpDesc4.Value
+	m.porIVA105 = Thisform.contenido.txtPorIVA105.Value
+	m.porIVA21 = Thisform.Contenido.txtPorIVA21.value
+	m.impIVA105 = Thisform.Contenido.txtImpIVA105.Value
+	m.impIVA21 = Thisform.Contenido.txtImpIVA21.Value
+	m.impNeto = Thisform.Contenido.txtST.Value
+	m.impFinal = Thisform.Contenido.txtTotFact.Value
+	m.totaNoGrav = thisform.contenido.txt_total_no_grav.value
+	m.porIIBB = Thisform.Contenido.txtPorIIBB.Value
+	m.impIIBB = Thisform.Contenido.txtImpIIBB.Value
+	m.porRec = Thisform.contenido.txtPorRec.Value
+	
+	SELECT cur_detalle
+ENDIF 
+m.observ = thisform.contenido.txtObserv.Value + ""
+
+&& Generación del código de barra
+m.barcode = ALLTRIM(Thisform.cli_cuit)
+m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
+m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
+m.barcode = m.barcode + ALLTRIM(m.cae)
+m.barcode = m.barcode + ALLTRIM(lcAnio)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
+m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
+m.code = m.barcode
+m.barcode = getcodbarras(m.barcode)
+
+IF thisform.contenido.chkImprimirCbte.Value THEN
+	SET PRINTER TO NAME ALLTRIM(lcPrinterName)
+
+	FOR i = 1 TO lnCantCpia 
+		IF ALLTRIM(Thisform.tipodoc) == "A" THEN
+			&& Imprime el comprobante de tipo "A"
+			SELECT cur_aux
+			IF llUsaTicket THEN
+				****************************************************************************
+				* Envío a imprimir el ticket
+				****************************************************************************
+				Thisform.oticket.limpiar_datos()
+				Thisform.oticket.con_corte = .T.
+				Thisform.oticket.codigo_cbte = m.codigoCbte
+				Thisform.oticket.leyenda = m.leyenda
+				Thisform.oticket.letra = m.tipoDoc
+				Thisform.oticket.nro_cbte = m.nroCbte
+				Thisform.oticket.fecha_cbte = m.fecha
+				Thisform.oticket.fecha_vencimiento = m.fecVto
+				Thisform.oticket.numero_cliente = m.NroCli
+				Thisform.oticket.razon_social = m.razSoc
+				Thisform.oticket.direccion = m.direccion
+				Thisform.oticket.codigo_postal = m.codPostal 
+				Thisform.oticket.localidad = m.localidad
+				Thisform.oticket.provincia = m.pcia
+				Thisform.oticket.tipo_iva = m.TipoIVA
+				Thisform.oticket.condicion_pago = m.condPago
+				SELECT cur_aux
+				GO TOP
+				DO WHILE !EOF("cur_aux")
+					Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+							cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+					SELECT cur_aux
+					SKIP
+				ENDDO
+				Thisform.oticket.total_neto = m.impNeto
+				Thisform.oticket.total_imp_iva21 = m.impIVA21
+				Thisform.oticket.total_imp_iva105 = m.impIVA105
+				Thisform.oticket.total = m.Total
+				Thisform.oticket.qr_image = Thisform.qr_image
+				Thisform.oticket.nro_cae = m.cae
+				Thisform.oticket.vto_cae = m.caevto
+				Thisform.oticket.motivo = m.motivo
+				Thisform.oticket.imprimir()
+			ELSE
+				REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+			ENDIF
+		ELSE
+			&& Imprime el comprobante de tipo "B"
+			SELECT cur_aux
+			IF llUsaTicket THEN
+				****************************************************************************
+				* Envío a imprimir el ticket
+				****************************************************************************
+				Thisform.oticket.limpiar_datos()
+				Thisform.oticket.codigo_cbte = m.codigoCbte
+				Thisform.oticket.leyenda = m.leyenda
+				Thisform.oticket.letra = m.tipoDoc
+				Thisform.oticket.nro_cbte = m.nroCbte
+				Thisform.oticket.fecha_cbte = m.fecha
+				Thisform.oticket.fecha_vencimiento = m.fecVto
+				Thisform.oticket.numero_cliente = m.NroCli
+				Thisform.oticket.razon_social = m.razSoc
+				Thisform.oticket.direccion = m.direccion
+				Thisform.oticket.codigo_postal = m.codPostal 
+				Thisform.oticket.localidad = m.localidad
+				Thisform.oticket.provincia = m.pcia
+				Thisform.oticket.tipo_iva = m.TipoIVA
+				Thisform.oticket.condicion_pago = m.condPago
+				SELECT cur_aux
+				GO TOP
+				DO WHILE !EOF("cur_aux")
+					Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+							cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+					SELECT cur_aux
+					SKIP
+				ENDDO
+				Thisform.oticket.total_neto = m.impNeto
+				Thisform.oticket.total_imp_iva21 = m.impIVA21
+				Thisform.oticket.total_imp_iva105 = m.impIVA105
+				Thisform.oticket.total_nograv = m.totaNoGrav
+				Thisform.oticket.total = m.Total
+				Thisform.oticket.qr_image = Thisform.qr_image
+				Thisform.oticket.nro_cae = m.cae
+				THisform.oticket.vto_cae = m.caevto
+				Thisform.oticket.motivo = m.motivo
+				Thisform.oticket.imprimir()
+			ELSE
+				REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+			ENDIF
+		ENDIF
+	NEXT
+ENDIF
+
+IF thisform.contenido.chkEnviarMail.Value THEN
+	Thisform.mailfc = Thisform.Contenido.txtMailFC.Value
+	lcFileName = ALLTRIM(GetGlobalCfg("FACPDFPATH")) + ;
+		this.cbte + "_" + m.NroCbte + ".pdf"
+	
+	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
+		loPDF.SetValue('output', lcFileName)
+		loPDF.SetValue('DisableOptionDialog', 'no') 
+		loPDF.SetValue('ConfirmOverwrite', 'no')
+		loPDF.SetValue('Showsettings', 'never') 
+		loPDF.SetValue('ShowSaveAS', 'nofile') 
+		loPDF.SetValue('ShowPdf', 'no') 
+		loPDF.WriteSettings(.t.)
+	
+	SET CONSOLE OFF
+	SET PRINTER TO NAME("Bullzip PDF Printer")
+	IF ALLTRIM(Thisform.tipodoc) == "A" THEN
+		&& Imprime el comprobante de tipo "A"
+		SELECT cur_aux
+		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
+	ELSE
+		&& Imprime el comprobante de tipo "B"
+		SELECT cur_aux
+		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
+	ENDIF
+	SET PRINTER TO DEFAULT
+	SET CONSOLE ON
+	
+	WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
+	DO WHILE !FILE(lcFileName)
+		
+	ENDDO
+	
+	&&MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, thisform.Caption)
+	
+	TEXT TO lcMailMsg NOSHOW
+	Estimado cliente,
+	
+	Le adjuntamos el comprobante electrónico de su compra en formato PDF.
+	Por favor no responder a este mail.
+	
+	Por favor, no responder a esta dirección de mail.
+	
+	Muchas gracias!
+	--
+	Mail generado por LINFOW Gestión.
+		
+	ENDTEXT
+	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILFIRMA") + CHR(13) + CHR(10)
+	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILEMP")
+
+	&& Procedo a hacer el envío de mail
+	DO LOCFILE("FoxyPreviewer.App")
+	WITH _screen.oFoxyPreviewer	
+		.cEmailType = "PDF"
+		.nEmailMode = 2
+		.cEMailTo = thisform.mailfc
+		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
+		.cSMTPServer = getGlobalCFG("EMAILSMTP")
+		.cEmailFrom = getGlobalCFG("EMAILEMP") + " <" + getGlobalCFG("EMAILADDR") + ">"
+		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
+		.nSMTPPort = getGlobalCFG("EMAILPORT")
+		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
+		.cSMTPUserName = getGlobalCFG("EMAILUSR")
+		.cSMTPPassword = getGlobalCFG("EMAILPWD")
+		.lReadReceipt  = .F.
+		.lPriority = .F.
+		.cEmailBody = lcMailMsg
+		.SendEmailUsingCDO(lcFileName)
+	ENDWITH	
+ENDIF
+
+DO FoxyPreviewer.App WITH "Release"
+ENDPROC
+PROCEDURE grabar_cbte_part
+**
+* Este método permite grabar el comprobante particionado cada 25 ítems.
+**
+
+LOCAL lnIdVentasC, lnIdCliente, lcFecEmis, lcCbte, lcTipoDoc, lnPtoVta
+LOCAL lnNroCbte, llAnulado, lnImpNeto, lnImpFinal, lnPorIVA21, lnImpIVA21
+LOCAL lnPorIVA105, lnImpIVA105, lnPorDesc1, lnPorDesc2, lnPorDesc3, lnPorDesc4
+LOCAL lnImpDesc1, lnImpDesc2, lnImpDesc3, lnImpDesc4, lnTotFact
+LOCAL lnIdVentasD, lnIdArticulo, lnCantidad, lnCostoRep, lnPrVenta, lnAlicIVA, lnImpIVA
+LOCAL lnTotNeto, lnSubTotal, lnSaldo, lcObserv, lnPorIIBB, lnImpIIBB
+LOCAL lnPDtoVta1, lnPDtoVta2, lnPDtoVta3, lnPDtoVta4, lnIDtoVta1, lnIDtoVta2, lnIDtoVta3, lnIDtoVta4
+LOCAL lnIdCondPago, lnIdSitIVA, lnPrArtic, lnPorRec, lnImpRec, lnUnidDesp, lnCantPack, lcUniMed
+LOCAL lnPRecItem, lnIRecItem
+LOCAL ldFecVto, lnIdOper, oDT, lnOC
+LOCAL loNumerador, lcSql, loCommand, loArtic, loOper, lnSqlSrv, lnPrNeto, lnIdCCOrig, loCliente, lnIdVendedor
+LOCAL loConDMO, loResCli, lcSql, lnIntentos
+LOCAL lnTotalNoGravado, lnItemPorNoGrav, lnItemBaseGrav, lnItemSubtNoGrav
+
+&& Inicializo las variables del detalle
+
+lnIdVentasD = 0
+lnIdArticulo = 0
+lnCantidad = 0.00
+lnCostoRep = 0.00
+lnPrVenta = 0.00
+lnAlicIVA = 0.00
+lnImpIVA = 0.00
+lnTotNeto = 0.00
+lnSubTotal = 0.00
+ldFecVto = {}
+lnIdOper = 0
+lnSaldo = 0
+oDT = CREATEOBJECT("datetime")
+loArtic = CREATEOBJECT("odbc_result")
+loOper = CREATEOBJECT("odbc_result")
+loCliente = CREATEOBJECT("odbc_result")
+loCommand = CREATEOBJECT("odbc_command")
+lnSqlSrv = INT(VAL(getconfig("SQLSRV")))
+lcObserv = Thisform.Contenido.txtObserv.Value
+lnPorIIBB = 0.00
+lnImpIIBB = 0.00
+lnPDtoVta1 = 0.00
+lnPDtoVta2 = 0.00
+lnPDtoVta3 = 0.00
+lnPDtoVta4 = 0.00
+lnIDtoVta1 = 0.00
+lnIDtoVta2 = 0.00
+lnIDtoVta3 = 0.00
+lnIDtoVta4 = 0.00
+lnPrNeto = 0.00
+lnIdCondPago = 0
+lnIdSitIVA = 0
+lnIdVendedor = 0
+loConDMO = CREATEOBJECT("odbc_connect")
+lnPrArtic = 0.00
+lnPorRec = 0.00
+lnImpRec = 0.00
+lcSql = ""
+loResCli = CREATEOBJECT("odbc_result") && Este objeto lo uso para validar que el cliente exista
+lnUniDesp = 0.00
+lnCantPack = 0.00
+lcUniMed = ""
+lnOC = Thisform.Contenido.txtOC.Value 
+lnPRecItem = 0.00
+lnIRecItem = 0.00
+
+&& Variables para grabar los totales no gravados.
+lnTotalNoGravado = 0.00
+lnItemPorNoGrav = 0.00 
+lnItemBaseGrav = 0.00
+lnItemSubtNoGrav = 0.00
+
+lcCbte = Thisform.Cbte
+
+
+lnIdCliente = Thisform.Contenido.sel_Cliente.ValCpoId
+
+IF ALLTRIM(lcCbte) == "PTO" THEN
+	&& Si es un comprobante PTO, entonces, abro la base DMO para generar el registro.
+
+	loConDMO.ConnectionString = ALLTRIM(getConfig("DMO_CC"))
+
+	IF !loConDMO.Open() THEN
+		MESSAGEBOX(loConDMO.ErrorMessage, 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF
+	
+	lcSql = "SELECT COUNT(*) AS cantCli FROM clientes WHERE idCliente = " + ALLTRIM(STR(lnIdCliente))
+	loResCli.ActiveConnection = loConDMO.ActiveConnection
+	loResCli.Cursor_Name = "cur_x"
+	
+	IF !loResCli.OpenQuery(lcSql) THEN
+		MESSAGEBOX(loResCli.Error_Message, 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF
+	
+	IF TYPE('cur_x.cantCli') != "C" THEN
+		IF cur_x.cantCli = 0 THEN
+			MESSAGEBOX("El cliente no existe en DMO, actualice la base y vuelva a intentar", 0+48, Thisform.Caption)
+			loResCli.Close_Query()
+			RETURN .F.
+		ENDIF
+	ELSE
+		IF INT(VAL(cur_x.cantCli)) = 0 THEN
+			MESSAGEBOX("El cliente no existe en DMO, actualice la base y vuelva a intentar", 0+48, Thisform.Caption)
+			loResCli.Close_Query()
+			RETURN .F.
+		ENDIF	
+	ENDIF
+	
+	loResCli.Close_Query()
+	
+	* Agrego el inicio de transacción para cuenta 2.
+	loConDMO.BeginTransaction()
+ELSE
+	* Agrego el inicio de transacción para cuenta 1.
+	goConn.BeginTransaction()
+ENDIF
+
+
+&& Asigno el idvendedor
+lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(lnIdCliente))
+loCliente.ActiveConnection = goConn.ActiveConnection
+loCliente.Cursor_Name = "cur_cliente"
+loCliente.OpenQuery(lcSql)
+
+lnIdVendedor = cur_cliente.idVendedor
+
+loCliente.Close_Query()
+
+lcFecEmis = ALLTRIM(STR(YEAR(DATETIME()))) + "-" + ALLTRIM(STR(MONTH(DATETIME()))) + " - " + ;
+	ALLTRIM(STR(DAY(DATETIME())))
+
+IF lcCbte == "COT"
+	lcTipoDoc = "X"
+	Thisform.tipodoc = lcTipoDoc
+ELSE
+	&& Aca tengo que agregar el cálculo en caso que sea
+	&& comprobante fiscal
+	IF lcCbte == "PED"
+		lcTipoDoc = "P"
+		Thisform.tipodoc = lcTipoDoc
+	ELSE
+		lcTipoDoc = thisform.calcular_tipodoc()
+		Thisform.tipodoc = lcTipoDoc
+	ENDIF
+ENDIF
+
+IF lcCbte == "PTO" THEN
+	lnPtoVta = 9999
+	lcTipoDoc = "X"
+	Thisform.tipodoc = lcTipoDoc
+ELSE
+	lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
+ENDIF
+
+Thisform.ptovta = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta))
+
+llAnulado = .F.
+lnImpNeto = cur_Subtotal.impNeto
+lnImpFinal = cur_Subtotal.impFinal
+lnPorIVA21 = cur_Subtotal.porIVA21
+lnPorIVA105 = cur_Subtotal.porIVA105
+lnImpIVA21 = cur_Subtotal.impIVA21
+lnImpIVA105 = cur_Subtotal.impIVA105
+lnPorIIBB= cur_Subtotal.porIIBB
+lnImpIIBB = cur_Subtotal.impIIBB
+lnPorDesc1 = cur_Subtotal.porDesc1
+lnPorDesc2 = cur_Subtotal.porDesc2
+lnPorDesc3 = cur_Subtotal.porDesc3
+lnPorDesc4 = cur_Subtotal.porDesc4
+lnImpDesc1 = cur_Subtotal.impDesc1
+lnImpDesc2 = cur_Subtotal.impDesc2
+lnImpDesc3 = cur_Subtotal.impDesc3
+lnImpDesc4 = cur_Subtotal.impDesc4
+lnTotFact = cur_Subtotal.totFact
+lnPorRec = cur_Subtotal.porRec
+lnImpRec = cur_Subtotal.impRec
+lnIdCondPago = clientes.idCondPago
+lnIdSitIVA = clientes.idSitIVA
+&& Agrego el total no gravado
+lnTotalNoGravado = cur_Subtotal.totaNoGrav
+
+IF ALLTRIM(thisform.cbte) == "PTO"
+	lnIdVentasC = loConDMO.GetNextID("ventascab", "idVentasC")
+ELSE
+	lnIdVentasC = goConn.GetNextID("ventascab", "idVentasC")
+ENDIF
+
+Thisform.id_ventasc = lnIdVentasC
+lnNroCbte = 0
+
+&& Calculo la fecha de vencimiento correspondiente a la factura
+IF ALLTRIM(Thisform.cbte) == "FC" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN 
+	IF thisform.cp_cntdias <> 0 THEN
+		ldFecVto = Thisform.contenido.txtFecEmis.Value + thisform.cp_cntdias
+	ELSE
+		ldFecVto = Thisform.contenido.txtFecEmis.Value
+	ENDIF 
+ELSE
+	ldFecVto = Thisform.contenido.txtFecEmis.Value
+ENDIF
+
+IF ALLTRIM(Thisform.cbte) == "FC" .OR. ALLTRIM(Thisform.cbte) == "PTO" THEN
+	lnSaldo = lnTotFact
+ELSE
+	lnSaldo = 0
+ENDIF
+
+lcSql = "INSERT INTO ventascab ( "
+lcSql = lcSql + "idVentasC, idCliente, razSoc, idTipoDoc, nroDoc, fecEmision, cbte, tipoDoc, ptoVta, numCbte, anulado, idCondPago, idSitIVA, idVendedor,"
+lcSql = lcSql + "impNeto, impFinal, porIVA21, impIVA21, porIVA105, impIVA105, porDesc1, "
+lcSql = lcSql + "porDesc2, porDesc3, porDesc4, impDesc1, impDesc2, impDesc3, impDesc4, totFact, Saldo, usuAlta, fecAlta, idHostAlta, observ, porIIBB, impIIBB, fecVto, porRec, impRec, nroOC, totaNoGrav) VALUES ("
+lcSql = lcSql + ALLTRIM(STR(lnIdVentasC)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdCliente)) + ", "
+lcSql = lcSql + "'" + STRTRAN(ALLTRIM(Thisform.contenido.sel_Cliente.txtDescripcion.Value), "'", "''") + "', "
+lcSql = lcSql + ALLTRIM(STR(Thisform.cli_idTipoDoc)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.contenido.txtCuit.Value) + "', "
+*lcSql = lcSql + oDT.getDateTime() + ", "
+lcSql = lcSql + oDT.toMySql(Thisform.contenido.txtFecEmis.Value) + ", "
+lcSql = lcSql + "'" + IIF(ALLTRIM(lcCbte) == "PTO", "FC", ALLTRIM(lcCbte)) + "', "
+lcSql = lcSql + "'" + ALLTRIM(lcTipoDoc) + "', "
+lcSql = lcSql + ALLTRIM(STR(lnPtoVta)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", "
+lcSql = lcSql + IIF(lnSqlSrv = 0, "false", "0") + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdCondPago)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdVendedor)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpNeto, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpFinal, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorIVA21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIVA21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorIVA105, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIVA105, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorDesc1, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorDesc2, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorDesc3, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorDesc4, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpDesc1, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpDesc2, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpDesc3, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpDesc4, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnTotFact, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnSaldo, 10, 2)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', " 
+lcSql = lcSql + oDT.getDateTime() + ", "
+lcSql = lcSql + "'" + SYS(0) + "', '" + strtran(ALLTRIM(lcObserv), "'", "''") + "', "
+lcSql = lcSql + ALLTRIM(STR(lnPorIIBB, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIIBB, 10, 2)) + ", "
+
+IF INT(VAL(getconfig("SQLSRV"))) = 1 THEN
+	lcSql = lcSql + oDT.getDateTime() + " + " + ALLTRIM(STR(thisform.cp_cntdias)) + ", "
+ELSE
+	lcSql = lcSql + oDT.toMySql(ldFecVto) + ", "
+ENDIF
+
+lcSql = lcSql + ALLTRIM(STR(lnPorRec, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpRec, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnOC)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnTotalNoGravado, 20, 2)) + ")"
+
+loCommand.CommandText = lcSql
+
+IF ALLTRIM(lcCbte) == "PTO" THEN
+	loCommand.ActiveConnection = loConDMO.ActiveConnection
+	
+	IF !loCommand.Execute()
+		thisform.desbloq_numerador()
+		loConDMO.Rollback()
+		RETURN .F.
+	ENDIF	
+ELSE
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	IF !loCommand.Execute()
+		thisform.desbloq_numerador()
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+ENDIF
+
+&& Grabo el detalle del comprobante
+
+SELECT cur_aux
+IF RECCOUNT() > 0
+	GO TOP
+ENDIF
+
+lnIdVentasD = 0
+
+DO WHILE !EOF()
+	lnIdVentasD = lnIdVentasD + 1
+	
+	lnIdArticulo = cur_aux.idArticulo
+	lnCantidad = cur_aux.cantidad
+	lnAlicIVA = cur_aux.alicIVA
+	lnPrVenta = cur_aux.PrVta
+	lnImpIVA = cur_aux.impIVA
+	lnPrNeto = cur_aux.impNeto
+	lnTotNeto = cur_aux.totNeto
+	lnSubTotal = cur_aux.subTotal
+	lnPDtoVta1 = cur_aux.pDtoVta1
+	lnPDtoVta2 = cur_aux.pDtoVta2
+	lnPDtoVta3 = cur_aux.pDtoVta3
+	lnPDtoVta4 = cur_aux.pDtoVta4
+	lnIDtoVta1 = cur_aux.iDtoVta1
+	lnIDtoVta2 = cur_aux.iDtoVta2
+	lnIDtoVta3 = cur_aux.iDtoVta3
+	lnIDtoVta4 = cur_aux.iDtoVta4
+	
+	lnPorDesc1 = cur_aux.pDtoCli1
+	lnPorDesc2 = cur_aux.pDtoCli2
+	lnPorDesc3 = cur_aux.pDtoCli3
+	lnPorDesc4 = cur_aux.pDtoCli4
+	lnImpDesc1 = cur_aux.iDtoCli1
+	lnImpDesc2 = cur_aux.iDtoCli2
+	lnImpDesc3 = cur_aux.iDtoCli3
+	lnImpDesc4 = cur_aux.iDtoCli4
+	
+	lnPrArtic = cur_aux.prArtic
+	lnPorRec = cur_aux.pRecVta
+	lnImpRec = cur_aux.iRecVta
+	lnUniDesp = cur_aux.uniDesp
+	lnCantPack = cur_aux.cantPack
+	lcUniMed = cur_aux.uniMed
+	lnPRecItem = cur_aux.pRecItem
+	lnIRecItem = cur_aux.iRecItem
+	lnItemPorNoGrav = cur_aux.porNoGrav
+	lnItemBaseGrav = cur_aux.baseGrav
+	lnItemSubtNoGrav = cur_aux.subtNoGrav
+	
+	lcSql = "SELECT * FROM articulos WHERE idArticulo = " + ALLTRIM(STR(lnIdArticulo))
+	
+	IF ALLTRIM(lcCbte) == "PTO" THEN
+		loArtic.ActiveConnection = loConDMO.ActiveConnection
+	ELSE
+		loArtic.ActiveConnection = goConn.ActiveConnection
+	ENDIF
+	
+	loArtic.Cursor_Name = "cur_Artic"
+	loArtic.OpenQuery(lcSql)
+	
+	SELECT cur_Artic
+	lnCostoRep = cur_Artic.costoRep
+	
+	loArtic.close_query()
+
+	lcSql = "INSERT INTO ventasdet ( "
+	lcSql = lcSql + "idVentasD, "
+	lcSql = lcSql + "idVentasC, "
+	lcSql = lcSql + "idArticulo, "
+	lcSql = lcSql + "descripcio, "
+	lcSql = lcSQl + "nroPart, "
+	lcSql = lcSql + "Cantidad, "
+	
+	IF ALLTRIM(lcCbte) == "PED" THEN
+		lcSql = lcSql + "cant_pri1, "
+	ENDIF
+	
+	lcSql = lcSql + "costoRep, "
+	lcSql = lcSql + "prVenta, "
+	lcSql = lcSql + "alicIVA, "
+	lcSql = lcSql + "impIVA, "
+	lcSql = lcSql + "subTotal, "
+	lcSql = lcSql + "porDesc1, "
+	lcSql = lcSql + "porDesc2, "
+	lcSql = lcSql + "porDesc3, "
+	lcSql = lcSql + "porDesc4, "
+	lcSql = lcSql + "impDesc1, "
+	lcSql = lcSql + "impDesc2, "
+	lcSql = lcSql + "impDesc3, "
+	lcSql = lcSql + "impDesc4, "
+	lcSql = lcSql + "pDtoVta1, "
+	lcSql = lcSql + "pDtoVta2, "
+	lcSql = lcSql + "pDtoVta3, "
+	lcSql = lcSql + "pDtoVta4, "
+	lcSql = lcSql + "iDtoVta1, "
+	lcSql = lcSql + "iDtoVta2, "
+	lcSql = lcSql + "iDtoVta3, "
+	lcSql = lcSql + "iDtoVta4, "
+	lcSql = lcSql + "pRecItem, "
+	lcSql = lcSql + "iRecItem, "
+	lcSql = lcSql + "impNeto, "
+	lcSql = lcSql + "totNeto, "
+	
+	&& Agrego los no gravados
+	lcSql = lcSql + "porNoGrav, "
+	lcSql = lcSql + "baseGrav, "
+	lcSql = lcSql + "subtNoGrav, "
+	
+	lcSql = lcSql + "prArtic, "
+	lcSql = lcSql + "esOferta, "
+	lcSql = lcSql + "pRecVta, "
+	lcSql = lcSql + "iRecVta, "
+	lcSql = lcSql + "uniDesp, "
+	lcSql = lcSql + "cantPack, "
+	lcSql = lcSql + "codUM) VALUES ( "
+	lcSql = lcSql + ALLTRIM(STR(lnIdVentasD)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIdVentasC)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIdArticulo)) + ", "
+	lcSql = lcSql + "'" + STRTRAN(ALLTRIM(cur_aux.descripcio), "'", "''") + "', "
+	lcSql = lcSql + "'" + ALLTRIM(cur_aux.nroPart) + "', "
+	lcSql = lcSql + ALLTRIM(STR(lnCantidad, 10, 2)) + ", "
+	
+	IF ALLTRIM(lcCbte) == "PED" THEN
+		lcSql = lcSql + ALLTRIM(STR(lnCantidad, 10, 2)) + ", "
+	ENDIF	
+	
+	lcSql = lcSql + ALLTRIM(STR(lnCostoRep, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPrVenta, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnAlicIVA, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnImpIVA, 10, 4)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnSubTotal, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPorDesc1, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPorDesc2, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPorDesc3, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPorDesc4, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnImpDesc1, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnImpDesc2, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnImpDesc3, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnImpDesc4, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta1, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta2, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta3, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPDtoVta4, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta1, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta2, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta3, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIDtoVta4, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPRecItem, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIRecItem, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPrNeto, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnTotNeto, 10, 2)) + ", "
+	
+	&& Agrego los no gravados
+	lcSql = lcSql + ALLTRIM(STR(lnItemPorNoGrav, 20, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnItemBaseGrav, 20, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnItemSubtNoGrav, 20, 2)) + ", "
+	
+	lcSql = lcSql + ALLTRIM(STR(lnPrArtic, 10, 2)) + ", "
+	lcSql = lcSql + IIF(cur_detalle.esOferta, "1", "0") + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnPorRec, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnImpRec, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnUniDesp, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnCantPack, 10, 2)) + ", "
+	lcSql = lcSql + "'" + ALLTRIM(lcUniMed) + "')"
+	
+	*******************************************************************************************
+	
+	loCommand.CommandText = lcSql
+
+	IF ALLTRIM(lcCbte) == "PTO" 
+		loCommand.ActiveConnection = loConDMO.ActiveConnection
+		IF !loCommand.Execute()
+			thisform.desbloq_numerador()
+			loConDMO.Rollback()
+			RETURN .F.
+		ENDIF	
+	ELSE
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		IF !loCommand.Execute()
+			thisform.desbloq_numerador()
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ENDIF	
+	
+	&& Si es nota de crédito entonces, actualizo la cantidad de NC en los
+	&& items de la factura.
+	&& Actualizar este dato tiene como objetivo de que si se hace más una NC
+	&& que no se pueda hacer dos veces sobre la misma cantidad de un producto
+	&& sino que por el resto.
+	
+	IF ALLTRIM(Thisform.cbte) == "NC" THEN
+		lcSql = "UPDATE ventasdet SET cantNC = cantNC + " + ALLTRIM(STR(lnCantidad, 10, 2)) + " "
+		lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.idorigen)) + " "
+		lcSql = lcSql + " AND idArticulo = " + ALLTRIM(STR(cur_aux.idArticulo))
+		
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		loCommand.CommandText = lcSql
+		
+		IF !loCommand.Execute() THEN
+			thisform.desbloq_numerador()
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ENDIF
+	
+	SELECT cur_aux
+	SKIP
+ENDDO
+
+IF ALLTRIM(thisform.cbte) == "PTO" THEN
+	lnProxID = loConDMO.GetNextId("cc_cli", "idCC_Cli")
+	lnIdOper = loConDMO.GetNextID("cc_cli", "idOper")		
+	lnIdCliente = Thisform.contenido.sel_Cliente.valcpoid
+
+	&& Inserto el registro correspondiente a la factura en la tabla de cuentas corrientes
+	lcSql = "INSERT INTO cc_cli (idCC_Cli, idCliente, idCC_Orig, cbte, nroCbte, tipoDoc, ptoVta, idCondPago, idSitIVA, idVendedor, "
+	lcSql = lcSql + "fecEmis, fecVto, impDebe, impHaber, idOper, idVentasC, usuAlta, fecAlta, idHostAlta) VALUES ( "
+	lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ALLTRIM(STR(lnIdCliente)) + ", null, '" + IIF(ALLTRIM(lcCbte) == "PTO", "FC", ALLTRIM(lcCbte)) + "', "
+	lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", '" + ALLTRIM(lcTipoDoc) + "', " + ALLTRIM(STR(lnPtoVta)) + ", " + ALLTRIM(STR(lnIdCondPago)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", " + ALLTRIM(STR(lnIdVendedor)) + ", " + oDT.toMySql(Thisform.contenido.txtFecEmis.Value) + ", "
+	lcSql = lcsql + IIF(INT(VAL(getconfig("SQLSRV"))) = 1, oDT.getDateTime() + " + " + ALLTRIM(STR(thisform.cp_cntdias)), oDT.toMySql(ldFecVto)) + ", " + ALLTRIM(STR(lnTotFact, 10, 2)) + ", 0, " + ALLTRIM(STR(lnIdOper)) + ", " + ALLTRIM(STR(lnIdVentasC)) + ", "
+	lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', " + oDT.getDateTime() + ", '" + ALLTRIM(SYS(0)) + "')"
+
+	loCommand.ActiveConnection = loConDMO.ActiveConnection	
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute()	
+		thisform.desbloq_numerador()
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+ENDIF
+
+&& Ahora tengo que generar la relación entre el comprobante de origen con el comprobante
+&& de destino
+IF (ALLTRIM(Thisform.Cbte) == "FC") .OR. (ALLTRIM(Thisform.cbte) == "PTO") THEN
+	SELECT cur_cbtes
+	IF RECCOUNT("cur_cbtes") > 0 THEN
+		GO TOP
+	ENDIF
+	
+	DO WHILE !EOF("cur_cbtes")
+		IF cur_cbtes.sel THEN
+			IF ALLTRIM(thisform.cbte) == "PTO" THEN
+				lnProxID = loConDMO.GetNextId("ventasrel", "idVtaRel")
+			ELSE
+				lnProxID = goConn.GetNextId("ventasrel", "idVtaRel")
+			ENDIF
+			
+			lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES ("
+			lcSql = lcSql + ALLTRIM(STR(lnProxID)) + ", " + ALLTRIM(STR(cur_cbtes.idVentasC)) + ", " + ALLTRIM(STR(lnIdVentasC)) + ")"
+			
+			loCommand.CommandText = lcSql
+
+			IF ALLTRIM(lcCbte) == "PTO" 
+				loCommand.ActiveConnection = loConDMO.ActiveConnection
+				IF !loCommand.Execute()
+					thisform.desbloq_numerador()
+					loConDMO.Rollback()
+					RETURN .F.
+				ENDIF	
+			ELSE
+				loCommand.ActiveConnection = goConn.ActiveConnection
+				IF !loCommand.Execute()
+					thisform.desbloq_numerador()
+					goConn.Rollback()
+					RETURN .F.
+				ENDIF
+			ENDIF
+		ENDIF
+		
+		SELECT cur_cbtes
+		SKIP
+	ENDDO
+ENDIF
+
+************************************************************************************************
+* Solo se procede a hacer el grabado de stock si es PTO.
+************************************************************************************************
+IF (ALLTRIM(Thisform.Cbte) <> "COT" .OR. ALLTRIM(THisform.Cbte) <> "NC") THEN
+
+	IF ALLTRIM(thisform.cbte) == "PTO" THEN
+		Thisform.mov_stock.circuito = "S"
+		Thisform.mov_stock.tipodoc = ""
+		Thisform.mov_stock.cbte = ""
+		IF !Thisform.mov_stock.grabar2() THEN
+			MESSAGEBOX(Thisform.mov_stock.ErrorMessage, 0+48, Thisform.Caption)
+			thisform.desbloq_numerador()
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ENDIF	
+ENDIF
+
+IF ALLTRIM(thisform.cbte) == "PTO" THEN
+	loConDMO.Commit()
+	loConDMO.close()	
+ELSE
+	goConn.Commit()
+ENDIF
+
+thisform.desbloq_numerador()
+thisform.id_ventasc = lnIdVentasC
+
+RETURN .T.
+ENDPROC
+PROCEDURE particionar_cbte
+************************************************************************************
+** Esta función permite grabar una factura cada 25 items.
+** Pablo Díaz
+************************************************************************************
+
+LOCAL ln_cantitems
+LOCAL lnResp, llPreguntarPorComprobante
+
+STORE 0 TO ln_cantitems, lnResp
+STORE getGlobalCFG("RTOIMPXFC") TO llPreguntarPorComprobante
+
+IF getGlobalCFG("PRINT_RTO") .AND. !llPreguntarPorComprobante THEN
+	lnResp = MESSAGEBOX("Desea imprimir remitos para este cliente", 4+32, Thisform.Caption)
+ENDIF
+
+SELECT cur_aux
+ZAP 
+
+*!*	IF !(ALLTRIM(thisform.cbte) == "COT") THEN
+*!*		IF !thisform.validar_stk_en_grabado() THEN
+*!*			goConn.Rollback()
+*!*			RETURN .F.
+*!*		ENDIF
+*!*	ENDIF
+
+SELECT cur_detalle
+IF RECCOUNT() > 0 THEN 
+	GO TOP
+ELSE 
+	RETURN .F.
+ENDIF 
+
+************************************************************************************
+** Paso de a 25 items del cursor de detalle al cursor auxiliar
+************************************************************************************
+SELECT cur_detalle
+DO WHILE !EOF()
+	ln_cantitems = ln_cantitems + 1
+	
+	SELECT cur_aux
+	APPEND BLANK	
+	
+	REPLACE cur_aux.idDetalle WITH cur_detalle.idDetalle
+	REPLACE cur_aux.idArticulo WITH cur_detalle.idArticulo ADDITIVE
+	REPLACE cur_aux.codArt WITH cur_detalle.codArt ADDITIVE
+	REPLACE cur_aux.descripcio WITH cur_detalle.descripcio ADDITIVE
+	REPLACE cur_aux.nroPart WITH cur_detalle.nroPart ADDITIVE
+	REPLACE cur_aux.cantidad WITH cur_detalle.cantidad ADDITIVE
+	REPLACE cur_aux.prVta WITH cur_detalle.prVta ADDITIVE
+	REPLACE cur_aux.pDtoVta1 WITH cur_detalle.pDtoVta1 ADDITIVE
+	REPLACE cur_aux.pDtoVta2 WITH cur_detalle.pDtoVta2 ADDITIVE
+	REPLACE cur_aux.pDtoVta3 WITH cur_detalle.pDtoVta3 ADDITIVE
+	REPLACE cur_aux.pDtoVta4 WITH cur_detalle.pDtoVta4 ADDITIVE
+	REPLACE cur_aux.iDtoVta1 WITH cur_detalle.iDtoVta1 ADDITIVE
+	REPLACE cur_aux.iDtoVta2 WITH cur_detalle.iDtoVta2 ADDITIVE
+	REPLACE cur_aux.iDtoVta3 WITH cur_detalle.iDtoVta3 ADDITIVE
+	REPLACE cur_aux.iDtoVta4 WITH cur_detalle.iDtoVta4 ADDITIVE
+	REPLACE cur_aux.pDtoCli1 WITH cur_detalle.pDtoCli1 ADDITIVE
+	REPLACE cur_aux.pDtoCli2 WITH cur_detalle.pDtoCli2 ADDITIVE
+	REPLACE cur_aux.pDtoCli3 WITH cur_detalle.pDtoCli3 ADDITIVE
+	REPLACE cur_aux.pDtoCli4 WITH cur_detalle.pDtoCli4 ADDITIVE
+	REPLACE cur_aux.iDtoCli1 WITH cur_detalle.iDtoCli1 ADDITIVE
+	REPLACE cur_aux.iDtoCli2 WITH cur_detalle.iDtoCli2 ADDITIVE
+	REPLACE cur_aux.iDtoCli3 WITH cur_detalle.iDtoCli3 ADDITIVE
+	REPLACE cur_aux.iDtoCli4 WITH cur_detalle.iDtoCli4 ADDITIVE
+	REPLACE cur_aux.alicIVA WITH cur_detalle.alicIVA ADDITIVE
+	REPLACE cur_aux.impIVA WITH cur_detalle.impIVA ADDITIVE
+	REPLACE cur_aux.impNeto WITH cur_detalle.impNeto ADDITIVE
+	REPLACE cur_aux.totNeto WITH cur_detalle.totNeto ADDITIVE
+	REPLACE cur_aux.subTotal WITH cur_detalle.subTotal ADDITIVE
+	REPLACE cur_aux.prArtic WITH cur_detalle.prArtic ADDITIVE
+	REPLACE cur_aux.esOferta WITH cur_detalle.esOferta ADDITIVE
+	REPLACE cur_aux.pRecVta WITH cur_detalle.pRecVta ADDITIVE 
+	REPLACE cur_aux.iRecVta WITH cur_detalle.iRecVta ADDITIVE
+	REPLACE cur_aux.uniDesp WITH cur_detalle.uniDesp ADDITIVE
+	REPLACE cur_aux.cantPack WITH cur_detalle.cantPack ADDITIVE 
+	REPLACE cur_aux.uniMed WITH cur_detalle.uniMed ADDITIVE
+	
+	&& Agrego los recargos
+	REPLACE cur_aux.pRecItem WITH cur_detalle.pRecItem ADDITIVE
+	REPLACE cur_aux.iRecItem WITH cur_detalle.iRecItem ADDITIVE
+	
+	&& Agrego los campos de no gravados
+	REPLACE cur_aux.porNoGrav WITH cur_detalle.porNoGrav ADDITIVE
+	REPLACE cur_aux.baseGrav WITH cur_detalle.baseGrav ADDITIVE
+	REPLACE cur_aux.subtNoGrav WITH cur_detalle.subtNoGrav ADDITIVE
+	
+	&& Si lleva stock agrege los movimientos que hay que generar.
+	IF ALLTRIM(cur_detalle.nropart) == "" THEN
+		IF Thisform.Mov_stock.lleva_stock(cur_detalle.idArticulo) THEN
+			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
+				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
+						cur_detalle.Cantidad, "")
+			ENDIF
+		ENDIF
+	ELSE
+		IF Thisform.Mov_stock.lleva_stock(cur_detalle.idArticulo) THEN
+			IF !(RIGHT(ALLTRIM(cur_detalle.codArt), 3) == "ARX") THEN
+				Thisform.mov_stock.agregar_articulo(cur_detalle.idArticulo, ;
+						cur_detalle.Cantidad, cur_detalle.nropart)
+			ENDIF
+		ENDIF
+	ENDIF	
+	
+	&& Cuando el contador llegue a 25 items grabo una factura nueva.
+	IF ln_cantitems = 25
+		&& tengo que hacer el calculo de los totales y el grabado		
+		Thisform.calc_subtot_cur_aux()
+		
+		IF !thisform.grabar_cbte_part()
+			RETURN .F.
+		ENDIF	
+		
+		&& Verifico que el comprobante haya sido grabado correctamente
+		IF !Thisform.verificar_cbte() THEN
+			MESSAGEBOX("Este comprobante no se encuentra grabado.", 0+48, Thisform.Caption)
+			RETURN .F.
+		ENDIF
+		
+		&& antes de enviar a autorizar
+		IF !thisform.enviar_wsafipfe() THEN
+			MESSAGEBOX(Thisform.error_message, 0+48, Thisform.Caption)
+			*RETURN .F.
+		ELSE
+			IF thisform.fe_set_cae() THEN
+				this.add_faccob(thisform.id_ventasc)
+				thisform.grabar_ctacte(thisform.id_ventasc)				
+				thisform.imprimir()
+				
+				&& Habilito la pregunta solo si está habilitada la impresión de remitos
+				IF getGlobalCFG("PRINT_RTO") THEN
+					&& Pregunto si quiere imprimir el remito por comprobante
+					IF llPreguntarPorComprobante THEN
+						lnResp = MESSAGEBOX("Desea imprimir remitos para esta factura", 4+32, Thisform.Caption)
+					ENDIF
+					
+					IF lnResp = 6 THEN
+						*thisform.imprimir_rtos()
+						Thisform.generar_remitos()
+					ENDIF
+				ENDIF
+			ENDIF
+		ENDIF
+		
+		ln_cantitems = 0
+		
+		SELECT cur_aux
+		ZAP
+		Thisform.mov_stock.limpiar()	
+	ENDIF 
+	
+	SELECT cur_detalle
+	SKIP  
+ENDDO 
+
+&& En el caso que la ultima factura no haya llegado a los 25 items
+&& tengo que hacer una nueva factura con los items restantes.
+IF ln_cantitems <> 0 
+	&& tengo que hacer el calculo de los totales y el grabado
+	Thisform.calc_subtot_cur_aux()
+		
+	IF !thisform.grabar_cbte_part()
+		RETURN .F.
+	ENDIF	
+	
+	IF !thisform.enviar_wsafipfe() THEN
+		MESSAGEBOX(Thisform.error_message, 0+48, Thisform.Caption)
+		RETURN .F.
+	ELSE
+		IF thisform.fe_set_cae() THEN
+			this.add_faccob(thisform.id_ventasc)
+			thisform.grabar_ctacte(thisform.id_ventasc)			
+			thisform.imprimir()
+			
+			&& Habilito la pregunta solo si está habilitada la emisión de remitos
+			IF getGlobalCFG("PRINT_RTO") THEN
+				&& Pregunto si quiere impimir el remito por comprobante
+				IF llPreguntarPorComprobante THEN
+					lnResp = MESSAGEBOX("Desea imprimir remitos para esta factura", 4+32, Thisform.Caption)
+				ENDIF
+				
+				IF lnResp = 6 .AND. getGlobalCFG("PRINT_RTO") THEN
+					Thisform.generar_remitos()
+				ENDIF
+			ENDIF
+				
+			thisform.id_ventasc = 0
+		ENDIF
+	ENDIF
+	
+	Thisform.mov_stock.limpiar()
+ENDIF
+
+IF getglobalcfg("PAGCTDO") .AND. This.cp_cntdias = 0 THEN
+	IF getglobalcfg("USECOBMOS") THEN
+		Thisform.realizar_cobranza_mostrador()
+	ELSE
+		Thisform.realizar_cobranza()
+	ENDIF
+ENDIF
+
+&& Verifico si hay saldo a favor en la cuenta corriente y si lo hay
+&& lanzo una notificación.
+IF thisform.validar_saldos_a_compensar() THEN
+	MESSAGEBOX("La cuenta corriente de este cliente tiene comprobantes para compensar. " ;
+			+ "Se recomienda entrar a la misma y dejar ordenada la cuenta", 0+64, Thisform.Caption)
+ENDIF
+
+RETURN .T.
+ENDPROC
+PROCEDURE verificar_cbte
+****************************************************************************
+* Verifica si el comprobante se grabó o no.
+* La validación se usa en particionar_cbte.
+****************************************************************************
+
+LOCAL loRes
+LOCAL lcSql
+
+loRes = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+lcSql = "SELECT COUNT(*) AS cantReg "
+lcSql = lcSql + "FROM ventascab "
+lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+
+IF !loRes.OpenQuery(lcSql) THEN
+	Thisform.error_message = loRes.Error_Message
+	RETURN .F.
+ENDIF
+
+* Si el COUNT no devuelve nada entonces significa que no se
+* grabó el comprobante en la base de datos.
+SELECT cur_x
+IF INT(VAL(cur_x.cantReg)) = 0 THEN
+	loRes.Close_Query()
+	RETURN .F.
+ENDIF
+
+loRes.Close_Query()
+
+RETURN .T.
+
+ENDPROC
+PROCEDURE Init
+DODEFAULT()
+Thisform.oTicket = CREATEOBJECT("cls_tickets")
+Thisform.oTicket.crear_cursor()
+
+ENDPROC
+
+
+************************************************************
+OBJETO: fe
+************************************************************
+*** PROPIEDADES ***
+Top = 492
+Left = 636
+Height = 24
+Width = 36
+Name = "fe"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: clsformcbtes_fe
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+Arial, 1, 9, 6, 15, 12, 32, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cls_cbtesnc_vtas
+************************************************************
+*** PROPIEDADES ***
+idventasc = 0
+idcliente = 
+fecemision = {}
+cbte = 
+tipodoc = 
+ptovta = 0
+numcbte = 0
+anulado = 0
+impneto = 0.00
+impfinal = 0.00
+poriva21 = 0.00
+impiva21 = 0.00
+poriva105 = 0.00
+impiva105 = 0.00
+pordesc1 = 0.00
+impdesc1 = 0.00
+pordesc2 = 0.00
+impdesc2 = 0.00
+pordesc3 = 0.00
+impdesc3 = 0.00
+pordesc4 = 0.00
+impdesc4 = 0.00
+totfact = 0.00
+saldo = 0.00
+espendi = 0
+usuario = 
+fecha = {}
+hostname = 
+esdemo = .F.
+demo_connection = 
+error_message = 
+printerdevice = 
+observ = 
+poriibb = 0.00
+impiibb = 0.00
+idcondpago = 0
+idsitiva = 0
+idvendedor = 0
+procesado = 0
+fecvto = {}
+nro_item = 0
+id_vta_origen = 0
+lnncimpneto = 0.00
+lnncimpdesc1 = 0.00
+lnncimpdesc2 = 0.00
+lnncimpdesc3 = 0.00
+lnncimpdesc4 = 0.00
+lnncimpfinal = 0.00
+lnncimpiva21 = 0.00
+lnncimpiva105 = 0.00
+lnncporiibb = 0.00
+lnncimpiibb = 0.00
+lnnctotfact = 0.00
+idcc_origen = 0
+id_oper = 0
+cant_copianc = 0
+lnncpordto1 = 0.00
+lnncpordto2 = 0.00
+lnncpordto3 = 0.00
+lnncpordto4 = 0.00
+nrocbte = 
+cbte_origen = 
+tipodoc_origen = 
+nrocbte_origen = 
+fis_num_cbte = 
+porrec = 0.00
+imprec = 0.00
+lnncporrec = 0.00
+lnncimprec = 0.00
+cli_razsoc = 
+cli_tipodoc = 0
+cli_nrodoc = 
+esfe = 0
+vincular_cbte = .F.
+aut_tipocbteorigen = 
+ptovta_origen = 
+nro_origen = 
+tipodoc_codafip = 
+totanograv = 0.00
+nc_totanograv = 0.00
+repname = 
+repnamecp = 
+Name = "cls_cbtesnc_vtas"
+
+*** METODOS ***
+PROCEDURE grabar
+* Tener en cuenta que al transacción deberá ser manejada desde donde se realiza la llamada.
+* Este método devolverá .T. en caso de que se haya ejecutado correctamente o .F. en caso de que 
+* se haya detectado algún error.
+
+LOCAL lcSql, loCommand, loDT
+LOCAL lnIdCC_Cli, loMovStock, lnIdVtaRel
+LOCAL lnIdVentasD, lnOperacion
+
+lcSql = ""
+loCommand = CREATEOBJECT("odbc_command")
+loDT = CREATEOBJECT("datetime")
+loMovStock = CREATEOBJECT("cl_mov_stock")
+lnIdCC_Cli = 0
+lnIdVtaRel = 0
+lnIdVentasD = 0
+lnOperacion = 0
+
+loMovStock.circuito = "S"
+loMovStock.crear_cursor()
+loMovStock.tipomov = "ENT"
+
+this.cbte = "NC"
+IF INT(VAL(getConfig("DEMO"))) = 1 THEN
+	this.ptovta = 9999
+ELSE
+	this.ptovta = INT(VAL(getConfig("PTOVTA")))
+ENDIF
+
+IF EMPTY(this.tipodoc) .OR. ALLTRIM(this.tipodoc) == "" THEN
+	this.calcuar_tipodoc()
+ENDIF
+
+IF this.esfe = 0 THEN 
+	IF EMPTY(this.fis_num_cbte) THEN
+		IF !this.calcular_nro_cbte() THEN
+			This.error_message = "No se puede calcular el número de comprobante"
+			RETURN .F.
+		ENDIF
+	ELSE
+		&& Si la propiedad fis_num_cbte no es vacío, entonces, se debe tomar el número
+		&& para grabar.
+		&& this.nrocbte = this.fis_num_cbte
+		this.numcbte = this.fis_num_cbte
+	ENDIF
+ENDIF 
+
+goConn.BeginTransaction()
+
+this.idventasc = goConn.getNextID("ventascab", "idVentasC")
+
+lcSql = "INSERT INTO ventascab ( "
+lcSql = lcSql + "idVentasC, "
+lcSql = lcSql + "idCliente, "
+lcSql = lcSql + "razSoc, "
+lcSql = lcSql + "idTipoDoc, "
+lcSql = lcSql + "nroDoc, "
+lcSql = lcSql + "fecEmision, "
+lcSql = lcSql + "cbte, "
+lcSql = lcSql + "tipoDoc, "
+lcSql = lcSql + "ptoVta, "
+lcSql = lcSql + "numCbte, "
+lcSql = lcSql + "anulado, "
+lcSql = lcSql + "impNeto, "
+lcSql = lcSql + "impFinal, "
+lcSql = lcSql + "porIVA21, "
+lcSql = lcSql + "impIVA21, "
+lcSql = lcSql + "porIVA105, "
+lcSql = lcSql + "impIVA105, "
+lcSql = lcSql + "porDesc1, "
+lcSql = lcSql + "impDesc1, "
+lcSql = lcSql + "porDesc2, "
+lcSql = lcSql + "impDesc2, "
+lcSql = lcSql + "porDesc3, "
+lcSql = lcSql + "impDesc3, "
+lcSql = lcSql + "porDesc4, "
+lcSql = lcSql + "impDesc4, "
+lcSql = lcSql + "totaNoGrav, "	&& Agrego el no gravado
+lcSql = lcSql + "totFact, "
+lcSql = lcSql + "saldo, "
+lcSql = lcSql + "esPendi, "
+lcSql = lcSql + "usuAlta, "
+lcSql = lcSql + "fecAlta, "
+lcSql = lcSql + "idHostAlta, "
+lcSql = lcSql + "observ, "
+lcSql = lcSql + "porIIBB, "
+lcSql = lcSql + "impIIBB, "
+lcSql = lcSql + "idCondPago, "
+lcSql = lcSql + "idSitIVA, "
+lcSql = lcSql + "idVendedor, "
+lcSql = lcSql + "procesado, "
+lcSql = lcSql + "fecVto, "
+lcSql = lcSql + "porRec, "
+lcSql = lcSql + "impRec) "
+lcSql = lcSql + "VALUES ( "
+lcSql = lcSql + ALLTRIM(STR(this.idventasc)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.idcliente)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(this.cli_razsoc) + "', "
+lcSql = lcSql + ALLTRIM(STR(this.cli_tipodoc)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(this.cli_nrodoc) + "', "
+lcSql = lcSql + loDT.toMySql(this.fecemision) + ", "
+lcSql = lcSql + "'" + ALLTRIM(this.cbte) + "', "
+lcSql = lcSql + "'" + ALLTRIM(this.tipodoc) + "', "
+lcSql = lcSql + ALLTRIM(STR(this.ptovta)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.numcbte)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.anulado)) + 	", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpneto, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpfinal, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.poriva21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpiva21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.poriva105, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpiva105, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.pordesc1, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc1, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.pordesc2, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc2, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.pordesc3, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc3, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.pordesc4, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpdesc4, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.nc_totanograv, 20, 2)) + ", "	&& Agrego el no gravado
+lcSql = lcSql + ALLTRIM(STR(this.lnnctotfact, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(0, 10, 2)) + ", "	&& saldo
+lcSql = lcSql + ALLTRIM(STR(this.espendi)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(gcCodusu) + "', "
+lcSql = lcSql + loDT.getDateTime() + ", "
+lcSql = lcSql + "'" + ALLTRIM(SYS(0)) + "', "
+lcSql = lcSql + "'" + ALLTRIM(this.observ) + "', "
+lcSql = lcSql + ALLTRIM(STR(this.poriibb, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimpiibb, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.idcondpago)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.idsitiva)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.idvendedor)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.procesado)) + ", "
+lcSql = lcSql + loDT.toMySql(this.fecemision) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncporrec, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(this.lnncimprec, 10, 2)) + ") "
+
+loCommand.commandText = lcSql
+loCommand.ActiveConnection = goConn.ActiveConnection
+
+IF !loCommand.Execute() THEN
+	this.error_message = loCommand.ErrorMessage
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+SELECT cur_detalle
+IF RECCOUNT("cur_detalle") > 0 THEN
+	GO TOP
+ENDIF
+
+DO WHILE !EOF("cur_detalle") 
+	lnIdVentasD = lnIdVentasD + 1
+	
+	IF cur_detalle.cantNC <> 0 THEN
+		&& Aca tengo que agregar el grabado en la tabla ventasdet
+		lcSql = "INSERT INTO ventasdet ( "
+		lcSql = lcSql + " idVentasD, "
+		lcSql = lcSql + " idVentasC, "
+		lcSql = lcSql + " idArticulo, "
+		lcSql = lcSql + " descripcio, "
+		lcSql = lcSql + " cantidad, "
+		lcSql = lcSql + " cantNC, "
+		lcSql = lcSql + " nroPart, "
+		lcSql = lcSql + " costoRep, "
+		lcSql = lcSql + " prVenta, "
+		lcSql = lcSql + " porDesc1, "
+		lcSql = lcSql + " porDesc2, "
+		lcSql = lcSql + " porDesc3, "
+		lcSql = lcSql + " porDesc4, "
+		lcSql = lcSql + " impDesc1, "
+		lcSql = lcSql + " impDesc2, "
+		lcSql = lcSql + " impDesc3, "
+		lcSql = lcSql + " impDesc4, "
+		lcSql = lcSql + " pDtoVta1, "
+		lcSql = lcSql + " pDtoVta2, "
+		lcSql = lcSql + " pDtoVta3, "
+		lcSql = lcSql + " pDtoVta4, "
+		lcSql = lcSql + " iDtoVta1, "
+		lcSql = lcSql + " iDtoVta2, "
+		lcSql = lcSql + " iDtoVta3, "
+		lcSql = lcSql + " iDtoVta4, "
+		lcSql = lcSql + " totNeto, "
+		lcSql = lcSql + " alicIVA, "
+		lcSql = lcSql + " impIVA, "
+		&& Agrego los campos no gravados
+		lcSql = lcSql + " porNoGrav, "
+		lcSql = lcSql + " baseGrav, "
+		lcSql = lcSql + " subtNoGrav, "
+		
+		lcSql = lcSql + " subTotal, "
+		lcSql = lcSql + " impNeto, "
+		lcSql = lcSql + " prArtic, "
+		lcSql = lcSql + " pRecVta, "
+		lcSql = lcSql + " iRecVta) "
+		lcSql = lcSql + "VALUES ( "
+		lcSql = lcSql + ALLTRIM(STR(lnIdVentasD)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(this.idventasc)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.idArticulo)) + ", "
+		lcSql = lcSql + "'" + ALLTRIM(cur_detalle.descripcio) + "', "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.cantNC)) + ", "
+		lcSql = lcSql + "0, "
+		lcSql = lcSql + "'" + ALLTRIM(cur_detalle.nroPart) + "', "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.costoRep, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.prVenta, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc1, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc2, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc3, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porDesc4, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc1, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc2, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc3, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impDesc4, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta1, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta2, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta3, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pDtoVta4, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta1, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta2, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta3, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iDtoVta4, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.totNeto, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.alicIVA, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impIVA, 10, 2)) + ", "
+		
+		&& Agrego los no gravados
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.porNoGrav, 20, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.baseGrav, 20, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.subtNoGrav, 20, 2)) + ", "
+		
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.subTotal, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.impNeto, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.prArtic, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.pRecVta, 10, 2)) + ", "
+		lcSql = lcSql + ALLTRIM(STR(cur_detalle.iRecVta, 10, 2)) + ")"
+		
+		loCommand.commandText = lcSql
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		
+		IF !loCommand.Execute() THEN
+			this.error_message = loCommand.ErrorMessage
+			goConn.Rollback()
+			RETURN .F.
+		ENDIF
+	ENDIF
+	
+	&& Agrego los artículos al movimiento de stock
+	IF !loMovStock.Agregar_Articulo(cur_detalle.idArticulo, cur_detalle.cantNC, cur_detalle.nroPart) THEN
+		MESSAGEBOX(loMovStock.ErrorMessage, 0+48, Thisform.Caption)
+	ENDIF
+	
+	&& Actualizo los items de la factura de origen filtrando por el idArticulo y
+	&& el id de venta de origen
+	
+	lcSql = "UPDATE ventasdet SET cantNC = cantNC + " + ALLTRIM(STR(cur_detalle.cantNC)) + " "
+	lcSql = lcSql + "WHERE idArticulo = " + ALLTRIM(STR(cur_detalle.idArticulo)) + " "
+	lcSql = lcSql + "	AND idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
+	lcSql = lcSql + "	AND idVentasD = " + ALLTRIM(STR(cur_detalle.idVentasD))
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		this.error_message = loCommand.ErrorMessage
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+	
+	SELECT cur_detalle
+	SKIP
+ENDDO
+
+&& Armo la relación entre comprobantes
+lnIdVtaRel = goConn.getNextID("ventasrel", "idVtaRel")
+
+lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES ( "
+lcSql = lcSql + ALLTRIM(STR(lnIdVtaRel)) + ", " + ALLTRIM(STR(this.id_vta_origen)) + ", " + ALLTRIM(STR(this.idventasc)) + ")"
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	this.error_message = loCommand.ErrorMessage
+	goConn.Rollback()
+	RETURN .F.	
+ENDIF
+
+&& Actualizo el saldo de la factura
+lcSql = "UPDATE ventascab "
+lcSql = lcSql + "SET 	saldo = ROUND(saldo - " + ALLTRIM(STR(this.lnnctotfact, 10, 2)) + ", 2), "
+lcSql = lcSql + "		usuModi = '" + ALLTRIM(gcCodusu) + "', "
+lcSql = lcSql + "		fecModi = " + loDT.getDateTime() + ", "
+lcSql = lcSql + "		idHostModi = '" + SYS(0) + "' "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	this.error_message = loCommand.ErrorMessage
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+IF this.esfe = 0 THEN 
+	&& Actualizo el numerador
+	lcSql = "UPDATE numerador SET numActual = " + ALLTRIM(STR(this.numcbte)) + " "
+	lcSql = lcSql + "WHERE cbte = '" + ALLTRIM(this.cbte) + "' "
+	lcSql = lcSql + "	AND tipoDoc = '" + ALLTRIM(this.tipodoc) + "' "
+	lcSql = lcSql + "	AND ptoVta = " + ALLTRIM(STR(this.ptovta))
+
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+
+	IF !loCommand.Execute() THEN
+		this.error_message = loCommand.ErrorMessage
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+ENDIF 
+
+goConn.Commit()
+
+RETURN .T.
+
+ENDPROC
+PROCEDURE calcular_nro_cbte
+LOCAL loResul, loCommand, lcSql
+LOCAL lnIdNum
+
+lcSql = ""
+loResult = CREATEOBJECT("odbc_result")
+loCommand = CREATEOBJECT("odbc_command")
+
+lcSql = "SELECT * FROM numerador WHERE cbte = '" + This.cbte + "' AND tipoDoc = '" + this.tipodoc + "' AND ptoVta = " + ALLTRIM(STR(this.ptovta))
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.cursor_name = "cur_Num"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	this.error_message = loResult.Error_Message
+	RETURN .F.
+ENDIF
+
+IF RECCOUNT("cur_num") = 0 THEN
+	this.error_message = "No se encuentra configurado el numerador del comprobante " + ALLTRIM(this.cbte) + " Punto de Venta: " + ALLTRIM(STR(this.ptovta)) + " Letra: " + ALLTRIM(this.tipodoc)
+	loResult.close_query()
+	RETURN .F.
+ENDIF
+
+IF DATE() > cur_Num.fecVto THEN
+	this.error_message = "El talonario actual está vencido, por favor, verifique que su talonario se encuentre en orden"
+	loResult.close_query()
+	RETURN .F.
+ENDIF
+
+SELECT cur_num
+lnIdNum = cur_num.idNum
+lnNroCbte = cur_num.numActual + 1
+this.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(this.ptovta)))) + ALLTRIM(STR(this.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_num.numActual)))) + ALLTRIM(STR(cur_num.numActual))
+this.repname = ALLTRIM(cur_Num.repname)
+this.repnamecp = ALLTRIM(cur_Num.repnamecp)
+
+loResult.close_query()	
+
+lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' AND idNum = " + ALLTRIM(STR(lnIdNum))
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_imp"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	This.error_message = "Error SQL: " + lcSql
+	RETURN .F.
+ENDIF
+
+SELECT cur_imp
+IF RECCOUNT("cur_imp") = 0 THEN
+	This.error_message = "La impresora no está configurada para este puesto de trabajo"
+	loResult.Close_Query()
+	RETURN .F.
+ENDIF
+
+This.cant_copianc = cur_imp.copias
+This.printerdevice = ALLTRIM(cur_imp.impresora)
+
+this.numcbte = lnNroCbte
+
+RETURN .T.
+ENDPROC
+PROCEDURE crear_cursor
+**
+* Este método crea los cursores que se necesitan para generar la nota
+* de crédito.
+**
+
+&& Detalle de la factura recuperado
+CREATE CURSOR cur_detalleFC (	;
+	idVentasD	int,;
+	idArticulo	int,;
+	codArt		varchar(20),;
+	descripcio	varchar(60),;
+	cantidad	float(10, 2),;
+	cantNC		float(10, 2),;
+	nroPart		varchar(30),;
+	costoRep	float(10, 2),;
+	prVenta		float(10, 2),;
+	porDesc1	float(10, 2),;
+	porDesc2	float(10, 2),;
+	porDesc3	float(10, 2),;
+	porDesc4	float(10, 2),;
+	impDesc1	float(10, 2),;
+	impDesc2	float(10, 2),;
+	impDesc3	float(10, 2),;
+	impDesc4	float(10, 2),;
+	pDtoVta1	float(10, 2),;
+	pDtoVta2	float(10, 2),;
+	pDtoVta3	float(10, 2),;
+	pDtoVta4	float(10, 2),;
+	iDtoVta1	float(10, 2),;
+	iDtoVta2	float(10, 2),;
+	iDtoVta3	float(10, 2),;
+	iDtoVta4	float(10, 2),;
+	totNeto		float(10, 2),;
+	alicIVA		float(10, 2),;
+	impIVA		float(10, 2),;
+	porNoGrav	float(20, 2) DEFAULT 0,;
+	baseGrav	float(20, 2) DEFAULT 0,;
+	subtNoGrav	float(20, 2) DEFAULT 0,;
+	subTotal	float(10, 2),;
+	impNeto		float(10, 2),;
+	prArtic		float(10, 2),;
+	pRecVta		float(10, 2),;
+	iRecVta		float(10, 2),;
+	pRecItem	float(10, 2),;
+	iRecItem	float(10, 2))
+	
+&& Detalle de la nota de crédito
+CREATE CURSOR cur_detalle (	;
+	idVentasD	int,;
+	idArticulo	int,;
+	codArt		varchar(20),;
+	descripcio	varchar(60),;
+	cantidad	float(10,2),;
+	cantNC		float(10,2),;
+	nroPart		varchar(30),;
+	costoRep	float(10, 2),;
+	prVenta		float(10, 2),;
+	porDesc1	float(10, 2),;
+	porDesc2	float(10, 2),;
+	porDesc3	float(10, 2),;
+	porDesc4	float(10, 2),;
+	impDesc1	float(10, 2),;
+	impDesc2	float(10, 2),;
+	impDesc3	float(10, 2),;
+	impDesc4	float(10, 2),;
+	pDtoVta1	float(10, 2),;
+	pDtoVta2	float(10, 2),;
+	pDtoVta3	float(10, 2),;
+	pDtoVta4	float(10, 2),;
+	iDtoVta1	float(10, 2),;
+	iDtoVta2	float(10, 2),;
+	iDtoVta3	float(10, 2),;
+	iDtoVta4	float(10, 2),;
+	totNeto		float(10, 2),;
+	alicIVA		float(10, 2),;
+	impIVA		float(10, 2),;
+	porNoGrav	float(20, 2) DEFAULT 0,;
+	baseGrav	float(20, 2) DEFAULT 0,;
+	subtNoGrav	float(20, 2) DEFAULT 0,;
+	subTotal	float(10, 2),;
+	impNeto		float(10, 2),;
+	prArtic		float(10, 2),;
+	pRecVta		float(10, 2),;
+	iRecVta		float(10, 2),;
+	pRecItem	float(10, 2),;
+	iRecItem	float(10, 2))
+
+&& Armo un cursor de detalle auxiliar para particionar la nota de crédito
+CREATE CURSOR cur_aux ( ;
+	idVentasD	int,;
+	idArticulo	int,;
+	codArt		varchar(20),;
+	descripcio	varchar(60),;
+	cantidad	float(10, 2),;
+	cantNC		float(10, 2),;
+	nroPart		varchar(30),;
+	costoRep	float(10, 2),;
+	prVenta		float(10, 2),;
+	porDesc1	float(10, 2),;
+	porDesc2	float(10, 2),;
+	porDesc3	float(10, 2),;
+	porDesc4	float(10, 2),;
+	impDesc1	float(10, 2),;
+	impDesc2	float(10, 2),;
+	impDesc3	float(10, 2),;
+	impDesc4	float(10, 2),;
+	pDtoVta1	float(10, 2),;
+	pDtoVta2	float(10, 2),;
+	pDtoVta3	float(10, 2),;
+	pDtoVta4	float(10, 2),;
+	iDtoVta1	float(10, 2),;
+	iDtoVta2	float(10, 2),;
+	iDtoVta3	float(10, 2),;
+	iDtoVta4	float(10, 2),;
+	totNeto		float(10, 2),;
+	alicIVA		float(10, 2),;
+	impIVA		float(10, 2),;
+	porNoGrav	float(20, 2) DEFAULT 0,;
+	baseGrav	float(20, 2) DEFAULT 0,;
+	subtNoGrav	float(20, 2) DEFAULT 0,;
+	subTotal	float(10, 2),;
+	impNeto		float(10, 2),;
+	prArtic		float(10, 2),;
+	pRecVta		float(10, 2),;
+	iRecVta		float(10, 2),;
+	pRecItem	float(10, 2),;
+	iRecItem	float(10, 2))
+	
+ENDPROC
+PROCEDURE recuperar_fc
+**
+* Este métdo permite recuperar los datos de la factura de origen con
+* su detalle incluído
+**
+
+LOCAL lcSql, loResult, loResDet, loResCC
+
+lcSql = ""
+loResult = CREATEOBJECT("odbc_result")
+loResDet = CREATEOBJECT("odbc_result")
+loResCC = CREATEOBJECT("odbc_result")
+
+*lcSql = "SELECT * FROM ventascab WHERE idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
+lcSql = "CALL ventascab_getById (?idVentasC)"
+lcSql = loResult.AddParameter(lcSql, "idVentasC", ALLTRIM(STR(this.id_vta_origen)), .f., .f.)
+loResult.ActiveConnection = IIF(this.esdemo, this.demo_connection.ActiveConnection, goConn.ActiveConnection)
+loResult.Cursor_Name = "cur_ventasC"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	This.Error_Message = loResult.Error_Message
+	RETURN .F.
+ENDIF
+
+SELECT cur_ventasC 
+IF RECCOUNT("cur_ventasC") > 0 THEN
+	this.id_vta_origen = cur_ventasC.idVentasC
+	this.idcliente = cur_ventasC.idCliente
+	this.tipodoc = cur_ventasC.tipoDoc
+	this.idcondpago = cur_ventasC.idcondpago
+	this.idsitiva = cur_ventasC.idsitiva
+	this.fecemision = cur_ventasC.fecEmision
+	this.pordesc1 = cur_ventasC.porDesc1
+	this.pordesc2 = cur_ventasC.porDesc2
+	this.pordesc3 = cur_ventasC.porDesc3
+	this.pordesc4 = cur_ventasC.porDesc4
+	this.impdesc1 = cur_ventasC.impDesc1
+	this.impdesc2 = cur_ventasC.impDesc2
+	this.impdesc3 = cur_ventasC.impDesc3
+	this.impdesc4 = cur_ventasC.impDesc4
+	this.saldo = cur_ventasc.saldo
+	this.totanograv = cur_ventasc.totaNoGrav	&& Agrego la recuperacón del total no gravado
+	this.totfact = cur_ventasC.totFact
+	this.impfinal = cur_ventasC.impFinal
+	this.impiva105 = cur_VentasC.impIVA105
+	this.impiva21 = cur_VentasC.impIVA21
+	this.impiibb = cur_VentasC.impIIBB
+	this.poriibb = cur_VentasC.porIIBB
+	this.impneto = cur_ventasC.impNeto
+	this.idvendedor = cur_ventasC.idVendedor
+	this.porrec = cur_ventasC.porRec
+	this.imprec = cur_ventasC.impRec
+	this.cli_razsoc = cur_ventasC.razSoc
+	this.cli_nrodoc = cur_ventasC.nroDoc
+	this.cli_tipodoc = cur_ventasC.idTipoDoc
+	
+	* Levanto el comprobante de origen
+	this.aut_tipocbteorigen = IIF(ISNULL(cur_ventasC.aut_tipoCbte), 0, ALLTRIM(cur_ventasC.aut_tipoCbte))
+	this.cbte_origen = ALLTRIM(cur_ventasC.cbte)
+	this.tipodoc_origen = ALLTRIM(cur_ventasC.tipodoc)
+	this.nrocbte_origen = REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_ventasC.ptovta)))) + ALLTRIM(STR(cur_ventasC.ptovta)) ;
+		+ "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_ventasC.numCbte)))) + ALLTRIM(STR(cur_ventasC.numCbte))
+	this.ptovta_origen = cur_ventasC.ptoVta
+	this.nro_origen = cur_ventasc.numCbte
+	this.tipodoc_codafip = cur_ventasC.CodAfip
+
+	this.observ = "Devolución de " + this.cbte_origen + " " + this.tipodoc_origen + " " + this.nrocbte_origen
+	
+	lcSql = "SELECT ventasdet.*, articulos.codArt, ventasdet.descripcio "
+	lcSql = lcSql + "FROM ventasdet INNER JOIN articulos ON ventasdet.idArticulo = articulos.idArticulo "
+	lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(this.id_vta_origen))
+	
+	loResDet.ActiveConnection = IIF(this.esdemo, this.demo_connection.ActiveConnection, goConn.ActiveConnection)
+	loResDet.Cursor_Name = "cur_VtasD"
+	
+	IF !loResDet.OpenQuery(lcSql) THEN
+		this.error_message = loResDet.Error_Message
+		RETURN .F.
+	ENDIF
+	
+	&& Recupero el detalle de la factura
+	SELECT cur_VtasD 
+	DO WHILE !EOF("cur_VtasD")
+		&&this.nro_item = this.nro_item + 1
+		
+		SELECT cur_detalleFC
+		APPEND BLANK
+		REPLACE cur_detalleFC.idVentasD WITH cur_VtasD.idVentasD
+		REPLACE cur_detalleFC.idArticulo WITH cur_VtasD.idArticulo ADDITIVE
+		REPLACE cur_detalleFC.codArt WITH cur_VtasD.CodArt ADDITIVE
+		REPLACE cur_detalleFC.descripcio WITH cur_VtasD.Descripcio ADDITIVE
+		REPLACE cur_detalleFC.cantidad WITH cur_VtasD.Cantidad - IIF(ISNULL(cur_VtasD.CantNC), 0, cur_VtasD.CantNC) ADDITIVE
+		REPLACE cur_detalleFC.cantNC WITH 0 ADDITIVE
+		REPLACE cur_detalleFC.nroPart WITH IIF(ISNULL(cur_VtasD.nroPart), "", cur_VtasD.nroPart) ADDITIVE
+		REPLACE cur_detalleFC.costoRep WITH cur_VtasD.CostoRep ADDITIVE
+		REPLACE cur_detalleFC.prVenta WITH cur_VtasD.prVenta ADDITIVE
+		REPLACE cur_detalleFC.porDesc1 WITH cur_VtasD.PorDesc1 ADDITIVE
+		REPLACE cur_detalleFC.porDesc2 WITH cur_VtasD.PorDesc2 ADDITIVE
+		REPLACE cur_detalleFC.porDesc3 WITH cur_VtasD.PorDesc3 ADDITIVE
+		REPLACE cur_detalleFC.porDesc4 WITH cur_VtasD.PorDesc4 ADDITIVE
+		REPLACE cur_detalleFC.impDesc1 WITH cur_VtasD.impDesc1 ADDITIVE
+		REPLACE cur_detalleFC.impDesc2 WITH cur_VtasD.impDesc2 ADDITIVE
+		REPLACE cur_detalleFC.impDesc3 WITH cur_VtasD.impDesc3 ADDITIVE
+		REPLACE cur_detalleFC.impDesc4 WITH cur_VtasD.impDesc4 ADDITIVE
+		REPLACE cur_detalleFC.pDtoVta1 WITH cur_VtasD.pDtoVta1 ADDITIVE
+		REPLACE cur_detalleFC.pDtoVta2 WITH cur_VtasD.pDtoVta2 ADDITIVE
+		REPLACE cur_detalleFC.pDtoVta3 WITH cur_VtasD.pDtoVta3 ADDITIVE
+		REPLACE cur_detalleFC.pDtoVta4 WITH cur_VtasD.pDtoVta4 ADDITIVE
+		REPLACE cur_detalleFC.iDtoVta1 WITH cur_VtasD.iDtoVta1 ADDITIVE
+		REPLACE cur_detalleFC.iDtoVta2 WITH cur_VtasD.iDtoVta2 ADDITIVE
+		REPLACE cur_detalleFC.iDtoVta3 WITH cur_VtasD.iDtoVta3 ADDITIVE
+		REPLACE cur_detalleFC.iDtoVta4 WITH cur_VtasD.iDtoVta4 ADDITIVE
+		REPLACE cur_detalleFC.totNeto WITH cur_VtasD.totNeto ADDITIVE
+		REPLACE cur_detalleFC.alicIVA WITH cur_VtasD.alicIVA ADDITIVE
+		REPLACE cur_detalleFC.impIVA WITH cur_VtasD.impIVA ADDITIVE
+		REPLACE cur_detalleFC.subTotal WITH cur_VtasD.SubTotal ADDITIVE
+		REPLACE cur_detalleFC.impNeto WITH cur_VtasD.impNeto ADDITIVE	
+		REPLACE cur_detalleFC.prArtic WITH cur_VtasD.prArtic ADDITIVE
+		REPLACE cur_detalleFC.pRecVta WITH cur_VtasD.pRecVta ADDITIVE 
+		REPLACE cur_detalleFC.iRecVta WITH cur_VtasD.iRecVta ADDITIVE
+		
+		&& Levanto los importes no gravados de la factura
+		REPLACE cur_detalleFC.porNoGrav WITH cur_VtasD.porNoGrav ADDITIVE
+		REPLACE cur_detalleFC.baseGrav WITH cur_VtasD.baseGrav ADDITIVE
+		REPLACE cur_detalleFC.subtNoGrav WITH cur_VtasD.subtNoGrav ADDITIVE
+		
+		SELECT cur_VtasD
+		SKIP
+	ENDDO
+	
+	loResDet.Close_Query()
+	
+	SELECT cur_detalleFC
+	IF RECCOUNT("cur_detalleFC") > 0 THEN
+		GO TOP
+	ENDIF
+ELSE
+	This.error_message = "No hay registros para mostrar"
+	RETURN .F.
+ENDIF
+
+SELECT cur_ventasC
+lcSql = "SELECT * FROM cc_cli WHERE idVentasC = " + ALLTRIM(STR(cur_ventasC.idVentasC))
+loResCC.ActiveConnection = IIF(this.esdemo, this.demo_connection.ActiveConnection, goConn.ActiveConnection)
+loResCC.Cursor_Name = "cur_ccCli"
+
+IF !loResCC.OpenQuery(lcSql) THEN
+	this.error_message = loResCC.ErrorMessage
+	RETURN .F.
+ENDIF
+
+this.idcc_origen = cur_ccCli.idCC_Cli
+this.id_oper = cur_ccCli.idOper
+
+loResCC.close_query()
+loResult.close_query()
+
+RETURN .T.
+ENDPROC
+PROCEDURE calcuar_tipodoc
+LOCAL lnSitIVACli
+
+lnSitIvaEmp = 0
+lnSitIvaEmp = VAL(ALLTRIM(getConfig("SITIVAEMP")))
+
+IF lnSitIvaEmp = 1 .AND. This.idsitiva = 1 THEN
+	RETURN "A"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. This.idsitiva = 2 THEN
+	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. This.idsitiva = 3 THEN
+	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. This.idsitiva = 6 THEN
+	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 6 THEN
+	RETURN "C"
+ENDIF
+
+ENDPROC
+PROCEDURE limpiar
+&& Limpio los cursores
+SELECT cur_detalleFC
+ZAP
+SELECT cur_detalle
+ZAP
+*SELECT cur_aux
+*ZAP
+ENDPROC
+PROCEDURE imprimir
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.porIIBB, m.impIIBB, m.observ
+LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
+LOCAL lcSql, loResult, lcPrinterName, lnCantCpia
+
+lo_rsSitIVA = CREATEOBJECT("odbc_result")
+loResult = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+lcSql = "SELECT clientes.*, localidad.descripcio as descLoc, localidad.codPostal, provincias.descripcio as pcia "
+lcSql = lcSql + "FROM clientes INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid "
+lcSql = lcSql + "	INNER JOIN provincias ON provincias.idProvin = localidad.idProvin "
+lcSql = lcSql + "WHERE clientes.idCliente = " + ALLTRIM(STR(this.idcliente))
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_cli"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	this.error_message = loResult.Error_Message
+	RETURN .F.
+ENDIF
+
+SELECT cur_cli
+m.NroCli = cur_cli.idCliente
+m.RazSoc = ALLTRIM(this.cli_razsoc)
+m.Telefono = ALLTRIM(cur_cli.telefono)
+m.direccion = ALLTRIM(cur_cli.direccion)
+m.localidad = ALLTRIM(cur_cli.descLoc)
+m.codPostal = ALLTRIM(cur_cli.codPostal)
+m.pcia = ALLTRIM(cur_cli.pcia)
+m.nroCUIT = ALLTRIM(this.cli_nrodoc)
+m.TipoIVA = this.idsitiva
+
+loResult.close_query()
+
+m.Total = 0.00
+m.NroCbte = this.nrocbte
+m.leyenda = ""
+m.Fecha = DATETIME()
+m.porIVA105 = 0.00
+m.porIVA21 = 0.00
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.fecVto = DATE()
+m.tipoDoc = this.tipodoc
+m.ptoVta = ""
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+lnCantCpia = 0
+m.observ = ""
+
+m.Leyenda = "NOTA DE CREDITO"
+
+m.porDesc1 = this.lnncpordto1
+m.porDesc2 = this.lnncpordto2
+m.porDesc3 = this.lnncpordto3
+m.porDesc4 = this.lnncpordto4
+m.impDesc1 = this.lnncimpdesc1
+m.impDesc2 = this.lnncimpdesc2
+m.impDesc3 = this.lnncimpdesc3
+m.impDesc4 = this.lnncimpdesc4
+m.porIVA105 = 10.5
+m.porIVA21 = 21
+m.impIVA105 = this.lnncimpiva105
+m.impIVA21 = this.lnncimpiva21
+m.impNeto = this.lnncimpfinal
+&&m.impFinal = this.lnncimpfinal
+m.porIIBB = this.lnncporiibb
+m.impIIBB = this.lnncimpiibb
+m.total = this.lnnctotfact
+
+&& Busco la situacion de IVA
+lcSql = "SELECT * FROM SitIva WHERE idSitIVA = " + ALLTRIM(STR(this.idsitiva))
+lo_rsSitIVA.ActiveConnection = goConn.ActiveConnection
+lo_rsSitIVA.Cursor_Name = "cur_SitIVA"
+lo_rsSitIVA.OpenQuery(lcSql)
+
+SELECT cur_SitIVA
+m.TipoIVA = cur_SitIVA.descripcio
+
+SET PRINTER TO NAME ALLTRIM(this.printerdevice)
+
+FOR i = 1 TO this.cant_copianc
+	IF ALLTRIM(This.tipodoc) == "A" THEN
+		&& Imprime el comprobante de tipo "A"
+		SELECT cur_aux
+		REPORT FORM "repcbtesvta.frx" TO PRINTER NOCONSOLE
+	ELSE
+		&& Imprime el comprobante de tipo "B"
+		SELECT cur_aux
+		REPORT FORM "repcbtesvta_b.frx" TO PRINTER NOCONSOLE
+	ENDIF
+NEXT
+
+RETURN .T.
+ENDPROC
+PROCEDURE grabar_ctacte
+LOCAL loCommand
+LOCAL loRes
+LOCAL loDT
+LOCAL lcSql
+LOCAL lnOperacion
+LOCAL lnIdCC_Cli
+
+loCommand = CREATEOBJECT("odbc_command")
+loRes = CREATEOBJECT("odbc_result")
+loDT = CREATEOBJECT("datetime")
+lcSql = ""
+lnOperacion = 0
+lnIdCC_Cli = 0
+
+goConn.BeginTransaction()
+
+IF this.vincular_cbte THEN
+	lnOperacion = this.getidoper()
+ELSE
+	lnOperacion = INT(VAL(this.getnextidoper()))
+ENDIF
+
+lcSql = "CALL cccli_insert ( " ;
+	+ ALLTRIM(STR(this.idcliente)) + ", " ;
+	+ ALLTRIM(STR(this.idcc_origen)) + ", " ;
+	+ ALLTRIM(STR(this.idventasc)) + ", " ;
+	+ "'" + ALLTRIM(this.cbte) + "', " ;
+	+ "'" + ALLTRIM(this.tipodoc) + "', " ;
+	+ ALLTRIM(STR(this.ptovta)) + ", " ;
+	+ ALLTRIM(STR(this.numCbte)) + ", " ;
+	+ loDT.toMySql(this.fecemision) + ", " ;
+	+ loDT.toMySql(this.fecemision) + ", " ;
+	+ "0, " ;
+	+ ALLTRIM(STR(this.lnnctotfact, 10, 2)) + ", " ;
+	+ ALLTRIM(STR(lnOperacion)) + ", " ;
+	+ "'" + ALLTRIM(this.observ) + "', " ;
+	+ "'" + ALLTRIM(gcCodUsu) + "', " ;
+	+ loDT.getDateTime() + ", " ;
+	+ "'" + SYS(0) + "', " ;
+	+ ALLTRIM(STR(this.idcondpago)) + ", " ;
+	+ ALLTRIM(STR(this.idsitiva)) + ", " ;
+	+ ALLTRIM(STR(this.idvendedor)) + ")"
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	this.error_message = loCommand.ErrorMessage
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+goConn.Commit()
+
+RETURN .T.
+ENDPROC
+PROCEDURE getidoper
+LOCAL loRes
+LOCAL lnIdOper
+
+loRes = CREATEOBJECT("odbc_result")
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_tmp"
+lcSql = "CALL cccli_getIdOper ( " ;
+	+ ALLTRIM(STR(this.id_vta_origen)) + ")"
+loRes.OpenQuery(lcSql)
+SELECT cur_tmp
+lnIdOper = cur_tmp.idOper
+loRes.Close_Query()
+RETURN lnIdOper
+ENDPROC
+PROCEDURE getnextidoper
+LOCAL loRes
+LOCAL lnIdOper
+
+loRes = CREATEOBJECT("odbc_result")
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_tmp"
+lcSql = "CALL cccli_getNextIdOper()"
+loRes.Cursor_Name = "cur_tmp"
+loRes.OpenQuery(lcSql)
+SELECT cur_tmp
+lnIdOper = cur_tmp.proxIdOper
+loRes.Close_Query()
+
+RETURN lnIdOper
+ENDPROC
+PROCEDURE verificar_estado_fc
+LOCAL loCmd
+LOCAL lcSql
+LOCAL lnSaldo
+lcSql = ""
+lnSaldo = 0.00
+loResult = CREATEOBJECT("odbc_result")
+lcSql = "CALL cccli_verificarEstadoCbte (" + ALLTRIM(STR(this.id_vta_origen)) + ")"
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_x"
+loResult.OpenQuery(lcSql)
+lnSaldo = cur_x.saldo
+loResult.Close_Query()
+RETURN lnSaldo
+ENDPROC
+PROCEDURE grabar_stock
+**********************************************
+* METODO PARA PODER GRABAR STOCK
+**********************************************
+LOCAL loMovStock
+loMovStock = CREATEOBJECT("cl_mov_stock")
+IF INT(VAL(getconfig("DEMO"))) = 1 THEN
+	&& Si se está ejecutando la versión DEMO, entonces, llama al grabar3 y no carga ningún
+	&& dato relativo al comprobante.
+	loMovStock.circuito = "S"
+	loMovStock.tipoDoc = ""
+	loMovStock.cbte = "ENT"
+	
+	IF !loMovStock.grabar3() THEN
+		this.error_message = loMovStock.ErrorMessage
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+ELSE
+	&& Si pasa por aca es en caso que se esté ejecutando la versión normal
+	loMovStock.circuito = "V"
+	
+	loMovStock.idVentasC = This.idventasc
+	loMovStock.idcliente = this.idcliente
+	loMovStock.idprov = 0
+	loMovStock.tipodoc = this.tipodoc
+	loMovStock.cbte = this.cbte
+	loMovStock.numcbte =  REPLICATE("0", 4 - LEN(ALLTRIM(STR(this.ptovta)))) + ALLTRIM(STR(this.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(this.numcbte)))) + ALLTRIM(STR(this.numcbte))
+
+	IF !loMovStock.grabar2() THEN
+		this.error_message = loMovStock.ErrorMessage
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+
+ENDIF
+
+
+ENDPROC
+
+
+************************************************************
+OBJETO: frm_ncnd_cc_sf
+************************************************************
+*** PROPIEDADES ***
+BorderStyle = 2
+Height = 520
+Width = 776
+DoCreate = .T.
+Caption = "Nota de crédito"
+cbte = NC
+idventascab = -1
+cbteref = 
+tipodocref = 
+ptovtaref = 
+numcbteref = 
+importecbteref = 
+idcliente = -1
+idcc_cli = -1
+printerdevice = 
+idoper = 
+imptotiva21 = 0.00
+imptotiva105 = 0.00
+poriva21 = 0.00
+poriva105 = 0.00
+ptovta = 
+nrocbte = 
+cli_calle = 
+cli_codpostal = 
+cli_localidad = 
+cli_pcia = 
+cli_sitiva = 
+cli_razsoc = 
+cli_cuit = 
+fiscal_nrodoc = 0
+usa_fiscal = .F.
+sqlsrv = .F.
+codabr = 
+idcheque = 0
+idsitiva = 0
+cli_tipodoc = 
+cli_idtipodoc = 0
+condicion_iva_receptor_id = 0.00
+Name = "frm_ncnd_cc_sf"
+
+*** METODOS ***
+PROCEDURE imprimir
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.impIVA105, m.impIVA21, m.impNeto, m.impFinal, m.porIIBB, m.impIIBB, m.observ
+LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
+LOCAL loResCli, loResLoc, loResPcia
+LOCAL lnIdNum
+LOCAL lcRepNameCP
+
+loNumerador = CREATEOBJECT("odbc_result")
+loResCli = CREATEOBJECT("odbc_result")
+loResLoc = CREATEOBJECT("odbc_result")
+loResPcia = CREATEOBJECT("odbc_result")
+loResSitIVA = CREATEOBJECT("odbc_result")
+lcSql = ""
+lnIdNum = 0
+
+m.Total = 0.00
+m.tipoDoc = ""
+m.NroCbte = ""
+m.leyenda = ""
+m.Fecha = DATETIME()
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.tipoDoc = Thisform.tipodocref
+m.ptoVta = Thisform.ptovta
+m.NroCbte = Thisform.ptovta + "-" + Thisform.nrocbte
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+m.observ = ""
+lcRepNameCP = ""
+
+&& Me fijo cuantas copias tengo que imprimir
+lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(INT(VAL(m.ptoVta))))
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+m.NroCbte = m.ptoVta + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_num.numActual)))) + ALLTRIM(STR(cur_num.numActual))
+lnIdNum = cur_num.idNum
+lcRepNameCP = ALLTRIM(cur_num.repnamecp)
+
+loNumerador.close_query()
+
+lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' "
+lcSql = lcSql + " AND idNum = " + ALLTRIM(STR(lnIdNum))
+
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+IF RECCOUNT("cur_num") = 0 THEN
+	MESSAGEBOX("La impresora no está instalada para este puesto de trabajo", 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+lcPrinterName = ALLTRIM(cur_num.impresora)
+lnCantCpia = cur_num.copias
+
+loNumerador.Close_Query()
+
+&& Recupero los datos del cliente
+lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
+loResCli.cursor_name = "cur_Cliente"
+loResCli.ActiveConnection = goConn.ActiveConnection
+loResCli.OpenQuery(lcSql)
+
+m.NroCli = cur_Cliente.idCliente
+m.RazSoc = cur_Cliente.razSoc
+m.Telefono = cur_Cliente.telefono
+m.direccion = cur_Cliente.direccion
+
+&& Levanto los datos de la localidad que tiene asignada el cliente
+lcSql = "SELECT * FROM localidad WHERE idLocalid = " + ALLTRIM(STR(cur_Cliente.idLocalid))
+loResLoc.Cursor_Name = "cur_Loc"
+loResLoc.ActiveConnection = goConn.ActiveConnection
+loResLoc.OpenQuery(lcSql)
+
+m.localidad = ALLTRIM(cur_Loc.descripcio)
+m.codPostal = ALLTRIM(cur_Loc.codPostal)
+
+&& Levanto los datos de la provincia que tiene asignada la localidad
+lcSql = "SELECT * FROM provincias WHERE idProvin = " + ALLTRIM(STR(cur_Loc.idProvin))
+loResPcia.Cursor_Name = "cur_Pcia"
+loResPcia.ActiveConnection = goConn.ActiveConnection
+loResPcia.OpenQuery(lcSql)
+
+m.pcia = ALLTRIM(cur_Pcia.descripcio)
+
+loResPcia.Close_Query()
+loResLoc.Close_Query()
+
+m.nroCUIT = cur_Cliente.nroCUIT
+
+&& Levanto los datos de la situación de IVA que tiene el cliente
+lcSql = "SELECT * FROM sitiva WHERE idSitIVA = " + ALLTRIM(STR(cur_Cliente.idSitIVA))
+loResSitIVA.Cursor_Name = "cur_SitIVA"
+loResSitIVA.ActiveConnection = goConn.ActiveConnection
+loResSitIVA.OpenQuery(lcSql)
+
+m.TipoIVA = cur_SitIVA.descripcio
+
+loResSitIVA.Close_Query()
+loResCli.Close_Query()
+
+
+m.impIVA105 = Thisform.txtImpIVA105.Value 
+m.impIVA21 = Thisform.txtImpIVA21.Value 
+m.impNeto = Thisform.txtSubTotal.Value
+m.impFinal = Thisform.txtTotal.Value
+m.porIIBB = Thisform.txtporIIBB.Value 
+m.impIIBB = Thisform.txtImpIIBB.Value 
+m.observ = Thisform.txtobserv.Value
+ 
+IF ALLTRIM(Thisform.Cbte) == "NC"
+	m.Leyenda = "NOTA DE CREDITO"
+	m.Total = Thisform.txtTotal.Value
+ELSE
+	IF ALLTRIM(Thisform.Cbte) == "ND"
+		m.leyenda = "NOTA DE DEBITO"
+		m.Total = Thisform.txtTotal.Value
+	ENDIF
+ENDIF
+
+SET PRINTER TO NAME ALLTRIM(lcPrinterName)
+SELECT vtadcp
+
+FOR i = 1 TO lnCantCpia
+	REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
+	
+*!*		IF INT(VAL(gnDEMO)) = 1 THEN
+*!*			REPORT FORM "repncnd_x.frx" TO PRINTER NOCONSOLE
+*!*		ELSE
+*!*			IF ALLTRIM(m.tipodoc) == "A" THEN 
+*!*				REPORT FORM "repncnd.frx" TO PRINTER NOCONSOLE
+*!*			ELSE 
+*!*				REPORT FORM "repncnd_b.frx" TO PRINTER NOCONSOLE
+*!*			ENDIF
+*!*		ENDIF
+NEXT
+
+
+ENDPROC
+PROCEDURE buscar_cheque
+LOCAL loResult, lcSql
+LOCAL lnIdBanco
+
+loResult = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+IF TYPE('Thisform.sel_Banco.valcpoid') == "C" THEN
+	lnIdBanco = INT(VAL(Thisform.sel_Banco.valcpoid))
+ELSE
+	lnIdBanco = Thisform.sel_Banco.valcpoid
+ENDIF
+
+lcSql = "CALL cheques_buscarND (" ;
+		+ "'" + ALLTRIM(thisform.txtNroCheque.Value) + "', " ;
+		+ ALLTRIM(STR(lnIdBanco)) + ")"
+loResult.Cursor_Name = "cur_Bco"
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.OpenQuery(lcSql)
+
+SELECT cur_Bco
+IF RECCOUNT("cur_Bco") > 0 THEN
+	Thisform.IdCheque = cur_Bco.idCheque
+	Thisform.txtImporteNeto.Value = cur_Bco.importe
+ELSE
+	MESSAGEBOX("Cheque no encontrado, por favor, ingrese bien los datos", 0+48, Thisform.Caption)
+	Thisform.txtNroCheque.Value = ""
+	Thisform.sel_Banco.txtCodigo.Value = ""
+	Thisform.sel_Banco.txtDescripcion.Value = ""
+ENDIF
+
+loResult.Close_Query()
+
+RETURN .T.
+
+ENDPROC
+PROCEDURE calcular_tipodoc
+LOCAL lnSitIVACli
+
+lnSitIvaEmp = 0
+lnSitIvaEmp = VAL(ALLTRIM(getConfig("SITIVAEMP")))
+
+IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 1 THEN
+	RETURN "A"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva= 2 THEN
+	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 3 THEN
+	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 5 THEN
+	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 6 THEN
+	&& Si es INSCRIPTO a Monotributista reemplazo B por A
+	RETURN "A"
+ENDIF
+
+IF lnSitIvaEmp = 1 .AND. Thisform.idSitIva = 7 THEN
+   	RETURN "B"
+ENDIF
+
+IF lnSitIvaEmp = 6 THEN
+	RETURN "C"
+ENDIF
+
+ENDPROC
+PROCEDURE calcular_ret_iibb
+&& Calculo el importe de percepción de ingresos brutos y lo anexo al total
+IF ALLTRIM(Thisform.cbte) == "NC" THEN
+	Thisform.txtImpIIBB.Value = ROUND(Thisform.txtsubTotal.Value * (Thisform.txtPorIIBB.Value / 100), 2)
+	Thisform.txttotal.Value = Thisform.txttotal.Value + Thisform.txtImpIIBB.Value
+ENDIF 
+
+ENDPROC
+PROCEDURE sumar_items
+LOCAL lnSubtotal, lnIVA21, lnIVA105, lnTotal
+
+lnSubtotal = 0.00
+lnIVA21 = 0.00
+lnIVA105 = 0.00
+lnTotal = 0.00
+
+SELECT vtadcp
+IF RECCOUNT("vtadcp") > 0
+	GO TOP 
+ENDIF 
+
+DO WHILE !EOF()
+	lnSubtotal = lnSubtotal + vtadcp.impNeto
+	
+	IF vtadcp.ivaPor = 21 THEN
+		lnIVA21 = lnIVA21 + vtadcp.ivaImp
+	ELSE
+		lnIVA105 = lnIVA105  + vtadcp.ivaImp
+	ENDIF
+	
+	lnTotal = lnTotal + vtadcp.total
+	
+	SELECT vtadcp
+	SKIP 
+ENDDO 
+
+Thisform.txtsubTotal.Value = lnSubtotal
+Thisform.txtImpIVA21.Value = lnIVA21
+Thisform.txtImpIVA105.Value = lnIVA105
+Thisform.txttotal.Value = lnTotal
+
+SELECT vtadcp
+IF RECCOUNT("vtadcp") > 0
+	GO TOP 
+ENDIF 
+
+
+ENDPROC
+PROCEDURE grabar_ctacte
+PARAMETERS tnIdVentaC
+	
+LOCAL loCommand
+LOCAL loRes
+LOCAL loDateTime
+LOCAL lcSql
+LOCAL lnIdOper
+LOCAL lnPtoVta
+LOCAL lnNroCbte
+LOCAL lnIdCondPago
+LOCAL lnIdSitIVA
+LOCAL lnIdVendedor
+LOCAL lnIdCC_CliOrig
+
+loCommand = CREATEOBJECT("odbc_command")
+loRes = CREATEOBJECT("odbc_result")
+loDateTime = CREATEOBJECT("datetime")
+lnIdOper = 0
+lnPtoVta = 0
+lnNroCbte = 0
+lnIdCondPago = 0
+lnIdSitIVA = 0
+lnIdVendedor = 0
+lnIdCC_CliOrig = thisform.idcc_cli
+
+lcSql = "SELECT ventascab.idVentasC, ventascab.ptoVta, ventascab.numCbte, "
+lcSql = lcSql + "ventascab.idCondPago, ventascab.idSitIVA, ventascab.idVendedor "
+lcSql = lcSql + "FROM ventascab "
+lcSql = lcSql + "WHERE ventascab.idVentasC = " + ALLTRIM(STR(tnIdVentaC))
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+IF !loRes.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lnPtoVta = cur_x.ptoVta
+lnNroCbte = cur_x.numCbte
+lnIdCondPago = cur_x.idCondPago
+lnIdSitIVA = cur_x.idSitIVA
+lnIdVendedor = cur_x.idVendedor
+loRes.Close_Query()
+
+IF lnIdCC_CliOrig <> -1 THEN
+	lcSql = "SELECT * FROM cc_cli WHERE idCC_Cli = " + ALLTRIM(STR(lnIdCC_CliOrig))
+	loRes.ActiveConnection = goConn.ActiveConnection
+	loRes.Cursor_Name = "cur_x"
+	IF !loRes.OpenQuery(lcSql) THEN
+		MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF
+
+	lnIdCondPago = cur_x.idCondPago
+	lnIdSitIVA = cur_x.idSitIVA
+	lnIdVendedor = cur_x.idVendedor
+	loRes.Close_Query()
+ENDIF
+
+&& Grabar el registro en CC_CLI vinculado por Id_Oper al cbte seleccionado
+lnIdCC_Cli = goConn.GetNextID("cc_cli", "idCC_Cli")
+
+IF Thisform.idOper = 0 THEN
+	lnIdOper = goConn.GetNextID("cc_cli", "idOper")
+ELSE
+	lnIdOper = Thisform.idOper
+ENDIF 
+
+IF ALLTRIM(Thisform.cbte) == "NC" THEN
+	lcSql = "INSERT INTO cc_cli ("
+	lcSql = lcSql + "idCC_Cli, "
+	lcSql = lcSql + "idCliente, "
+	lcSql = lcSql + "idCC_Orig, "
+	lcSql = lcSql + "idVentasC, "
+	lcSql = lcSql + "cbte, "
+	lcSql = lcSql + "tipoDoc, "
+	lcSql = lcSql + "ptoVta, "
+	lcSql = lcSql + "nroCbte, "
+	lcSql = lcSql + "fecEmis, "
+	lcSql = lcSql + "fecVto, "
+	lcSql = lcSql + "idCondPago, "
+	lcSql = lcSql + "idSitIVA, "
+	lcSql = lcSql + "idVendedor, "
+	lcSql = lcSql + "impDebe, "
+	lcSql = lcSql + "impHaber, "
+	lcSql = lcSql + "idOper, "
+	lcSql = lcSql + "observ, "
+	lcSql = lcSql + "usuAlta, "
+	lcSql = lcSql + "fecAlta, "
+	lcSql = lcSql + "idHostAlta) "
+	lcSql = lcSql + "VALUES ("
+	lcSql = lcSql + ALLTRIM(STR(lnIdCC_Cli)) + ", " + ;
+			ALLTRIM(STR(Thisform.idCliente)) + ", " + ;
+			IIF(lnIdCC_CliOrig <> -1, ALLTRIM(STR(lnIdCC_CliOrig)), "null") + ", " + ;
+			ALLTRIM(STR(tnIdVentaC)) + "," + ;
+			"'" + ALLTRIM(Thisform.cbte) + "', " + ;
+			"'" + ALLTRIM(Thisform.TipoDocRef) + "', " + ;
+			ALLTRIM(STR(lnPtoVta)) + ", " + ;
+			ALLTRIM(STR(lnNroCbte)) + ", " + ;
+			loDateTime.getDateTime() + ", " + ;
+			loDateTime.getDateTime() + ", " + ;
+			ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+			ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+			ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+			"0, " + ;
+			ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", " + ;
+			ALLTRIM(STR(lnIdOPer)) + ", " + ;
+			"'" + ALLTRIM(thisform.txtobserv.Value) + "', " + ;
+			"'" + ALLTRIM(gcCodUsu) + "', " + ;
+			loDateTime.getDateTime() + ", " + ;
+			"'" + ALLTRIM(SYS(0)) + "')"
+ELSE
+	lcSql = "INSERT INTO cc_cli ("
+	lcSql = lcSql + "idCC_Cli, "
+	lcSql = lcSql + "idCliente, "
+	lcSql = lcSql + "idCC_Orig, "
+	lcSql = lcSql + "idVentasC, "
+	lcSql = lcSql + "cbte, "
+	lcSql = lcSql + "tipoDoc, "
+	lcSql = lcSql + "ptoVta, "
+	lcSql = lcSql + "nroCbte, "
+	lcSql = lcSql + "fecEmis, "
+	lcSql = lcSql + "fecVto, "
+	lcSql = lcSql + "idCondPago, "
+	lcSql = lcSql + "idSitIVA, "
+	lcSql = lcSql + "idVendedor, "
+	lcSql = lcSql + "impDebe, "
+	lcSql = lcSql + "impHaber, "
+	lcSql = lcSql + "idOper, "
+	lcSql = lcSql + "observ, "
+	lcSql = lcSql + "usuAlta, "
+	lcSql = lcSql + "fecAlta, "
+	lcSql = lcSql + "idHostAlta) "
+	lcSql = lcSql + "VALUES ("
+	lcSql = lcSql + ALLTRIM(STR(lnIdCC_Cli)) + ", " + ;
+			ALLTRIM(STR(Thisform.idCliente)) + ", " + ;
+			IIF(lnIdCC_CliOrig <> -1, ALLTRIM(STR(lnIdCC_CliOrig)), "null") + ", " + ;
+			ALLTRIM(STR(tnIdVentaC)) + ", " + ;
+			"'" + ALLTRIM(Thisform.cbte) + "', " + ;
+			"'" + ALLTRIM(Thisform.TipoDocRef) + "', " + ;
+			ALLTRIM(STR(lnPtoVta)) + ", " + ;
+			ALLTRIM(STR(lnNroCbte)) + ", " + ;
+			loDateTime.getDateTime() + ", " + ;
+			loDateTime.getDateTime() + ", " + ;
+			ALLTRIM(STR(lnIdCondPago)) + ", " + ;
+			ALLTRIM(STR(lnIdSitIVA)) + ", " + ;
+			ALLTRIM(STR(lnIdVendedor)) + ", " + ;
+			ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", " + ;
+			"0, " + ;
+			ALLTRIM(STR(lnIdOper)) + ", " + ;
+			"'" + ALLTRIM(thisform.txtobserv.Value) + "', " + ;
+			"'" + ALLTRIM(gcCodUsu) + "', " + ;
+			loDateTime.getDateTime() + ", " + ;
+			"'" + ALLTRIM(SYS(0)) + "')"
+ENDIF
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+RETURN .T.
+ENDPROC
+PROCEDURE Activate
+LOCAL lo_rsIIBB
+
+lo_rsIIBB = CREATEOBJECT("odbc_result")
+lcSql = ""
+
+&& Levanto el IIBB del cliente
+lcSql = "SELECT * FROM padronib WHERE cuit = '" + ALLTRIM(STRTRAN(thisform.cli_cuit,"-","")) + "'"
+lo_rsIIBB.ActiveConnection = goConn.ActiveConnection
+lo_rsIIBB.Cursor_Name = "cur_PadronIB"
+lo_rsIIBB.OpenQuery(lcSql)
+
+SELECT cur_PadronIB
+IF RECCOUNT("cur_PadronIB") > 0 THEN
+	Thisform.txtPorIIBB.Value = cur_PadronIB.AlicuotaPer
+ELSE 
+	Thisform.txtPorIIBB.Value = 0.00
+ENDIF 
+
+lo_rsIIBB.close_query()
+
+&& Si es cuenta dos no tildo IVA 21%
+IF INT(VAL(ALLTRIM(getconfig("DEMO")))) == 0 THEN
+	Thisform.chkIVA21.Value = 1
+ENDIF
+
+&&Thisform.chkIVA21.Value = 1
+Thisform.txtPtoVta.Value = Thisform.ptovtaref
+Thisform.txtNroCbte.Value = Thisform.numcbteref
+Thisform.txtPorIVA105.Value = 10.50
+Thisform.txtPorIVA21.Value = 21.00
+
+IF ALLTRIM(Thisform.cbte) == "NC" THEN
+	Thisform.txtOperacion.Value = "NOTA DE CREDITO"
+ELSE
+	Thisform.txtOperacion.Value = "NOTA DE DEBITO"
+	Thisform.txtPorIIBB.Value = 0.00
+ENDIF
+ENDPROC
+PROCEDURE Load
+DODEFAULT()
+
+&& Creo el cursor que contendrá el detalle del comprobante
+
+CREATE CURSOR vtadcp (	;
+	id_vtadcp	int	,;
+	idVentasC	int ,;
+	idPlanCta	int ,;
+	idBanco		int ,;
+	codPlanCta	varchar(20),;
+	descPlan	varchar(60),;
+	cheque_nro	varchar(8),;
+	impNeto		float(10, 2),;
+	ivaPor		float(10, 2),;
+	ivaImp		float(10, 2),;
+	total		float(10, 2) ;
+)
+	
+
+
+
+ENDPROC
+PROCEDURE Init
+DODEFAULT()
+
+&& Creo la grilla
+SELECT vtadcp
+Thisform.grdDetalle.RecordSource = "vtadcp"
+Thisform.grdDetalle.list_controlsource = "codPlanCta,descPlan,cheque_nro,impNeto,ivaPor,ivaImp,total"
+Thisform.grdDetalle.lista_ancho_cols = "100,250,100,70,70,70,70"
+Thisform.grdDetalle.titulos_cabeceras = "Código,Descripción,Cheque,Imp. Neto,I.V.A,Imp. IVA,Total"
+Thisform.grdDetalle.generar_grid()
+
+
+IF ALLTRIM(GetConfig("USA_FISCAL")) == "S" THEN
+	Thisform.usa_fiscal = .T.
+ELSE
+	Thisform.usa_fiscal = .F.
+ENDIF
+
+IF ALLTRIM(GetConfig("SQLSRV")) == "1" THEN
+	Thisform.sqlsrv = .T.
+ELSE
+	Thisform.sqlsrv = .F.
+ENDIF
+
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta1
+************************************************************
+*** PROPIEDADES ***
+Caption = "Operación"
+Height = 15
+Left = 12
+Top = 12
+Width = 72
+TabIndex = 15
+Name = "Clsetiqueta1"
 
 *** METODOS ***
 
@@ -35857,11 +32419,12 @@ Name = "CLSETIQUETA1"
 OBJETO: Clsetiqueta2
 ************************************************************
 *** PROPIEDADES ***
-Caption = "Cliente Hasta:"
+Caption = "Factura de Referencia"
 Height = 15
-Left = 5
-Top = 37
-TabIndex = 13
+Left = 157
+Top = 12
+Width = 132
+TabIndex = 16
 Name = "Clsetiqueta2"
 
 *** METODOS ***
@@ -35871,13 +32434,73 @@ Name = "Clsetiqueta2"
 OBJETO: Clsetiqueta3
 ************************************************************
 *** PROPIEDADES ***
-Caption = "Fecha Desde:"
+Caption = "Importe"
 Height = 15
-Left = 5
-Top = 89
-Width = 84
-TabIndex = 15
+Left = 346
+Top = 12
+Width = 51
+TabIndex = 17
 Name = "Clsetiqueta3"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtOperacion
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 12
+TabIndex = 18
+Top = 28
+Width = 120
+Name = "txtOperacion"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPtoVta
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 157
+TabIndex = 19
+Top = 28
+Width = 43
+Name = "txtPtoVta"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtNroCbte
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 204
+TabIndex = 20
+Top = 28
+Width = 109
+Name = "txtNroCbte"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImporte
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 347
+TabIndex = 21
+Top = 28
+Width = 86
+Name = "txtImporte"
 
 *** METODOS ***
 
@@ -35886,525 +32509,124 @@ Name = "Clsetiqueta3"
 OBJETO: Clsetiqueta4
 ************************************************************
 *** PROPIEDADES ***
-Caption = "Fecha Hasta:"
+Caption = "Concepto:"
 Height = 15
-Left = 202
-Top = 89
-Width = 84
-TabIndex = 16
+Left = 12
+Top = 71
+Width = 72
+TabIndex = 23
 Name = "Clsetiqueta4"
 
 *** METODOS ***
 
 
 ************************************************************
-OBJETO: sel_cliDesde
+OBJETO: sel_Conceptos
 ************************************************************
 *** PROPIEDADES ***
-Top = 8
-Left = 96
+Top = 63
+Left = 91
+Width = 557
+Height = 25
 TabIndex = 1
-cfieldname = idCliente
-esnumerico = .T.
-nombre_campo_codigo = idCliente
-nombre_campo_desc = razSoc
-nombre_tabla = clientes
-pkfield = idCliente
-requerido = .F.
-criterio_filtro = clientes.fecBaja IS NULL
-Name = "sel_cliDesde"
-TXTCODIGO.Name = "TXTCODIGO"
-TXTDESCRIPCION.Name = "TXTDESCRIPCION"
+cfieldname = 
+nombre_campo_codigo = codPlanCta
+nombre_campo_desc = descripcio
+nombre_tabla = planctas
+pkfield = idPlanCta
+autocompletar_ceros = .F.
+Name = "sel_Conceptos"
+txtCodigo.Height = 21
+txtCodigo.Left = 2
+txtCodigo.Top = 2
+txtCodigo.Width = 172
+txtCodigo.Name = "txtCodigo"
+txtDescripcion.Left = 177
+txtDescripcion.Top = 2
+txtDescripcion.Name = "txtDescripcion"
 
 *** METODOS ***
+PROCEDURE recuperar_datos
+thisform.codabr = planctas.codAbr
 
-
-************************************************************
-OBJETO: sel_cliHasta
-************************************************************
-*** PROPIEDADES ***
-Top = 32
-Left = 96
-TabIndex = 2
-cfieldname = idCliente
-esnumerico = .T.
-nombre_campo_codigo = idCliente
-nombre_campo_desc = razSoc
-nombre_tabla = clientes
-pkfield = idCliente
-requerido = .F.
-criterio_filtro = clientes.fecBaja IS NULL
-Name = "sel_cliHasta"
-TXTCODIGO.Name = "TXTCODIGO"
-TXTDESCRIPCION.Name = "TXTDESCRIPCION"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecDesde
-************************************************************
-*** PROPIEDADES ***
-Left = 98
-TabIndex = 7
-Top = 85
-isdatetime = .T.
-Name = "txtFecDesde"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtFecHasta
-************************************************************
-*** PROPIEDADES ***
-Left = 292
-TabIndex = 8
-Top = 85
-isdatetime = .T.
-Name = "txtFecHasta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: grdCbtes
-************************************************************
-*** PROPIEDADES ***
-Height = 309
-Left = 2
-TabIndex = 17
-Top = 112
-Width = 1013
-alias_name = cur_Cbtes
-permitir_busqueda = .F.
-permitir_ordenamiento = .F.
-list_controlsource = fecEmis,idCliente,razSoc,nroDoc,impFinal,usualta,fecAlta,idhostalta
-lista_ancho_cols = 100,70,210,150,70,70,130,150
-titulos_cabeceras = Fecha,Cliente,Razón Social,Nro. Comprobante,Importe,Usuario,Fecha Alta,Host
-Name = "grdCbtes"
-COLUMN1.HEADER1.Name = "HEADER1"
-COLUMN1.TEXT1.Name = "TEXT1"
-COLUMN1.Name = "COLUMN1"
-COLUMN2.HEADER1.Name = "HEADER1"
-COLUMN2.TEXT1.Name = "TEXT1"
-COLUMN2.Name = "COLUMN2"
-COLUMN3.HEADER1.Name = "HEADER1"
-COLUMN3.TEXT1.Name = "TEXT1"
-COLUMN3.Name = "COLUMN3"
-COLUMN4.HEADER1.Name = "HEADER1"
-COLUMN4.TEXT1.Name = "TEXT1"
-COLUMN4.Name = "COLUMN4"
-COLUMN5.HEADER1.Name = "HEADER1"
-COLUMN5.TEXT1.Name = "TEXT1"
-COLUMN5.Name = "COLUMN5"
-COLUMN6.HEADER1.Name = "HEADER1"
-COLUMN6.TEXT1.Name = "TEXT1"
-COLUMN6.Name = "COLUMN6"
-COLUMN7.HEADER1.Name = "HEADER1"
-COLUMN7.TEXT1.Name = "TEXT1"
-COLUMN7.Name = "COLUMN7"
-COLUMN8.HEADER1.Name = "HEADER1"
-COLUMN8.TEXT1.Name = "TEXT1"
-COLUMN8.Name = "COLUMN8"
-COLUMN9.HEADER1.Name = "HEADER1"
-COLUMN9.TEXT1.Name = "TEXT1"
-COLUMN9.Name = "COLUMN9"
-COLUMN10.HEADER1.Name = "HEADER1"
-COLUMN10.TEXT1.Name = "TEXT1"
-COLUMN10.Name = "COLUMN10"
-COLUMN11.HEADER1.Name = "HEADER1"
-COLUMN11.TEXT1.Name = "TEXT1"
-COLUMN11.Name = "COLUMN11"
-COLUMN12.HEADER1.Name = "HEADER1"
-COLUMN12.TEXT1.Name = "TEXT1"
-COLUMN12.Name = "COLUMN12"
-COLUMN13.HEADER1.Name = "HEADER1"
-COLUMN13.TEXT1.Name = "TEXT1"
-COLUMN13.Name = "COLUMN13"
-COLUMN14.HEADER1.Name = "HEADER1"
-COLUMN14.TEXT1.Name = "TEXT1"
-COLUMN14.Name = "COLUMN14"
-COLUMN15.HEADER1.Name = "HEADER1"
-COLUMN15.TEXT1.Name = "TEXT1"
-COLUMN15.Name = "COLUMN15"
-COLUMN16.HEADER1.Name = "HEADER1"
-COLUMN16.TEXT1.Name = "TEXT1"
-COLUMN16.Name = "COLUMN16"
-COLUMN17.HEADER1.Name = "HEADER1"
-COLUMN17.TEXT1.Name = "TEXT1"
-COLUMN17.Name = "COLUMN17"
-COLUMN18.HEADER1.Name = "HEADER1"
-COLUMN18.TEXT1.Name = "TEXT1"
-COLUMN18.Name = "COLUMN18"
-COLUMN19.HEADER1.Name = "HEADER1"
-COLUMN19.TEXT1.Name = "TEXT1"
-COLUMN19.Name = "COLUMN19"
-COLUMN20.HEADER1.Name = "HEADER1"
-COLUMN20.TEXT1.Name = "TEXT1"
-COLUMN20.Name = "COLUMN20"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnAceptar
-************************************************************
-*** PROPIEDADES ***
-Top = 66
-Left = 973
-Height = 44
-Width = 45
-TabIndex = 9
-Name = "btnAceptar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lcFecDesde, lcFecHasta, loDateTime, lcNroDoc 
-LOCAL lnIdCliDesde, lnIdCliHasta, lcSql, loResult
-LOCAL lnTotal
-
-loDateTime = CREATEOBJECT("datetime")
-loResult = CREATEOBJECT("odbc_result")
-lcFecDesde = loDateTime.toMySql(thisform.contenido.txtFecDesde.Value)
-lcFecHasta = loDateTime.toMySql(thisform.contenido.txtFecHasta.Value)
-lcNroDoc = "" 
-lnTotal = 0.00
-
-IF thisform.contenido.sel_cliDesde.valcpoid <> 0 .AND. thisform.contenido.sel_CliHasta.valcpoid <> 0
-	lnIdCliDesde = thisform.contenido.sel_cliDesde.valcpoid
-	lnIdCliHasta = thisform.contenido.sel_CliHasta.valcpoid
+&& Si es cheque rechazado, habilito para que carguen el banco y el número
+&& de cheque, en caso contrario, deshabilito los controles de cheques.
+IF ALLTRIM(planctas.codAbr) == "CHR" THEN
+	Thisform.sel_Banco.txtcodigo.Enabled = .T.
+	Thisform.txtNroCheque.Enabled = .T.
 ELSE
-	lnIdCliDesde = 0
-	lnIdCliHasta = 999999
+	Thisform.sel_Banco.txtcodigo.Enabled = .F.
+	Thisform.txtNroCheque.Enabled = .F.
 ENDIF
-
-SELECT cur_Cbtes
-ZAP
-
-lcSql = "CALL ventascab_consultar ( " ;
-	+ "?tipoConsulta, " ;
-	+ "?fechaDesde, " ;
-	+ "?fechaHasta, " ;
-	+ "?idClienteDesde, " ;
-	+ "?idClienteHasta, " ;
-	+ "?cbte, " ;
-	+ "?tipoDoc, " ;
-	+ "?ptoVta, " ;
-	+ "?numCbte)"
-	
-lcSql = loResult.AddParameter(lcSql, "tipoConsulta", thisform.tipo_consulta, .t., .f.)
-lcSql = loResult.AddParameter(lcSql, "fechaDesde", thisform.contenido.txtFecDesde.Value, .f., .t.)
-lcSql = loResult.AddParameter(lcSql, "fechaHasta", thisform.contenido.txtFecHasta.Value, .f., .t.)
-lcSql = loResult.AddParameter(lcSql, "idClienteDesde", ALLTRIM(STR(thisform.contenido.sel_cliDesde.valcpoid)), .f., .f.)
-lcSql = loResult.AddParameter(lcSql, "idClienteHasta", ALLTRIM(STR(thisform.contenido.sel_cliHasta.valcpoid)), .f., .f.)
-lcSql = loResult.AddParameter(lcSql, "cbte", ALLTRIM(UPPER(thisform.contenido.cmbCbte.Value)), .t., .f.)
-lcSql = loResult.AddParameter(lcSql, "tipoDoc", ALLTRIM(UPPER(thisform.contenido.cmbTipo.Value)), .t., .f.)
-lcSql = loResult.AddParameter(lcSql, "ptoVta", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtPtoVta.Value))))), .f., .f.)
-lcSql = loResult.AddParameter(lcSql, "numCbte", ALLTRIM(STR(INT(VAL(ALLTRIM(thisform.contenido.txtNumero.Value))))), .f., .f.)
-
-loResult.ActiveConnection = goConn.ActiveConnection
-loResult.cursor_name = "cur_tempo"
-loResult.OpenQuery(lcSql)
-SELECT cur_tempo
-IF RECCOUNT() > 0
-	GO TOP
-ENDIF
-
-SELECT cur_tempo
-DO WHILE !EOF()
-	lcNroDoc = ALLTRIM(cur_tempo.Cbte) + " " + ALLTRIM(cur_tempo.tipoDoc) + " "
-	lcNroDoc = lcNroDoc + REPLICATE("0", 4 - LEN(ALLTRIM(STR(cur_tempo.ptoVta)))) + ALLTRIM(STR(cur_tempo.ptoVta)) + "-"
-	lcNroDoc = lcNroDoc + REPLICATE("0", 8 - LEN(ALLTRIM(STR(cur_tempo.numCbte)))) + ALLTRIM(STR(cur_tempo.numCbte))
-
-	SELECT cur_Cbtes
-	APPEND BLANK
-	REPLACE idVentasC WITH cur_tempo.idVentasC
-	REPLACE idCliente WITH cur_tempo.idCliente ADDITIVE
-	REPLACE razSoc WITH cur_tempo.razSoc ADDITIVE
-	REPLACE fecEmis WITH cur_tempo.fecEmision ADDITIVE
-	REPLACE nroDoc WITH lcNroDoc ADDITIVE
-	REPLACE impFinal WITH cur_tempo.totFact ADDITIVE
-	REPLACE usualta WITH cur_tempo.usualta ADDITIVE
-	REPLACE fecAlta WITH cur_tempo.fecAlta ADDITIVE
-	REPLACE idhostalta WITH cur_tempo.idhostalta ADDITIVE
-	REPLACE observ WITH IIF(ISNULL(cur_tempo.Observ), "", cur_tempo.Observ) ADDITIVE
-	IF ALLTRIM(cur_tempo.Cbte) == "NC" THEN
-		lnTotal = lnTotal - cur_tempo.totFact
-	ELSE
-		lnTotal = lnTotal + cur_tempo.totFact
-	ENDIF
-	SELECT cur_tempo
-	SKIP
-ENDDO
-
-loResult.close_query()
-
-SELECT cur_Cbtes
-IF RECCOUNT() > 0
-	GO TOP
-ENDIF
-
-Thisform.Contenido.grdCbtes.Refresh()
-Thisform.Contenido.txtTotal.Value = lnTotal
 ENDPROC
-
-
-************************************************************
-OBJETO: btnEliminar
-************************************************************
-*** PROPIEDADES ***
-Top = 454
-Left = 922
-TabIndex = 12
-Name = "btnEliminar"
-
-*** METODOS ***
-PROCEDURE Click
-LOCAL lnResp, lcSql, loRes
-LOCAL loCommand
-
-lnResp = 0
-lcSql = ""
-loRes = CREATEOBJECT("odbc_result")
-loCommand = CREATEOBJECT("odbc_command")
-
-lnResp = MESSAGEBOX("¿Está seguro que desea anular el comprobante?", 4+32, Thisform.Caption)
-
-IF lnResp = 6
-	goConn.BeginTransaction()
-
-	lcSql = "UPDATE ventascab "
-	lcSql = lcSql + "SET anulado = 1, "
-	lcSql = lcSql + "usuBaja = '" + ALLTRIM(gcCodUsu) + "', " 
-	IF ALLTRIM(getconfig("SQLSRV")) == "0" THEN
-		lcSql = lcSql + "fecBaja = current_timestamp, "
-	ELSE
-		lcSql = lcSql + "fecBaja = GETDATE(), "
-	ENDIF
-	lcSql = lcSql + "idHostBaja = '" + SYS(0) + "' "
-	lcSql = lcSql + "WHERE idventasc = " + ALLTRIM(STR(cur_Cbtes.idventasc))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.execute()
-		MESSAGEBOX("No se ha podido anular el comprobante", 0+64, thisform.Caption)
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-	
-	&& Verifico que sea una Nota de crédito a eliminar y seteo cantNC en 0 al eliminar la nota de crédito, antes de limpiar el cursor_cbtes.
-	IF SUBSTR(cur_cbtes.nroDoc, 1, 2) == "NC" then
-		thisform.anular_cantnc_factura()
-		
-	endif
-	
-	SELECT cur_Cbtes
-	DELETE
-	thisform.contenido.grdCbtes.Refresh()
-		
-	&& Si estoy eliminando una factura, entonces, tengo que dar de alta nuevamente
-	&& el stock
-	IF getGlobalCFG("STK_MODULE") THEN
-		IF SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "FC" .OR. SUBSTR(cur_Cbtes.nroDoc, 1, 2) == "PED" THEN
-			lcSql = "select * from ventasdet where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
-			loRes.ActiveConnection = goConn.ActiveConnection
-			loRes.Cursor_Name = "cur_x"
-			
-			IF !loRes.OpenQuery(lcSql) THEN
-				MESSAGEBOX(loRes.Error_Message, 0+48, Thisform.Caption)
-				goConn.Rollback()
-				RETURN .F.
-			ENDIF
-			
-			SELECT cur_x
-			IF RECCOUNT() > 0 THEN
-				GO TOP
-			ENDIF
-			
-			DO WHILE !EOF("cur_x")
-				thisform.stock.crear_cursor()
-				thisform.stock.circuito = "V"
-				thisform.stock.tipomov = "ENT"
-				thisform.stock.cbte = ""
-				thisform.stock.numcbte = "ANULACION " + SUBSTR(cur_Cbtes.nroDoc, 1, 2)
-				thisform.stock.agregar_articulo(cur_x.idArticulo, cur_x.cantidad, IIF(ISNULL(cur_x.nroPart), "", cur_x.nroPart))
-				
-				IF !thisform.stock.grabar2() THEN
-					MESSAGEBOX(thisform.stock.ErrorMessage, 0+48, thisform.Caption)
-					goConn.Rollback()
-					RETURN .F.
-				ENDIF
-			
-				SELECT cur_x
-				SKIP
-			ENDDO
-			
-			loRes.Close_Query()
-		ENDIF
-	ENDIF
-	
-	&& Doy de baja la factura en la cuenta corriente del cliente
-	lcSql = "update cc_cli "
-	lcSql = lcSql + "set cc_cli.usuBaja = '" + ALLTRIM(gcCodUsu) + "', "
-	lcSql = lcSql + "	fecBaja = " + IIF(INT(VAL(getConfig("SQLSRV"))) = 1, "getdate(), ", "current_timestamp, ")
-	lcSql = lcSql + "	idHostBaja = '" + ALLTRIM(SYS(0)) + "' "
-	lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(cur_Cbtes.idVentasC))
-	
-	loCommand.ActiveConnection = goConn.ActiveConnection
-	loCommand.CommandText = lcSql
-	
-	IF !loCommand.Execute() THEN
-		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
-		goConn.Rollback()
-		RETURN .F.
-	ENDIF
-	
-	goConn.Commit()
-		
-ENDIF
-
-RETURN .T.
-ENDPROC
-
-
-************************************************************
-OBJETO: btnCerrar
-************************************************************
-*** PROPIEDADES ***
-Top = 454
-Left = 969
-TabIndex = 13
-Name = "btnCerrar"
-
-*** METODOS ***
 
 
 ************************************************************
 OBJETO: Clsetiqueta5
 ************************************************************
 *** PROPIEDADES ***
-Caption = "Comprobante:"
+Caption = "Importe Neto"
 Height = 15
-Left = 5
-Top = 62
-Width = 84
-TabIndex = 14
+Left = 87
+Top = 146
+Width = 79
+TabIndex = 25
 Name = "Clsetiqueta5"
 
 *** METODOS ***
 
 
 ************************************************************
-OBJETO: txtptovta
+OBJETO: chkIVA21
 ************************************************************
 *** PROPIEDADES ***
-Alignment = 3
-Value = 
-Height = 21
-Left = 208
-MaxLength = 4
+Top = 144
+Left = 192
+Height = 18
+Width = 91
+Alignment = 0
+Caption = "I.V.A 21,00%"
 TabIndex = 5
-Top = 59
-Width = 45
-autocompleta = .T.
-ischaracter = .T.
-Name = "txtptovta"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbCbte
-************************************************************
-*** PROPIEDADES ***
-Height = 24
-Left = 98
-TabIndex = 3
-Top = 58
-Width = 59
-cfieldname = 
-Name = "cmbCbte"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: cmbTipo
-************************************************************
-*** PROPIEDADES ***
-Height = 24
-Left = 160
-TabIndex = 4
-Top = 58
-Width = 44
-Name = "cmbTipo"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: txtnumero
-************************************************************
-*** PROPIEDADES ***
-Alignment = 3
-Value = 
-Height = 21
-Left = 256
-MaxLength = 8
-TabIndex = 6
-Top = 59
-Width = 90
-ischaracter = .T.
-autocompleta = .T.
-Name = "txtnumero"
-
-*** METODOS ***
-
-
-************************************************************
-OBJETO: btnVerDetalles
-************************************************************
-*** PROPIEDADES ***
-Top = 453
-Left = 5
-TabIndex = 10
-Name = "btnVerDetalles"
+Name = "chkIVA21"
 
 *** METODOS ***
 PROCEDURE Click
-DO FORM "frmImagenCbte"
+IF this.Value = 1 THEN
+	Thisform.txtIVA105.Value = 0.00
+	Thisform.txtIVA21.Value = ROUND(Thisform.txtImporteNeto.Value * 0.21, 2)
+	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+	Thisform.chkIVA105.Value = 0
+ELSE
+	Thisform.txtIVA21.Value = 0.00
+	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+ENDIF
 ENDPROC
 
 
 ************************************************************
-OBJETO: btnSeguimiento
+OBJETO: chkIVA105
 ************************************************************
 *** PROPIEDADES ***
-Top = 454
-Left = 52
-Height = 44
-Width = 45
-Picture = ..\imagen\my-documents.ico
-TabIndex = 11
-ToolTipText = "Seguimiento de Comprobantes"
-Name = "btnSeguimiento"
+Top = 144
+Left = 300
+Height = 18
+Width = 92
+Alignment = 0
+Caption = "I.V.A 10,50%"
+TabIndex = 6
+Name = "chkIVA105"
 
 *** METODOS ***
 PROCEDURE Click
-LOCAL loForm
-
-loForm = CREATEOBJECT("cls_frm_linkedcbtes")
-
-SELECT cur_Cbtes
-loForm.idVentasC = cur_Cbtes.idVentasC
-loForm.nrocbte = cur_Cbtes.nrodoc
-
-loForm.leer_datos()
-
-loForm.show()
-
+IF this.Value = 1 THEN
+	Thisform.txtIVA21.Value = 0.00
+	Thisform.txtIVA105.Value = ROUND(Thisform.txtImporteNeto.Value * 0.105, 2)
+	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+	Thisform.chkIVA21.Value = 0
+ELSE
+	Thisform.txtIVA105.Value = 0.00
+	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+ENDIF
 ENDPROC
 
 
@@ -36412,12 +32634,286 @@ ENDPROC
 OBJETO: Clsetiqueta6
 ************************************************************
 *** PROPIEDADES ***
-Caption = "Importe total de comprobantes:"
+Caption = "Importe Total"
 Height = 15
-Left = 673
-Top = 432
-Width = 180
+Left = 412
+Top = 146
+Width = 79
+TabIndex = 26
 Name = "Clsetiqueta6"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImporteNeto
+************************************************************
+*** PROPIEDADES ***
+Left = 84
+TabIndex = 4
+Top = 162
+isnumeric = .T.
+Name = "txtImporteNeto"
+
+*** METODOS ***
+PROCEDURE LostFocus
+IF thisform.chkIVA21.Value = 1 THEN
+	Thisform.txtIVA105.Value = 0.00
+	Thisform.txtIVA21.Value = ROUND(Thisform.txtImporteNeto.Value * 0.21, 2)
+	Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+ELSE
+	IF thisform.txtIVA105.Value = 1 THEN
+		Thisform.txtIVA21.Value = 0.00
+		Thisform.txtIVA105.Value = ROUND(Thisform.txtImporteNeto.Value * 0.105, 2)
+		Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+	ELSE 
+		Thisform.txtIVA21.Value = 0.00
+		Thisform.txtIVA105.Value = 0.00
+		Thisform.txtImpTotal.Value = ROUND(Thisform.txtImporteNeto.Value + Thisform.txtIVA21.Value + Thisform.txtIVA105.Value, 2)
+	ENDIF 
+ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: txtIVA21
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 192
+TabIndex = 27
+Top = 162
+Width = 104
+isnumeric = .T.
+Name = "txtIVA21"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtIVA105
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 302
+TabIndex = 28
+Top = 162
+Width = 101
+isnumeric = .T.
+Name = "txtIVA105"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: btnAgregar
+************************************************************
+*** PROPIEDADES ***
+Top = 143
+Left = 680
+Height = 44
+Width = 45
+TabIndex = 7
+Name = "btnAgregar"
+
+*** METODOS ***
+PROCEDURE Click
+IF Thisform.sel_Conceptos.valcpoid = 0 THEN
+	MESSAGEBOX("Debe selecionar un concepto", 0+48, Thisform.Caption)
+	Thisform.sel_Conceptos.txtCodigo.SetFocus()
+	RETURN .F.
+ENDIF
+
+IF Thisform.txtImporteNeto.Value = 0 THEN
+	MESSAGEBOX("Debe ingresar el importe neto", 0+48, Thisform.Caption)
+	Thisform.txtImporteNeto.SetFocus()
+	RETURN .F.
+ENDIF
+
+&& Si es cheque rechazado entonces valido que el usuario ingrese los datos
+&& del cheque
+IF ALLTRIM(Thisform.codAbr) == "CHR" THEN
+	IF ALLTRIM(Thisform.Sel_Banco.txtCodigo.Value) == "" THEN
+		MESSAGEBOX("Debe ingresar el banco", 0+48, Thisform.Caption)
+		Thisform.sel_Banco.txtCodigo.SetFocus()
+		RETURN .F.
+	ENDIF
+	
+	IF ALLTRIM(Thisform.txtNroCheque.Value) == "" THEN
+		MESSAGEBOX("Debe ingresar el número de cheque", 0+48, Thisform.Caption)
+		Thisform.txtNroCheque.SetFocus()
+		RETURN .F.
+	ENDIF
+	
+	IF !Thisform.buscar_cheque() THEN
+		Thisform.sel_Banco.txtCodigo.SetFocus()
+		RETURN .F.
+	ENDIF
+ENDIF
+
+SELECT vtadcp
+APPEND BLANK
+REPLACE vtadcp.id_vtadcp WITH 0
+REPLACE vtadcp.idVentasC WITH 0 ADDITIVE
+REPLACE vtadcp.idPlanCta WITH Thisform.sel_Conceptos.valcpoid ADDITIVE
+REPLACE vtadcp.idBanco WITH Thisform.sel_Banco.valcpoid ADDITIVE
+REPLACE vtadcp.codPlanCta WITH Thisform.sel_Conceptos.txtCodigo.Value ADDITIVE
+REPLACE vtadcp.descPlan WITH Thisform.sel_Conceptos.txtDescripcion.Value ADDITIVE
+REPLACE vtadcp.cheque_nro WITH Thisform.txtNroCheque.Value ADDITIVE
+REPLACE	vtadcp.impNeto WITH ROUND(Thisform.txtImporteNeto.Value, 2) ADDITIVE
+
+IF Thisform.txtIVA105.Value <> 0 THEN
+	REPLACE vtadcp.ivaPor WITH 10.5 ADDITIVE
+	REPLACE vtadcp.ivaImp WITH Thisform.txtIVA105.Value ADDITIVE
+ELSE 
+	IF Thisform.txtIVA21.Value <> 0 THEN
+		REPLACE vtadcp.ivaPor WITH 21 ADDITIVE
+		REPLACE vtadcp.ivaImp WITH Thisform.txtIVA21.Value ADDITIVE
+	ELSE 
+		REPLACE vtadcp.ivaPor WITH 0 ADDITIVE
+		REPLACE vtadcp.ivaImp WITH 0 ADDITIVE
+	ENDIF
+ENDIF 
+
+REPLACE vtadcp.total WITH Thisform.txtImpTotal.Value ADDITIVE
+
+Thisform.grdDetalle.Refresh()
+
+Thisform.sel_Conceptos.txtCodigo.Value = ""
+Thisform.sel_Conceptos.txtdescripcion.Value = ""
+Thisform.txtImporteNeto.Value = 0.00
+Thisform.txtIVA105.Value = 0.00
+Thisform.txtIVA21.Value = 0.00
+Thisform.txtImpTotal.Value = 0.00
+Thisform.sel_Conceptos.txtCodigo.SetFocus()
+Thisform.chkIVA105.Value = 0
+Thisform.chkIVA21.Value = 1
+
+Thisform.sumar_items()
+Thisform.calcular_ret_iibb()
+
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: grdDetalle
+************************************************************
+*** PROPIEDADES ***
+Height = 224
+Left = 3
+TabIndex = 30
+Top = 189
+Width = 769
+Name = "grdDetalle"
+COLUMN1.Header1.Name = "Header1"
+COLUMN1.Text1.Name = "Text1"
+COLUMN1.Name = "COLUMN1"
+COLUMN2.Header1.Name = "Header1"
+COLUMN2.Text1.Name = "Text1"
+COLUMN2.Name = "COLUMN2"
+COLUMN3.Header1.Name = "Header1"
+COLUMN3.Text1.Name = "Text1"
+COLUMN3.Name = "COLUMN3"
+COLUMN4.Header1.Name = "Header1"
+COLUMN4.Text1.Name = "Text1"
+COLUMN4.Name = "COLUMN4"
+COLUMN5.Header1.Name = "Header1"
+COLUMN5.Text1.Name = "Text1"
+COLUMN5.Name = "COLUMN5"
+COLUMN6.Header1.Name = "Header1"
+COLUMN6.Text1.Name = "Text1"
+COLUMN6.Name = "COLUMN6"
+COLUMN7.Header1.Name = "Header1"
+COLUMN7.Text1.Name = "Text1"
+COLUMN7.Name = "COLUMN7"
+COLUMN8.Header1.Name = "Header1"
+COLUMN8.Text1.Name = "Text1"
+COLUMN8.Name = "COLUMN8"
+COLUMN9.Header1.Name = "Header1"
+COLUMN9.Text1.Name = "Text1"
+COLUMN9.Name = "COLUMN9"
+COLUMN10.Header1.Name = "Header1"
+COLUMN10.Text1.Name = "Text1"
+COLUMN10.Name = "COLUMN10"
+COLUMN11.Header1.Name = "Header1"
+COLUMN11.Text1.Name = "Text1"
+COLUMN11.Name = "COLUMN11"
+COLUMN12.Header1.Name = "Header1"
+COLUMN12.Text1.Name = "Text1"
+COLUMN12.Name = "COLUMN12"
+COLUMN13.Header1.Name = "Header1"
+COLUMN13.Text1.Name = "Text1"
+COLUMN13.Name = "COLUMN13"
+COLUMN14.Header1.Name = "Header1"
+COLUMN14.Text1.Name = "Text1"
+COLUMN14.Name = "COLUMN14"
+COLUMN15.Header1.Name = "Header1"
+COLUMN15.Text1.Name = "Text1"
+COLUMN15.Name = "COLUMN15"
+COLUMN16.Header1.Name = "Header1"
+COLUMN16.Text1.Name = "Text1"
+COLUMN16.Name = "COLUMN16"
+COLUMN17.Header1.Name = "Header1"
+COLUMN17.Text1.Name = "Text1"
+COLUMN17.Name = "COLUMN17"
+COLUMN18.Header1.Name = "Header1"
+COLUMN18.Text1.Name = "Text1"
+COLUMN18.Name = "COLUMN18"
+COLUMN19.Header1.Name = "Header1"
+COLUMN19.Text1.Name = "Text1"
+COLUMN19.Name = "COLUMN19"
+COLUMN20.Header1.Name = "Header1"
+COLUMN20.Text1.Name = "Text1"
+COLUMN20.Name = "COLUMN20"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: SubTotal
+************************************************************
+*** PROPIEDADES ***
+Caption = "SubTotal"
+Height = 15
+Left = 12
+Top = 422
+Width = 60
+TabIndex = 31
+Name = "SubTotal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtSubTotal
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 72
+TabIndex = 9
+Top = 418
+Width = 86
+isnumeric = .T.
+Name = "txtSubTotal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta9
+************************************************************
+*** PROPIEDADES ***
+Caption = "Total:"
+Height = 15
+Left = 464
+Top = 422
+Width = 40
+TabIndex = 34
+Name = "Clsetiqueta9"
 
 *** METODOS ***
 
@@ -36426,11 +32922,12 @@ Name = "Clsetiqueta6"
 OBJETO: txtTotal
 ************************************************************
 *** PROPIEDADES ***
+Enabled = .F.
 Height = 21
-Left = 865
-ReadOnly = .T.
-Top = 428
-Width = 149
+Left = 504
+TabIndex = 12
+Top = 418
+Width = 86
 isnumeric = .T.
 Name = "txtTotal"
 
@@ -36438,11 +32935,2612 @@ Name = "txtTotal"
 
 
 ************************************************************
-OBJETO: clsform_consbjacbte_sf
+OBJETO: btnGrabar
+************************************************************
+*** PROPIEDADES ***
+Top = 471
+Left = 680
+Height = 44
+Width = 45
+TabIndex = 13
+Name = "btnGrabar"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lcSql, loCommand, lnIdVentaC, lnPtoVta, lnIdVtasRel, loResCli
+LOCAL loNumerador, lnPtoVta, lnNroCbte, lnPorIVA21 
+LOCAL lnPorIVA105, lnImpIVA21, lnImpIVA105, lnIdVtaCP, lnIdCC_Cli
+LOCAL lnIdOper, lnSaldo, loDateTime
+LOCAL lnIdCondPago, lnIdSitIVA, lnIdVendedor, lnPorIIBB, lnImpIIBB, lnIdCC_CliOrig 
+
+lcSql = ""
+loDateTime = CREATEOBJECT("datetime")
+loCommand = CREATEOBJECT("odbc_command")
+loResCli = CREATEOBJECT("odbc_result")
+lnIdVentaC = 0
+lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
+lnNroCbte = 0
+lnIdVtaCP = 0
+lnIdCC_Cli = 0
+lnPorIVA21 = 0.00
+lnImpIVA21 = 0.00
+lnPorIVA105 = 0.00
+lnImpIVA105 = 0.00
+lnIdOper = 0
+lnSaldo = 0.00
+lnIdVtasRel = 0
+lnIdCondPago = 0
+lnIdSitIVA = 0
+lnIdVendedor = 0
+lnPorIIBB = 0.00
+lnImpIIBB = 0.00
+lnIdCC_CliOrig = thisform.idcc_cli
+
+
+SELECT vtadcp
+IF RECCOUNT("vtadcp") = 0 THEN
+	MESSAGEBOX("Debe ingresar al menos un ítem del detalle", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
+loResCli.ActiveConnection = goConn.ActiveConnection
+loResCli.Cursor_Name = "cur_cli"
+
+IF !loResCli.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResCli.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_cli
+lnIdCondPago = cur_cli.idCondPago
+lnIdSitIVA = cur_cli.idSitIVA
+lnIdVendedor = cur_cli.idVendedor
+
+loResCli.Close_Query()
+
+SELECT vtadcp
+DO WHILE !EOF("vtadcp") 
+	IF vtadcp.ivaPor = 21 THEN
+		lnPorIVA21 = vtadcp.ivaPor
+		lnImpIVA21 = lnImpIVA21 + vtadcp.ivaImp
+	ELSE
+		lnPorIVA105 = vtadcp.ivaPor
+		lnImpIVA105 = lnImpIVA105 + vtadcp.ivaImp
+	ENDIF	
+
+	SELECT vtadcp
+	SKIP	
+ENDDO
+
+lnPorIIBB = Thisform.txtporIIBB.Value
+lnImpIIBB = Thisform.txtImpIIBB.Value
+
+goConn.BeginTransaction()	&& Inicio la transacción
+ 
+&& Calculo el tipo de comprobante
+IF INT(VAL(ALLTRIM(getconfig("DEMO")))) == 0 THEN
+	Thisform.Tipodocref = Thisform.calcular_tipodoc()
+ELSE
+	Thisform.Tipodocref = "X"
+ENDIF
+
+lcSql = "SELECT * FROM numerador WHERE cbte = '" + ALLTRIM(Thisform.cbte) + "' AND tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "' AND ptoVta = " + ALLTRIM(STR(lnPtoVta))
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+SELECT cur_num
+
+IF RECCOUNT("cur_num") = 0 THEN
+	MESSAGEBOX("No se encuentra configurado el numerador del comprobante " + ALLTRIM(Thisform.cbte) + " Punto de Venta: " + ALLTRIM(STR(lnPtoVta)) + " Letra: " + ALLTRIM(thisform.tipodocref), 0+48, thisform.Caption)
+	loNumerador.close_query()
+	RETURN .F.
+ENDIF
+
+SELECT cur_num
+lnNroCbte = cur_num.numActual + 1
+Thisform.printerDevice = cur_num.impresora
+
+loNumerador.close_query()
+
+&& Actualizo el numerador
+lcSql = "update numerador set numActual = " + ALLTRIM(STR(lnNroCbte)) + ;
+	" where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "'"
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute()
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+lnIdVentaC = goConn.GetNextId("ventascab", "idVentasC")
+
+lcSql = "INSERT INTO ventascab ( "
+lcSql = lcSql + "idVentasC, idCliente, razSoc, idTipoDoc, nroDoc, fecEmision, fecVto, cbte, tipoDoc, ptoVta, numCbte, anulado, idCondPago, idSitIVA, idVendedor, "
+lcSql = lcSql + "impNeto, impFinal, porIVA21, impIVA21, porIVA105, impIVA105, porDesc1, "
+lcSql = lcSql + "porDesc2, porDesc3, porDesc4, impDesc1, impDesc2, impDesc3, impDesc4, totFact, Saldo, usuAlta, fecAlta, idHostAlta, porIIBB, impIIBB, observ) VALUES ("
+lcSql = lcSql + ALLTRIM(STR(lnIdVentaC)) + ", "
+lcSql = lcSql + ALLTRIM(STR(Thisform.idCliente)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_razsoc) + "', "
+lcSql = lcSql + ALLTRIM(STR(Thisform.cli_idTipodoc)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_cuit) + "', "
+lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
+lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
+lcSql = lcSql + "'" + ALLTRIM(Thisform.cbte) + "', "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.tipodocref) + "', "
+lcSql = lcSql + ALLTRIM(STR(lnPtoVta)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", "
+lcSql = lcSql + "0, "
+lcSql = lcSql + ALLTRIM(STR(lnIdCondPago)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdVendedor)) + ", "
+lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorIVA21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIVA21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorIVA105, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIVA105, 10, 2)) + ", "
+lcSql = lcSql + "0, 0, 0, 0, 0, 0, 0, 0, "
+lcSql = lcSql + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", 0, "
+lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', "
+lcSql = lcSql + loDateTime.getDateTime() + ", "
+lcSql = lcSql + "'" + SYS(0) + "', "
+lcSql = lcSql + ALLTRIM(STR(lnPorIIBB, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIIBB, 10, 2)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(thisform.txtobserv.Value) + "')"
+
+loCommand.commandText = lcSql
+loCommand.ActiveConnection = goConn.ActiveConnection
+
+IF !loCommand.Execute() then
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+&& Grabar el detalle en VTADCP
+SELECT vtadcp
+GO TOP
+DO WHILE !EOF("vtadcp")
+	lnIdVtaCP = goConn.GetNextID("vtadcp", "id_vtadcp")
+	
+	lcSql = "INSERT INTO vtadcp ( "
+	lcSql = lcSql + "id_vtadcp, idVentasC, idPlanCta, impNeto, ivaPor, ivaImp, total) VALUES "
+	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtaCP)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ", " + ALLTRIM(STR(vtadcp.idPlanCta)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(vtadcp.impNeto, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaPor, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaImp, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(vtadcp.total, 10, 2)) + ")"
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		goConn.Rollback()
+		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF
+	
+	&& Marco el cheque como cheque rechazado
+	IF ALLTRIM(vtadcp.cheque_nro) != "" THEN
+		lcSql = "UPDATE cheques SET estado = 'R' WHERE chq_nro = '" + ALLTRIM(vtadcp.cheque_nro) + "' AND idBanco = " + ALLTRIM(STR(vtadcp.idBanco))
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		loCommand.CommandText = lcSql
+		
+		IF !loCommand.Execute() THEN
+			goConn.Rollback()
+			MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+			RETURN .F.
+		ENDIF
+	ENDIF	
+
+	SELECT vtadcp
+	SKIP
+ENDDO
+
+IF Thisform.idVentascab <> - 1 THEN
+	&& Generar el registro de vinculación de comprobantes
+	lnIdVtasRel = goConn.GetNextId("ventasrel", "idvtarel")
+
+	&& Vinculo el comprobante de venta
+	lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES "
+	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtasRel)) + ", " + ALLTRIM(STR(Thisform.idventascab)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ")"
+
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+
+	IF !loCommand.Execute()
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+ENDIF 
+
+IF !Thisform.grabar_ctacte(lnIdVentaC) THEN
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+&& Actualizar el saldo de la factura seleccionada
+IF ALLTRIM(thisform.cbte) == "NC" THEN
+
+	lcSql = "UPDATE ventascab SET Saldo = Saldo - " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
+	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
+	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
+ELSE 
+	lcSql = "UPDATE ventascab SET Saldo = Saldo + " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
+	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
+	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
+
+ENDIF
+	
+loCommand.CommandText = lcSql
+loCommand.ActiveConnection = goConn.ActiveConnection
+
+IF !loCommand.Execute()
+	goConn.Rollback()
+	RETURN .F.
+ENDIF 
+
+goConn.Commit()
+
+Thisform.ptovta = REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta))
+Thisform.nrocbte = REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNroCbte)))) + ALLTRIM(STR(lnNroCbte))
+
+MESSAGEBOX("El comprobante: " + ALLTRIM(Thisform.cbte) + " " + ALLTRIM(Thisform.Tipodocref) + " " + REPLICATE("0", 4 - LEN(ALLTRIM(STR(lnPtoVta)))) + ALLTRIM(STR(lnPtoVta)) + "-" + ;
+	REPLICATE("0", 8 - LEN(ALLTRIM(STR(lnNroCbte)))) + ALLTRIM(STR(lnNroCbte)) + " se ha generado exitosamente...", 0+64, Thisform.Caption)
+
+IF !Thisform.usa_fiscal THEN
+	Thisform.imprimir()
+ENDIF
+
+Thisform.Release()
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: btnCerrar
+************************************************************
+*** PROPIEDADES ***
+Top = 471
+Left = 727
+Height = 44
+Width = 45
+Cancel = .T.
+TabIndex = 14
+Name = "btnCerrar"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta10
+************************************************************
+*** PROPIEDADES ***
+Caption = "Banco:"
+Height = 15
+Left = 12
+Top = 95
+Width = 72
+TabIndex = 22
+Name = "Clsetiqueta10"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Sel_Banco
+************************************************************
+*** PROPIEDADES ***
+Top = 87
+Left = 91
+TabIndex = 2
+esnumerico = .F.
+cfieldname = codbco
+nombre_campo_codigo = codbco
+nombre_campo_desc = descripcio
+nombre_tabla = bancos
+pkfield = idBanco
+autocompletar_ceros = .F.
+Name = "Sel_Banco"
+txtCodigo.Value = 
+txtCodigo.Name = "txtCodigo"
+txtDescripcion.Name = "txtDescripcion"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta11
+************************************************************
+*** PROPIEDADES ***
+Caption = "Cheque Nº:"
+Height = 15
+Left = 576
+Top = 92
+Width = 72
+TabIndex = 24
+Name = "Clsetiqueta11"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtNroCheque
+************************************************************
+*** PROPIEDADES ***
+Height = 21
+Left = 644
+MaxLength = 8
+TabIndex = 3
+Top = 89
+Width = 125
+ischaracter = .T.
+autocompleta = .T.
+Name = "txtNroCheque"
+
+*** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+
+IF !Thisform.buscar_cheque() THEN
+	Thisform.sel_Banco.txtCodigo.SetFocus()
+ENDIF
+
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta12
+************************************************************
+*** PROPIEDADES ***
+Caption = "I.V.A 21:"
+Height = 15
+Left = 226
+Top = 422
+Width = 57
+TabIndex = 33
+Name = "Clsetiqueta12"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta13
+************************************************************
+*** PROPIEDADES ***
+Caption = "I.V.A 10,5:"
+Height = 15
+Left = 226
+Top = 445
+Width = 72
+TabIndex = 35
+Name = "Clsetiqueta13"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPorIVA21
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 297
+ReadOnly = .T.
+TabIndex = 41
+Top = 418
+Width = 44
+isnumeric = .T.
+Name = "txtPorIVA21"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPorIVA105
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 297
+ReadOnly = .T.
+TabIndex = 42
+Top = 441
+Width = 44
+isnumeric = .T.
+Name = "txtPorIVA105"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpIVA21
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 342
+ReadOnly = .T.
+TabIndex = 44
+Top = 418
+Width = 75
+isnumeric = .T.
+Name = "txtImpIVA21"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpIVA105
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 342
+ReadOnly = .T.
+TabIndex = 45
+Top = 441
+Width = 75
+isnumeric = .T.
+Name = "txtImpIVA105"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsetiqueta18
+************************************************************
+*** PROPIEDADES ***
+Caption = "Perc. IIBB.:"
+Height = 15
+Left = 226
+Top = 467
+Width = 63
+TabIndex = 34
+Name = "Clsetiqueta18"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtPorIIBB
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 297
+ReadOnly = .T.
+TabIndex = 40
+Top = 464
+Width = 44
+isnumeric = .T.
+Name = "txtPorIIBB"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpIIBB
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 342
+ReadOnly = .T.
+TabIndex = 43
+Top = 464
+Width = 75
+isnumeric = .T.
+Name = "txtImpIIBB"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: Clsdelete
+************************************************************
+*** PROPIEDADES ***
+Top = 143
+Left = 727
+Height = 44
+Width = 45
+Name = "Clsdelete"
+
+*** METODOS ***
+PROCEDURE Click
+LOCAL lnResp
+
+lnResp = MESSAGEBOX("Está seguro que desea eliminar este ítem?", 0+4, Thisform.Caption)
+
+IF lnResp = 6 THEN
+	SELECT vtadcp 
+	DELETE 
+
+	Thisform.grdDetalle.Refresh()
+
+	Thisform.sumar_items()
+	Thisform.calcular_ret_iibb()
+ENDIF 
+ENDPROC
+
+
+************************************************************
+OBJETO: Clsetiqueta7
+************************************************************
+*** PROPIEDADES ***
+Caption = "Leyenda:"
+Height = 15
+Left = 11
+Top = 118
+Width = 72
+TabIndex = 22
+Name = "Clsetiqueta7"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtobserv
+************************************************************
+*** PROPIEDADES ***
+Enabled = .T.
+Height = 21
+Left = 93
+TabIndex = 18
+Top = 113
+Width = 550
+Name = "txtobserv"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: txtImpTotal
+************************************************************
+*** PROPIEDADES ***
+Enabled = .F.
+Height = 21
+Left = 410
+ReadOnly = .F.
+Top = 162
+Width = 166
+isnumeric = .T.
+Name = "txtImpTotal"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: frm_ncnd_cc_sf
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 8, 5, 14, 11, 29, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cls_ncdev_fe
+************************************************************
+*** PROPIEDADES ***
+DoCreate = .T.
+WindowState = 0
+nrocbte = 0
+aut_cae = 
+aut_cae_vto = 
+aut_resultado = 
+aut_motivo = 
+aut_numero = 
+ptovta = 
+qr_image = 
+oticket = 
+codigo_cbte = 
+Name = "cls_ncdev_fe"
+contenido.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.sel_Cliente.txtCodigo.Name = "txtCodigo"
+contenido.sel_Cliente.txtDescripcion.Name = "txtDescripcion"
+contenido.sel_Cliente.Name = "sel_Cliente"
+contenido.BTNBUSCARFC.Name = "BTNBUSCARFC"
+contenido.PAGINAS.ErasePage = .T.
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN1.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN1.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN1.Name = "COLUMN1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN2.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN2.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN2.Name = "COLUMN2"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN3.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN3.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN3.Name = "COLUMN3"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN4.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN4.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN4.Name = "COLUMN4"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN5.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN5.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN5.Name = "COLUMN5"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN6.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN6.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN6.Name = "COLUMN6"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN7.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN7.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN7.Name = "COLUMN7"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN8.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN8.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN8.Name = "COLUMN8"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN9.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN9.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN9.Name = "COLUMN9"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN10.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN10.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN10.Name = "COLUMN10"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN11.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN11.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN11.Name = "COLUMN11"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN12.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN12.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN12.Name = "COLUMN12"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN13.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN13.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN13.Name = "COLUMN13"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN14.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN14.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN14.Name = "COLUMN14"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN15.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN15.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN15.Name = "COLUMN15"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN16.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN16.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN16.Name = "COLUMN16"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN17.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN17.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN17.Name = "COLUMN17"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN18.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN18.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN18.Name = "COLUMN18"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN19.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN19.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN19.Name = "COLUMN19"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN20.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN20.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMS.COLUMN20.Name = "COLUMN20"
+contenido.PAGINAS.Page1.GRDITEMS.Name = "GRDITEMS"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN1.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN1.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN1.Name = "COLUMN1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN2.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN2.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN2.Name = "COLUMN2"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN3.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN3.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN3.Name = "COLUMN3"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN4.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN4.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN4.Name = "COLUMN4"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN5.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN5.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN5.Name = "COLUMN5"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN6.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN6.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN6.Name = "COLUMN6"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN7.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN7.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN7.Name = "COLUMN7"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN8.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN8.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN8.Name = "COLUMN8"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN9.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN9.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN9.Name = "COLUMN9"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN10.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN10.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN10.Name = "COLUMN10"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN11.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN11.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN11.Name = "COLUMN11"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN12.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN12.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN12.Name = "COLUMN12"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN13.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN13.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN13.Name = "COLUMN13"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN14.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN14.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN14.Name = "COLUMN14"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN15.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN15.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN15.Name = "COLUMN15"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN16.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN16.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN16.Name = "COLUMN16"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN17.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN17.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN17.Name = "COLUMN17"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN18.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN18.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN18.Name = "COLUMN18"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN19.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN19.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN19.Name = "COLUMN19"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN20.Header1.Name = "Header1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN20.Text1.Name = "Text1"
+contenido.PAGINAS.Page1.GRDITEMNC.COLUMN20.Name = "COLUMN20"
+contenido.PAGINAS.Page1.GRDITEMNC.Name = "GRDITEMNC"
+contenido.PAGINAS.Page1.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.PAGINAS.Page1.Clsetiqueta2.Name = "Clsetiqueta2"
+contenido.PAGINAS.Page1.BTNACEPTAR.Name = "BTNACEPTAR"
+contenido.PAGINAS.Page1.btnCancelar.Name = "btnCancelar"
+contenido.PAGINAS.Page1.Name = "Page1"
+contenido.PAGINAS.Page2.Clsetiqueta1.Name = "Clsetiqueta1"
+contenido.PAGINAS.Page2.Clsetiqueta2.Name = "Clsetiqueta2"
+contenido.PAGINAS.Page2.Clsetiqueta3.Name = "Clsetiqueta3"
+contenido.PAGINAS.Page2.Clsetiqueta4.Name = "Clsetiqueta4"
+contenido.PAGINAS.Page2.Clsetiqueta5.Name = "Clsetiqueta5"
+contenido.PAGINAS.Page2.Clsetiqueta6.Name = "Clsetiqueta6"
+contenido.PAGINAS.Page2.Clsetiqueta7.Name = "Clsetiqueta7"
+contenido.PAGINAS.Page2.Clsetiqueta8.Name = "Clsetiqueta8"
+contenido.PAGINAS.Page2.Clsetiqueta9.Name = "Clsetiqueta9"
+contenido.PAGINAS.Page2.Clslinea1.Name = "Clslinea1"
+contenido.PAGINAS.Page2.CLSLINEA2.Name = "CLSLINEA2"
+contenido.PAGINAS.Page2.Clsetiqueta10.Name = "Clsetiqueta10"
+contenido.PAGINAS.Page2.Clsetiqueta11.Name = "Clsetiqueta11"
+contenido.PAGINAS.Page2.TXTFCIMPNETO.Name = "TXTFCIMPNETO"
+contenido.PAGINAS.Page2.TXTFCPORDTO1.Name = "TXTFCPORDTO1"
+contenido.PAGINAS.Page2.TXTFCPORDTO2.Name = "TXTFCPORDTO2"
+contenido.PAGINAS.Page2.TXTFCPORDTO3.Name = "TXTFCPORDTO3"
+contenido.PAGINAS.Page2.TXTFCPORDTO4.Name = "TXTFCPORDTO4"
+contenido.PAGINAS.Page2.TXTFCIMPFINAL.Name = "TXTFCIMPFINAL"
+contenido.PAGINAS.Page2.TXTFCIMPIVA21.Name = "TXTFCIMPIVA21"
+contenido.PAGINAS.Page2.TXTFCIMPIVA105.Name = "TXTFCIMPIVA105"
+contenido.PAGINAS.Page2.TXTFCTOTFACT.Name = "TXTFCTOTFACT"
+contenido.PAGINAS.Page2.TXTFCIMPDTO1.Name = "TXTFCIMPDTO1"
+contenido.PAGINAS.Page2.TXTFCIMPDTO2.Name = "TXTFCIMPDTO2"
+contenido.PAGINAS.Page2.TXTFCIMPDTO3.Name = "TXTFCIMPDTO3"
+contenido.PAGINAS.Page2.TXTFCIMPDTO4.Name = "TXTFCIMPDTO4"
+contenido.PAGINAS.Page2.TXTNCIMPNETO.Name = "TXTNCIMPNETO"
+contenido.PAGINAS.Page2.TXTNCPORDTO1.Name = "TXTNCPORDTO1"
+contenido.PAGINAS.Page2.TXTNCPORDTO2.Name = "TXTNCPORDTO2"
+contenido.PAGINAS.Page2.TXTNCPORDTO3.Name = "TXTNCPORDTO3"
+contenido.PAGINAS.Page2.TXTNCPORDTO4.Name = "TXTNCPORDTO4"
+contenido.PAGINAS.Page2.TXTNCIMPFINAL.Name = "TXTNCIMPFINAL"
+contenido.PAGINAS.Page2.TXTNCIMPIVA21.Name = "TXTNCIMPIVA21"
+contenido.PAGINAS.Page2.TXTNCIMPIVA105.Name = "TXTNCIMPIVA105"
+contenido.PAGINAS.Page2.TXTNCTOTFACT.Name = "TXTNCTOTFACT"
+contenido.PAGINAS.Page2.TXTNCIMPDTO1.Name = "TXTNCIMPDTO1"
+contenido.PAGINAS.Page2.TXTNCIMPDTO2.Name = "TXTNCIMPDTO2"
+contenido.PAGINAS.Page2.TXTNCIMPDTO3.Name = "TXTNCIMPDTO3"
+contenido.PAGINAS.Page2.TXTNCIMPDTO4.Name = "TXTNCIMPDTO4"
+contenido.PAGINAS.Page2.CLSLINEA3.Name = "CLSLINEA3"
+contenido.PAGINAS.Page2.CLSLINEA4.Name = "CLSLINEA4"
+contenido.PAGINAS.Page2.Clsetiqueta12.Name = "Clsetiqueta12"
+contenido.PAGINAS.Page2.TXTFCPORIIBB.Name = "TXTFCPORIIBB"
+contenido.PAGINAS.Page2.TXTFCIMPIIBB.Name = "TXTFCIMPIIBB"
+contenido.PAGINAS.Page2.TXTNCPORIIBB.Name = "TXTNCPORIIBB"
+contenido.PAGINAS.Page2.TXTNCIMPIIBB.Name = "TXTNCIMPIIBB"
+contenido.PAGINAS.Page2.TXTNCPORREC.Name = "TXTNCPORREC"
+contenido.PAGINAS.Page2.TXTNCIMPREC.Name = "TXTNCIMPREC"
+contenido.PAGINAS.Page2.TXTFCPORREC.Name = "TXTFCPORREC"
+contenido.PAGINAS.Page2.TXTFCIMPREC.Name = "TXTFCIMPREC"
+contenido.PAGINAS.Page2.Clsetiqueta13.Name = "Clsetiqueta13"
+contenido.PAGINAS.Page2.Clsetiqueta14.Name = "Clsetiqueta14"
+contenido.PAGINAS.Page2.txtFCTotalNoGrav.Name = "txtFCTotalNoGrav"
+contenido.PAGINAS.Page2.txtNCTotalNoGrav.Name = "txtNCTotalNoGrav"
+contenido.PAGINAS.Page2.Name = "Page2"
+contenido.PAGINAS.Name = "PAGINAS"
+contenido.BTNCERRAR.Name = "BTNCERRAR"
+contenido.btnGrabar.Name = "btnGrabar"
+contenido.BTNNUEVO.Name = "BTNNUEVO"
+contenido.Clsetiqueta2.Name = "Clsetiqueta2"
+contenido.TXTCBTE.Name = "TXTCBTE"
+contenido.TXTTIPO.Name = "TXTTIPO"
+contenido.TXTNROCBTE.Name = "TXTNROCBTE"
+contenido.Clsetiqueta3.Name = "Clsetiqueta3"
+contenido.txtFecEmis.Name = "txtFecEmis"
+contenido.lblEstadoCbte.Name = "lblEstadoCbte"
+contenido.Name = "contenido"
+DATOS_CBTES.Name = "DATOS_CBTES"
+
+*** METODOS ***
+PROCEDURE fe_set_cae
+LOCAL loCommand, loMovStock, lcSql
+LOCAL loDT, ldFecVto
+LOCAL lcAnio, lcMes, lcDia
+
+loDT = CREATEOBJECT("datetime")
+loCommand = CREATEOBJECT("odbc_command")
+loMovStock = CREATEOBJECT("cl_mov_stock")
+lcSql = ""
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+lcSql = "update ventascab "
+lcSql = lcSql + "set "
+lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
+lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
+lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
+lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
+lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
+lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
+lcSql = lcsql + "	aut_tipoCbte = '" + ALLTRIM(This.codigo_cbte) + "', "
+lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
+lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(Thisform.datos_cbtes.idventasc))
+
+goConn.BeginTransaction()
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "update cc_cli set nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + " "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.datos_cbtes.idventasc))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+IF getGlobalCFG("stk_module") THEN
+	Thisform.datos_cbtes.ptovta = Thisform.ptovta
+	Thisform.datos_cbtes.numcbte = Thisform.nrocbte
+	thisform.datos_cbtes.grabar_Stock()
+ELSE
+	Thisform.datos_cbtes.ptovta = Thisform.ptovta
+	Thisform.datos_cbtes.numcbte = Thisform.nrocbte
+ENDIF
+goConn.Commit()
+
+
+RETURN .T.
+
+
+ENDPROC
+PROCEDURE enviar_wsafipfe
+*********************************************************************************
+* Nuevo código para autorizar implementando la nueva clase cls_arca_service
+* Fecha: 29/01/2026
+*********************************************************************************
+LOCAL loArcaService, llAutorizado
+
+&& Inicializo el resultado de autorización
+llAutorizado = .F.
+
+&& Se verifica que el id de venta a autorizar sea válido.
+IF EMPTY(Thisform.datos_cbtes.idventasc) THEN
+	MESSAGEBOX("No se encontró el registro del comprobante a autorizar", 0+16, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loArcaService = CREATEOBJECT("cls_arca_service")
+loArcaService.id_ventasc = Thisform.datos_cbtes.idventasc
+
+WAIT WINDOW "Autorizando en ARCA y ejecutando procesos pos-autorización... Aguarde." NOWAIT
+llAutorizado = loArcaService.obtener_cae()
+
+IF llAutorizado THEN
+	&& Si se autorizó todo correctamente, entonces, envío a imprimir el comprobante.
+	Thisform.cbte = loArcaService.cbte
+	Thisform.ptovta = loArcaService.ptovta
+	Thisform.nrocbte = loArcaService.nrocbte
+	Thisform.aut_cae = loArcaService.aut_cae
+	Thisform.aut_cae_vto = loArcaService.aut_cae_vto
+	Thisform.aut_motivo = loArcaService.aut_motivo
+	Thisform.aut_numero = loArcaService.aut_numero
+	Thisform.aut_resultado = loArcaService.aut_resultado
+	Thisform.codigo_cbte = loArcaService.aut_tipocbte
+	Thisform.qr_image = loArcaService.aut_qr
+	
+	&& Paso el número de comprobante a la clase que graba las notas de créditos
+	&& porque está poniendo el stock en cero.
+	Thisform.datos_cbtes.ptovta = Thisform.ptovta
+	Thisform.datos_cbtes.nrocbte = Thisform.nrocbte
+	
+	IF !EMPTY(loArcaService.error_message) THEN
+		MESSAGEBOX("Error de sistema: " + loArcaService.error_message, 0+48, Thisform.Caption)
+	ENDIF
+	
+	MESSAGEBOX("Comprobante aprobado y procesado correctamente." + CHR(13) + CHR(10) ;
+		+ "Resultados: " + CHR(13) + CHR(10) ;
+		+ loArcaService.arca_message, 0+64, Thisform.Caption)
+ELSE
+	MESSAGEBOX("Atención: No se pudo completar la operación." + CHR(13) + CHR(10) ;
+		+ "MOTIVO: " + loArcaService.arca_message + CHR(13) + CHR(10) ;
+		+ loArcaService.error_message, 0+48, Thisform.Caption)
+ENDIF
+
+loArcaService = NULL
+
+RETURN llAutorizado
+
+ENDPROC
+PROCEDURE calc_digito_verificador
+&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
+
+PARAMETERS tcCodigo
+
+LOCAL lnDigito
+LOCAL lnSumaE1
+LOCAL lnSumaE3
+LOCAL lnProductoE2
+LOCAL lnSumaE4
+LOCAL lnMin
+LOCAL lnPos
+
+lnDigito = 0
+lnSumaE1 = 0
+lnSumaE3 = 0
+lnSumaE4 = 0
+lnMin = 0
+
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(i, 2) <> 0 THEN
+		&& Etapa 1 (posiciones impares)
+		lnSumaE1 = lnSumaE1 + lnDigito
+	ELSE
+		&& Etapa 3 (posiciones pares)
+		lnSumaE3 = lnSumaE3 + lnDigito
+	ENDIF
+NEXT i
+
+lnProductoE2 = lnSumaE1 * 3 && Etapa 2
+lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
+
+&& Etapa 5
+lnPos = 0
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
+		IF lnPos = 0 THEN
+			lnMin = lnDigito
+		ELSE
+			IF lnDigito < lnMin THEN
+				lnMin = lnDigito
+			ENDIF
+		ENDIF
+		
+		lnPos = lnPos + 1
+	ENDIF
+NEXT i
+
+RETURN lnMin
+ENDPROC
+PROCEDURE ticket_valido
+LOCAL llTkValido
+LOCAL lcTicket
+LOCAL lcFileTicket
+LOCAL lcTK
+LOCAL hndFile
+LOCAL llModoLocal
+
+llTkValido = .F.
+lcTicket = ""
+lcTK = ""
+lcFileTicket = getGlobalCFG("FE_TICKACC")
+llModoLocal = getGlobalCFG("FELOCAL")
+
+IF !llModoLocal THEN
+	** Si el ticket se está transfiriendo al cloud server, entonces,
+	** Descargo el último ticket que está en el server para validar luego
+	** si es válido o no.
+	IF DATE() > FDATE(lcFileTicket) THEN
+		* Si la fecha del archivo no coincide entonces descargo del FTP
+		descargar_ticket_acceso(lcFileTicket)
+	ENDIF
+ENDIF
+
+IF FILE(ALLTRIM(lcFileTicket)) THEN
+	hndFile = FOPEN(lcFileTicket, 12)
+	IF hndFile < 0 THEN
+		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
+		=FCLOSE(hndFile)
+	ELSE
+		=FCLOSE(hndFile)
+		
+		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
+		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
+		
+		IF Thisform.fe.f1TicketEsValido THEN
+			llTkValido = .T.
+		ELSE
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+	
+	IF !llTkValido THEN
+		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
+		** generar con los nuevos datos.
+		DELETE FILE ALLTRIM(lcFileTicket)
+		
+		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+			lcTK = Thisform.fe.f1GuardarTicketAcceso()
+			hndFile = FCREATE(lcFileTicket)
+			
+			IF hndFile < 0 THEN
+				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
+			ELSE
+				=FWRITE(hndFile, lcTK)
+				llTkValido = .T.
+			ENDIF
+			
+			=FCLOSE(hndFile)
+			
+			IF !llModoLocal THEN
+				* Envío el ticket de acceso al FTP
+				enviar_ticket_acceso(lcFileTicket)
+			ENDIF
+		ELSE
+			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+ELSE
+	** Si no existe el archivo entonces lo creo y lo envío al servidor.
+	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+		lcTK = Thisform.fe.f1GuardarTicketAcceso()
+		hndFile = FCREATE(lcFileTicket)
+		
+		IF hndFile < 0 THEN
+			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
+		ELSE
+			=FWRITE(hndFile, lcTK)
+			llTkValido = .T.
+		ENDIF
+		
+		=FCLOSE(hndFile)
+
+		IF !llModoLocal THEN
+			* Envío el ticket de acceso al FTP
+			enviar_ticket_acceso(lcFileTicket)
+		ENDIF
+	ELSE
+		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+		llTkValido = .F.			
+	ENDIF	
+ENDIF
+
+RETURN llTkValido
+ENDPROC
+PROCEDURE imprimir
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.porIIBB, m.impIIBB, m.observ
+LOCAL m.porIVA105, m.impIVA105, m.porIVA21, m.impIVA21, m.impNeto, m.impFinal
+LOCAL m.cae, m.caevto
+LOCAL lcAnio, lcMes, lcDia
+LOCAL lcSql, loResult, lcPrinterName, lnCantCpia
+LOCAL m.codigoCbte, m.barcode, m.code
+LOCAL lnIdNum, m.vendedor, m.nroOC, m.NroRto, m.condPago
+LOCAL m.porRec, loPDF, lcFileName
+LOCAL lcNomEmp, lcRepName
+LOCAL m.qr, llUsaTicket, m.motivo, lnIdSitIVA, m.totaNoGrav
+LOCAL m.saldodeudor_total
+
+&& Calculo los saldos para imprimir. Solo lo calculo si la condición de pago
+&& no es contado
+IF clientes.idCondPago <> 1 THEN
+	thisform.calcular_saldo_deudor_c1()
+	thisform.calcular_saldo_deudor_c2()
+ELSE
+	thisform.saldodeudor_c1 = 0.00
+	thisform.saldodeudor_c2 = 0.00
+ENDIF
+m.saldodeudor_total = thisform.saldodeudor_c1 + thisform.saldodeudor_c2
+
+lcNomEmp = getconfig("NOMEMP")
+loResult = CREATEOBJECT("odbc_result")
+lcSql = ""
+lcRepName = ""
+
+lcSql = "SELECT clientes.*, localidad.descripcio as descLoc, localidad.codPostal, provincias.descripcio as pcia, sitiva.descripcio as sitiva "
+lcSql = lcSql + "FROM clientes INNER JOIN localidad ON localidad.idLocalid = clientes.idLocalid "
+lcSql = lcSql + "	INNER JOIN provincias ON provincias.idProvin = localidad.idProvin "
+lcSql = lcSql + "	INNER JOIN sitiva ON sitiva.idsitiva = clientes.idsitiva "
+lcSql = lcSql + "WHERE clientes.idCliente = " + ALLTRIM(STR(thisform.contenido.sel_cliente.valcpoid))
+lcSql = lcSql + " AND sitiva.idsitiva = " + ALLTRIM(STR(Thisform.datos_cbtes.idsitiva))
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_cli"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResult.Error_Message, 0+48, thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_cli
+m.NroCli = cur_cli.idCliente
+m.RazSoc = ALLTRIM(thisform.cli_razsoc)
+m.Telefono = ALLTRIM(cur_cli.telefono)
+m.direccion = ALLTRIM(cur_cli.direccion)
+m.localidad = ALLTRIM(cur_cli.descLoc)
+m.codPostal = ALLTRIM(cur_cli.codPostal)
+m.pcia = ALLTRIM(cur_cli.pcia)
+m.nroCUIT = ALLTRIM(thisform.cli_cuit)
+lnIdSitIVA = cur_cli.idSitIVA
+m.TipoIVA = ALLTRIM(cur_cli.sitiva)
+m.codigoCbte = This.codigo_cbte
+m.barcode = ""
+m.code = ""
+m.qr = thisform.qr_image
+
+loResult.close_query()
+
+m.totaNoGrav = 0.00 && Agrego no gravado
+m.Total = 0.00
+m.tipoDoc = ""
+m.leyenda = ""
+m.Fecha = DATETIME()
+m.porIVA105 = 0.00
+m.porIVA21 = 0.00
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.fecVto = DATE()
+m.tipoDoc = this.datos_cbtes.tipodoc
+m.ptovta = thisform.ptovta
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+lcPrinterName = ""
+lnCantCpia = 0
+m.observ = thisform.datos_cbtes.observ
+m.total = thisform.contenido.paginas.page2.txtNcTotFact.Value
+m.porRec = 0.00
+m.NroRto = ""
+m.condPago = ALLTRIM(thisform.cli_condpago)
+
+&& Levanto el talonario del numerador solo para tomar la configuración de la impresora
+lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
+
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_num"
+loResult.OpenQuery(lcSql)
+
+SELECT cur_num
+lnIdNum = cur_num.idNum
+lcRepName = cur_num.repname
+
+loResult.close_query()
+
+lcSql = "SELECT * FROM impresoras WHERE idNum = " + ALLTRIM(STR(lnIdNum)) + " AND hostName = '" + ALLTRIM(SYS(0)) + "'"
+loResult.ActiveConnection = goConn.ActiveConnection
+loResult.Cursor_Name = "cur_imp"
+
+IF !loResult.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResult.Error_Message, 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+SELECT cur_imp
+IF RECCOUNT("cur_imp") = 0 THEN
+	MESSAGEBOX("La impresora no está configurada en este puesto de trabajo", 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+lcPrinterName = ALLTRIM(cur_imp.impresora)
+lnCantCpia = cur_imp.copias
+llUsaTicket = cur_imp.usa_ticket
+
+loResult.Close_Query()
+
+&& Si es monotributo extraigo la leyenda.
+IF lnIdSitIVA = 6 THEN
+	IF !llUsaTicket THEN
+		m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
+			+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
+	ELSE
+		m.motivo =   "El crédito fiscal discriminado en el presente" + CHR(13) + CHR(10) ;
+				   + "comprobante, sólo podrá ser computado a " + CHR(13) + CHR(10) ;
+				   + "efectos del Régimen de Sostenimiento e " + CHR(13) + CHR(10) ;
+				   + "Inclusión Fiscal para Pequeños Contri-" + CHR(13) + CHR(10) ;
+				   + "buyentes de la Ley Nº 27.618"
+	ENDIF
+ELSE
+	m.motivo = ""
+ENDIF
+
+m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(thisform.ptovta)))) + ALLTRIM(STR(thisform.ptovta)) + "-" + ;
+	REPLICATE("0", 8 - LEN(ALLTRIM(STR(thisform.nrocbte)))) + ALLTRIM(STR(thisform.nrocbte))
+	
+m.Leyenda = "NOTA DE CREDITO"
+
+m.porDesc1 = thisform.contenido.paginas.page2.txtNCPorDto1.Value
+m.porDesc2 = thisform.contenido.paginas.page2.txtNCPorDto2.Value
+m.porDesc3 = thisform.contenido.paginas.page2.txtNCPorDto3.Value
+m.porDesc4 = thisform.contenido.paginas.page2.txtNCPorDto4.Value
+m.impDesc1 = thisform.contenido.paginas.page2.txtNCImpDto1.Value
+m.impDesc2 = thisform.contenido.paginas.page2.txtNCImpDto2.Value
+m.impDesc3 = thisform.contenido.paginas.page2.txtNCImpDto3.Value
+m.impDesc4 = thisform.contenido.paginas.page2.txtNCImpDto4.Value
+m.porIVA105 = 10.5
+m.porIVA21 = 21
+m.impIVA105 = thisform.contenido.paginas.page2.txtNCImpIVA105.Value
+m.impIVA21 = thisform.contenido.paginas.page2.txtNCImpIVA21.Value
+&&m.impNeto = thisform.contenido.paginas.page2.txtNCImpNeto.Value
+m.impNeto = thisform.contenido.paginas.page2.txtNCImpFinal.Value
+m.porIIBB = thisform.contenido.paginas.page2.txtNCPorIIBB.Value
+m.impIIBB = thisform.contenido.paginas.page2.txtNCImpIIBB.Value
+m.totaNoGrav = thisform.contenido.paginas.page2.txtNCTotalNoGrav.Value
+
+m.vendedor = thisform.nombre_usuario
+m.nroOC = ""
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+m.cae = thisform.aut_cae
+m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
+
+&& Generación del código de barra
+m.barcode = ALLTRIM(Thisform.cli_cuit)
+m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
+m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
+m.barcode = m.barcode + ALLTRIM(m.cae)
+m.barcode = m.barcode + ALLTRIM(lcAnio)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
+m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
+m.code = m.barcode
+m.barcode = getcodbarras(m.barcode)
+
+&& Creo el cursor cur_aux para imprimir el detalle del comprobante
+&& USE IN cur_aux
+SELECT cur_aux
+ZAP
+
+SELECT cur_detalle
+GO TOP
+DO WHILE !EOF("cur_detalle")
+	SELECT cur_aux
+	APPEND BLANK
+	REPLACE cur_aux.idVentasD WITH cur_detalle.idVentasD
+	REPLACE cur_aux.idArticulo WITH cur_detalle.idArticulo ADDITIVE
+	REPLACE cur_aux.codArt WITH cur_detalle.codArt ADDITIVE
+	REPLACE cur_aux.descripcio WITH cur_detalle.descripcio ADDITIVE
+	REPLACE cur_aux.cantidad WITH cur_detalle.cantidad ADDITIVE
+	REPLACE cur_aux.cantNC WITH 0 ADDITIVE
+	REPLACE cur_aux.nroPart WITH cur_detalle.nroPart ADDITIVE
+	REPLACE cur_aux.costoRep WITH cur_detalle.costoRep ADDITIVE
+	REPLACE cur_aux.porDesc1 WITH cur_detalle.porDesc1 ADDITIVE
+	REPLACE cur_aux.porDesc2 WITH cur_detalle.porDesc2 ADDITIVE
+	REPLACE cur_aux.porDesc3 WITH cur_detalle.porDesc3 ADDITIVE
+	REPLACE cur_aux.porDesc4 WITH cur_detalle.porDesc4 ADDITIVE
+	REPLACE cur_aux.impDesc1 WITH cur_detalle.impDesc1 ADDITIVE
+	REPLACE cur_aux.impDesc2 WITH cur_detalle.impDesc2 ADDITIVE
+	REPLACE cur_aux.impDesc3 WITH cur_detalle.impDesc3 ADDITIVE
+	REPLACE cur_aux.impDesc4 WITH cur_detalle.impDesc4 ADDITIVE
+	REPLACE cur_aux.pDtoVta1 WITH cur_detalle.pDtoVta1 ADDITIVE
+	REPLACE cur_aux.pDtoVta2 WITH cur_detalle.pDtoVta2 ADDITIVE
+	REPLACE cur_aux.pDtoVta3 WITH cur_detalle.pDtoVta3 ADDITIVE
+	REPLACE cur_aux.pDtoVta4 WITH cur_detalle.pDtoVta4 ADDITIVE
+	REPLACE cur_aux.iDtoVta1 WITH cur_detalle.iDtoVta1 ADDITIVE
+	REPLACE cur_aux.iDtoVta2 WITH cur_detalle.iDtoVta2 ADDITIVE
+	REPLACE cur_aux.iDtoVta3 WITH cur_detalle.iDtoVta3 ADDITIVE
+	REPLACE cur_aux.iDtoVta4 WITH cur_detalle.iDtoVta4 ADDITIVE
+	REPLACE cur_aux.totNeto WITH cur_detalle.totNeto ADDITIVE
+	REPLACE cur_aux.alicIVA WITH cur_detalle.alicIVA ADDITIVE
+	REPLACE cur_aux.impIVA WITH cur_detalle.impIVA ADDITIVE
+	REPLACE cur_aux.subTotal WITH cur_detalle.subTotal ADDITIVE
+	REPLACE cur_aux.impNeto WITH cur_detalle.impNeto ADDITIVE
+	REPLACE cur_aux.prArtic WITH cur_detalle.prArtic ADDITIVE
+	REPLACE cur_aux.pRecVta WITH cur_detalle.pRecVta ADDITIVE
+	REPLACE cur_aux.iRecVta WITH cur_detalle.iRecVta ADDITIVE
+	
+	SELECT cur_detalle
+	SKIP
+ENDDO
+
+SELECT cur_aux
+GO TOP
+
+IF thisform.printcbte THEN		
+	SET PRINTER TO NAME ALLTRIM(lcPrinterName)
+
+	FOR i = 1 TO lnCantCpia 
+		IF ALLTRIM(This.datos_cbtes.tipodoc) == "X" THEN
+			&& Imprime un comprobante de tipo "X"
+			REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+		ELSE
+			IF ALLTRIM(This.datos_cbtes.tipodoc) == "A" THEN
+				&& Imprime el comprobante de tipo "A"
+				IF llUsaTicket THEN
+					****************************************************************************
+					* Envío a imprimir el ticket
+					****************************************************************************
+					Thisform.oticket.limpiar_datos()
+					Thisform.oticket.codigo_cbte = m.codigoCbte
+					Thisform.oticket.leyenda = m.leyenda
+					Thisform.oticket.letra = m.tipoDoc
+					Thisform.oticket.nro_cbte = m.nroCbte
+					Thisform.oticket.fecha_cbte = m.fecha
+					Thisform.oticket.fecha_vencimiento = m.fecVto
+					Thisform.oticket.numero_cliente = m.NroCli
+					Thisform.oticket.razon_social = m.razSoc
+					Thisform.oticket.direccion = m.direccion
+					Thisform.oticket.codigo_postal = m.codPostal 
+					Thisform.oticket.localidad = m.localidad
+					Thisform.oticket.provincia = m.pcia
+					Thisform.oticket.tipo_iva = m.TipoIVA
+					SELECT cur_aux
+					GO TOP
+					DO WHILE !EOF("cur_aux")
+						Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+								cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+						SELECT cur_aux
+						SKIP
+					ENDDO
+					Thisform.oticket.total_neto = m.impNeto
+					Thisform.oticket.total_imp_iva21 = m.impIVA21
+					Thisform.oticket.total_imp_iva105 = m.impIVA105
+					Thisform.oticket.total = m.Total
+					Thisform.oticket.qr_image = Thisform.qr_image
+					Thisform.oticket.nro_cae = m.cae
+					Thisform.oticket.vto_cae = m.caevto
+					Thisform.oticket.motivo = m.motivo
+					Thisform.oticket.imprimir()				
+				ELSE
+					REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+				ENDIF
+			ELSE
+				&& Imprime el comprobante de tipo "B"
+				IF llUsaTicket THEN
+					****************************************************************************
+					* Envío a imprimir el ticket
+					****************************************************************************
+					Thisform.oticket.limpiar_datos()
+					Thisform.oticket.codigo_cbte = m.codigoCbte
+					Thisform.oticket.leyenda = m.leyenda
+					Thisform.oticket.letra = m.tipoDoc
+					Thisform.oticket.nro_cbte = m.nroCbte
+					Thisform.oticket.fecha_cbte = m.fecha
+					Thisform.oticket.fecha_vencimiento = m.fecVto
+					Thisform.oticket.numero_cliente = m.NroCli
+					Thisform.oticket.razon_social = m.razSoc
+					Thisform.oticket.direccion = m.direccion
+					Thisform.oticket.codigo_postal = m.codPostal 
+					Thisform.oticket.localidad = m.localidad
+					Thisform.oticket.provincia = m.pcia
+					Thisform.oticket.tipo_iva = m.TipoIVA
+					SELECT cur_aux
+					GO TOP
+					DO WHILE !EOF("cur_aux")
+						Thisform.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+								cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+						SELECT cur_aux
+						SKIP
+					ENDDO
+					Thisform.oticket.total_neto = m.impNeto
+					Thisform.oticket.total_imp_iva21 = m.impIVA21
+					Thisform.oticket.total_imp_iva105 = m.impIVA105
+					Thisform.oticket.total = m.Total
+					Thisform.oticket.qr_image = Thisform.qr_image
+					Thisform.oticket.nro_cae = m.cae
+					THisform.oticket.vto_cae = m.caevto
+					Thisform.oticket.motivo = m.motivo
+					Thisform.oticket.imprimir()				
+				ELSE
+					REPORT FORM &lcRepName TO PRINTER NOCONSOLE
+				ENDIF
+			ENDIF
+		ENDIF 
+	NEXT
+ENDIF
+
+IF thisform.envcbte THEN
+	IF !DIRECTORY(getGlobalCFG("FACPDFPATH")) THEN
+		lcFileName = SYS(5) + SYS(2003) + "\wsafip\ComprobantesPDF\" + this.cbte + "_" + m.NroCbte + ".pdf"
+	ELSE
+		lcFileName = getGlobalCFG("FACPDFPATH") + this.cbte + "_" + m.NroCbte + ".pdf"
+	ENDIF
+	
+	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
+		loPDF.SetValue('output', lcFileName)
+		loPDF.SetValue('DisableOptionDialog', 'no') 
+		loPDF.SetValue('ConfirmOverwrite', 'no')
+		loPDF.SetValue('Showsettings', 'never') 
+		loPDF.SetValue('ShowSaveAS', 'nofile') 
+		loPDF.SetValue('ShowPdf', 'no') 
+		loPDF.WriteSettings(.t.)
+	
+	SET CONSOLE OFF
+	SET PRINTER TO NAME("Bullzip PDF Printer")
+	IF ALLTRIM(This.datos_cbtes.tipodoc) == "A" THEN
+		&& Imprime el comprobante de tipo "A"
+		SELECT cur_aux
+		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
+	ELSE
+		&& Imprime el comprobante de tipo "B"
+		SELECT cur_aux
+		REPORT FORM &lcRepName NOCONSOLE TO PRINTER
+	ENDIF
+	SET PRINTER TO DEFAULT
+	SET CONSOLE ON
+	
+	WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
+	DO WHILE !FILE(lcFileName)
+		
+	ENDDO
+	
+	&&MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, thisform.Caption)
+	
+	TEXT TO lcMailMsg NOSHOW
+	Estimado cliente,
+	
+	Le adjuntamos el comprobante electrónico de su compra en formato PDF.
+	
+	Muchas gracias!
+	
+	
+	Saludos cordiales,
+	
+	ENDTEXT
+	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILFIRMA") + CHR(13) + CHR(10)
+	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILEMP")
+	
+	&& Procedo a hacer el envío de mail
+	DO LOCFILE("FoxyPreviewer.App")
+	WITH _screen.oFoxyPreviewer	
+		.cEmailType = "PDF"
+		.nEmailMode = 2
+		.cEMailTo = thisform.mailfc
+		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
+		.cSMTPServer = getGlobalCFG("EMAILSMTP")
+		.cEmailFrom = getGlobalCFG("EMAILEMP") + " <" + getGlobalCFG("EMAILADDR") + ">"
+		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
+		.nSMTPPort = getGlobalCFG("EMAILPORT")
+		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
+		.cSMTPUserName = getGlobalCFG("EMAILUSR")
+		.cSMTPPassword = getGlobalCFG("EMAILPWD")
+		.lReadReceipt  = .F.
+		.lPriority = .F.
+		.cEmailBody = lcMailMsg
+		.SendEmailUsingCDO(lcFileName)
+	ENDWITH	
+ENDIF
+
+DO FoxyPreviewer.App WITH "Release"
+
+RETURN .T.
+ENDPROC
+PROCEDURE Init
+DODEFAULT()
+Thisform.oTicket = CREATEOBJECT("cls_tickets")
+Thisform.oTicket.crear_cursor()
+
+ENDPROC
+PROCEDURE contenido.btnGrabar.Click
+LOCAL lnResp
+
+thisform.datos_cbtes.lnncimpdesc1 = thisform.contenido.paginas.page2.txtNCImpDto1.Value
+thisform.datos_cbtes.lnncimpdesc2 = thisform.contenido.paginas.page2.txtNCImpDto2.Value
+thisform.datos_cbtes.lnncimpdesc3 = thisform.contenido.paginas.page2.txtNCImpDto3.Value
+thisform.datos_cbtes.lnncimpdesc4 = thisform.contenido.paginas.page2.txtNCImpDto4.Value
+thisform.datos_cbtes.lnncimpfinal = thisform.contenido.paginas.page2.txtNCImpFinal.Value
+thisform.datos_cbtes.lnncporiibb = thisform.contenido.paginas.page2.txtNCPorIIBB.Value
+thisform.datos_cbtes.lnncimpiibb = thisform.contenido.paginas.page2.txtNCImpIIBB.Value
+thisform.datos_cbtes.lnncimpiva105 =  thisform.contenido.paginas.page2.txtNCImpIVA105.Value
+thisform.datos_cbtes.lnncimpiva21 = thisform.contenido.paginas.page2.txtNCImpIVA21.Value
+thisform.datos_cbtes.lnncimpneto = thisform.contenido.paginas.page2.txtNCImpNeto.Value
+thisform.datos_cbtes.lnnctotfact = thisform.contenido.paginas.page2.txtNCTotFact.Value
+thisform.datos_cbtes.lnncpordto1 = thisform.contenido.paginas.page2.txtNCPorDto1.Value
+thisform.datos_cbtes.lnncpordto2 = thisform.contenido.paginas.page2.txtNCPorDto2.Value
+thisform.datos_cbtes.lnncpordto3 = thisform.contenido.paginas.page2.txtNCPorDto3.Value
+thisform.datos_cbtes.lnncpordto4 = thisform.contenido.paginas.page2.txtNCPorDto4.Value
+thisform.datos_cbtes.lnncporrec = thisform.contenido.paginas.page2.txtNCporRec.Value
+thisform.datos_cbtes.lnncimprec = thisform.contenido.paginas.page2.txtNCimpRec.Value
+thisform.datos_cbtes.poriva21 = IIF(thisform.datos_cbtes.lnncimpiva21 <> 0, 21, 0)
+thisform.datos_cbtes.poriva105 = IIF(thisform.datos_cbtes.lnncimpiva105 <> 0, 10.5, 0)
+
+thisform.datos_cbtes.cli_razsoc = thisform.cli_razsoc
+thisform.datos_cbtes.cli_nrodoc = thisform.cli_cuit
+thisform.datos_cbtes.cli_tipodoc = thisform.cli_idtipodoc
+thisform.datos_cbtes.esfe = 1
+
+IF !thisform.validardetalle() THEN
+	RETURN .F.
+ENDIF
+
+Thisform.datos_cbtes.fecemision = DATETIME()
+THisform.datos_cbtes.fecvto = DATETIME()
+
+IF !thisform.datos_cbtes.grabar() THEN
+	MESSAGEBOX(thisform.datos_cbtes.error_message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+IF !thisform.enviar_wsafipfe() THEN
+	MESSAGEBOX("Este comprobante no ha sido autorizado, por favor, vuelva a intentarlo desde la autorización diferida", 0+48, Thisform.Caption)
+	
+	Thisform.limpiar()
+	
+	RETURN .F.
+ELSE
+	IF thisform.fe_set_cae() THEN
+		
+		IF !Thisform.fc_cancelada THEN
+			lnResp = MESSAGEBOX("¿Desea vincular esta nota de crédito " ;
+				+ "al comprobante de origen?", 4+32, thisform.Caption)		
+			IF lnResp = 6 THEN
+				thisform.datos_cbtes.vincular_cbte = .t.
+			ELSE
+				thisform.datos_cbtes.vincular_cbte = .f.
+			ENDIF
+		ELSE
+			thisform.datos_cbtes.vincular_cbte = .f.
+		ENDIF
+	
+		IF Thisform.datos_cbtes.grabar_ctacte() THEN
+			Thisform.imprimir()
+		ENDIF
+	ENDIF
+ENDIF
+
+Thisform.limpiar()
+
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: fe
+************************************************************
+*** PROPIEDADES ***
+Top = 444
+Left = 756
+Height = 24
+Width = 36
+Name = "fe"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: cls_ncdev_fe
 ************************************************************
 *** PROPIEDADES ***
 Arial, 0, 9, 5, 15, 12, 32, 3, 0
 Arial, 1, 8, 5, 14, 11, 29, 3, 0
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: frm_ncnd_cc_fe
+************************************************************
+*** PROPIEDADES ***
+DoCreate = .T.
+WindowState = 0
+aut_numero = 
+aut_cae = 
+aut_cae_vto = 
+aut_resultado = 
+aut_motivo = 
+id_ventasc = 0
+envcbte = .F.
+mailfc = 
+printcbte = .F.
+qr_image = 
+oticket = 
+codigo_cbte = 
+cli_idtipodoc = 0
+Name = "frm_ncnd_cc_fe"
+Clsetiqueta1.Name = "Clsetiqueta1"
+Clsetiqueta2.Name = "Clsetiqueta2"
+Clsetiqueta3.Name = "Clsetiqueta3"
+txtOperacion.Name = "txtOperacion"
+txtPtoVta.Name = "txtPtoVta"
+TXTNROCBTE.Name = "TXTNROCBTE"
+txtImporte.Name = "txtImporte"
+Clsetiqueta4.Name = "Clsetiqueta4"
+sel_Conceptos.txtCodigo.Name = "txtCodigo"
+sel_Conceptos.txtDescripcion.Name = "txtDescripcion"
+sel_Conceptos.Name = "sel_Conceptos"
+Clsetiqueta5.Name = "Clsetiqueta5"
+chkIVA21.Alignment = 0
+chkIVA21.Name = "chkIVA21"
+chkIVA105.Alignment = 0
+chkIVA105.Name = "chkIVA105"
+Clsetiqueta6.Name = "Clsetiqueta6"
+txtImporteNeto.Name = "txtImporteNeto"
+txtIVA21.Name = "txtIVA21"
+txtIVA105.Name = "txtIVA105"
+btnAgregar.Name = "btnAgregar"
+grdDetalle.COLUMN1.Header1.Name = "Header1"
+grdDetalle.COLUMN1.Text1.Name = "Text1"
+grdDetalle.COLUMN1.Name = "COLUMN1"
+grdDetalle.COLUMN2.Header1.Name = "Header1"
+grdDetalle.COLUMN2.Text1.Name = "Text1"
+grdDetalle.COLUMN2.Name = "COLUMN2"
+grdDetalle.COLUMN3.Header1.Name = "Header1"
+grdDetalle.COLUMN3.Text1.Name = "Text1"
+grdDetalle.COLUMN3.Name = "COLUMN3"
+grdDetalle.COLUMN4.Header1.Name = "Header1"
+grdDetalle.COLUMN4.Text1.Name = "Text1"
+grdDetalle.COLUMN4.Name = "COLUMN4"
+grdDetalle.COLUMN5.Header1.Name = "Header1"
+grdDetalle.COLUMN5.Text1.Name = "Text1"
+grdDetalle.COLUMN5.Name = "COLUMN5"
+grdDetalle.COLUMN6.Header1.Name = "Header1"
+grdDetalle.COLUMN6.Text1.Name = "Text1"
+grdDetalle.COLUMN6.Name = "COLUMN6"
+grdDetalle.COLUMN7.Header1.Name = "Header1"
+grdDetalle.COLUMN7.Text1.Name = "Text1"
+grdDetalle.COLUMN7.Name = "COLUMN7"
+grdDetalle.COLUMN8.Header1.Name = "Header1"
+grdDetalle.COLUMN8.Text1.Name = "Text1"
+grdDetalle.COLUMN8.Name = "COLUMN8"
+grdDetalle.COLUMN9.Header1.Name = "Header1"
+grdDetalle.COLUMN9.Text1.Name = "Text1"
+grdDetalle.COLUMN9.Name = "COLUMN9"
+grdDetalle.COLUMN10.Header1.Name = "Header1"
+grdDetalle.COLUMN10.Text1.Name = "Text1"
+grdDetalle.COLUMN10.Name = "COLUMN10"
+grdDetalle.COLUMN11.Header1.Name = "Header1"
+grdDetalle.COLUMN11.Text1.Name = "Text1"
+grdDetalle.COLUMN11.Name = "COLUMN11"
+grdDetalle.COLUMN12.Header1.Name = "Header1"
+grdDetalle.COLUMN12.Text1.Name = "Text1"
+grdDetalle.COLUMN12.Name = "COLUMN12"
+grdDetalle.COLUMN13.Header1.Name = "Header1"
+grdDetalle.COLUMN13.Text1.Name = "Text1"
+grdDetalle.COLUMN13.Name = "COLUMN13"
+grdDetalle.COLUMN14.Header1.Name = "Header1"
+grdDetalle.COLUMN14.Text1.Name = "Text1"
+grdDetalle.COLUMN14.Name = "COLUMN14"
+grdDetalle.COLUMN15.Header1.Name = "Header1"
+grdDetalle.COLUMN15.Text1.Name = "Text1"
+grdDetalle.COLUMN15.Name = "COLUMN15"
+grdDetalle.COLUMN16.Header1.Name = "Header1"
+grdDetalle.COLUMN16.Text1.Name = "Text1"
+grdDetalle.COLUMN16.Name = "COLUMN16"
+grdDetalle.COLUMN17.Header1.Name = "Header1"
+grdDetalle.COLUMN17.Text1.Name = "Text1"
+grdDetalle.COLUMN17.Name = "COLUMN17"
+grdDetalle.COLUMN18.Header1.Name = "Header1"
+grdDetalle.COLUMN18.Text1.Name = "Text1"
+grdDetalle.COLUMN18.Name = "COLUMN18"
+grdDetalle.COLUMN19.Header1.Name = "Header1"
+grdDetalle.COLUMN19.Text1.Name = "Text1"
+grdDetalle.COLUMN19.Name = "COLUMN19"
+grdDetalle.COLUMN20.Header1.Name = "Header1"
+grdDetalle.COLUMN20.Text1.Name = "Text1"
+grdDetalle.COLUMN20.Name = "COLUMN20"
+grdDetalle.Name = "grdDetalle"
+SUBTOTAL.Name = "SUBTOTAL"
+txtSubTotal.Name = "txtSubTotal"
+Clsetiqueta9.Name = "Clsetiqueta9"
+txtTotal.Name = "txtTotal"
+btnGrabar.Name = "btnGrabar"
+BTNCERRAR.Name = "BTNCERRAR"
+Clsetiqueta10.Name = "Clsetiqueta10"
+Sel_Banco.txtCodigo.Name = "txtCodigo"
+Sel_Banco.txtDescripcion.Name = "txtDescripcion"
+Sel_Banco.Name = "Sel_Banco"
+Clsetiqueta11.Name = "Clsetiqueta11"
+txtNroCheque.Name = "txtNroCheque"
+Clsetiqueta12.Name = "Clsetiqueta12"
+Clsetiqueta13.Name = "Clsetiqueta13"
+txtPorIVA21.Height = 21
+txtPorIVA21.Left = 298
+txtPorIVA21.Top = 418
+txtPorIVA21.Width = 55
+txtPorIVA21.Name = "txtPorIVA21"
+txtPorIVA105.Height = 21
+txtPorIVA105.Left = 298
+txtPorIVA105.Top = 441
+txtPorIVA105.Width = 55
+txtPorIVA105.Name = "txtPorIVA105"
+txtImpIVA21.Left = 355
+txtImpIVA21.Top = 418
+txtImpIVA21.Name = "txtImpIVA21"
+txtImpIVA105.Left = 355
+txtImpIVA105.Top = 441
+txtImpIVA105.Name = "txtImpIVA105"
+Clsetiqueta18.Name = "Clsetiqueta18"
+txtPorIIBB.Height = 21
+txtPorIIBB.Left = 298
+txtPorIIBB.Top = 464
+txtPorIIBB.Width = 55
+txtPorIIBB.Name = "txtPorIIBB"
+txtImpIIBB.Left = 355
+txtImpIIBB.Top = 464
+txtImpIIBB.Name = "txtImpIIBB"
+clsdelete.Name = "clsdelete"
+Clsetiqueta7.Name = "Clsetiqueta7"
+txtObserv.Name = "txtObserv"
+txtImpTotal.Name = "txtImpTotal"
+
+*** METODOS ***
+PROCEDURE fe_set_cae
+LOCAL loCommand, lcSql
+LOCAL loDT, ldFecVto
+LOCAL lcAnio, lcMes, lcDia
+
+loDT = CREATEOBJECT("datetime")
+loCommand = CREATEOBJECT("odbc_command")
+lcSql = ""
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+lcSql = "update ventascab "
+lcSql = lcSql + "set "
+lcSql = lcSql + "	ptoVta = " + ALLTRIM(STR(Thisform.ptovta)) + ", "
+lcSql = lcSql + "	numCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + ", "
+lcSql = lcSql + "	aut_CAE = '" + ALLTRIM(Thisform.aut_cae) + "', "
+lcSql = lcSql + "	aut_CAE_vto = " + loDT.toMySql(CTOD(lcDia + "/" + lcMes + "/" + lcAnio)) + ", "
+lcSql = lcSql + "	aut_Resultado = '" + ALLTRIM(Thisform.aut_resultado) + "', "
+lcSql = lcSql + "	aut_Motivo = '" + STRTRAN(ALLTRIM(Thisform.aut_motivo), "'", "''") + "', "
+lcSql = lcsql + "	aut_tipoCbte = '" + ALLTRIM(Thisform.codigo_cbte) + "', "
+lcSql = lcSql + "	aut_qr = '" + ALLTRIM(STRTRAN(thisform.qr_image, "\", "\\")) + "' "
+lcSql = lcSql + "where idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
+
+goConn.BeginTransaction()
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "update cc_cli set nroCbte = " + ALLTRIM(STR(Thisform.nrocbte)) + " "
+lcSql = lcSql + "WHERE idVentasC = " + ALLTRIM(STR(Thisform.id_ventasc))
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute() THEN
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+goConn.Commit()
+
+RETURN .T.
+
+
+ENDPROC
+PROCEDURE enviar_wsafipfe
+LOCAL loArcaService, llAutorizado
+
+&& Inicializo el resultado de autorización
+llAutorizado = .F.
+
+&& Se verifica que el id de venta a autorizar sea válido.
+IF EMPTY(Thisform.id_ventasc) THEN
+	MESSAGEBOX("No se encontró el registro del comprobante a autorizar", 0+16, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+loArcaService = CREATEOBJECT("cls_arca_service")
+loArcaService.id_ventasc = Thisform.id_ventasc
+
+WAIT WINDOW "Autorizando en ARCA y ejecutando procesos pos-autorización... Aguarde." NOWAIT
+llAutorizado = loArcaService.obtener_cae()
+
+IF llAutorizado THEN
+	&& Si se autorizó todo correctamente, entonces, envío a imprimir el comprobante.
+	Thisform.cbte = loArcaService.cbte
+	Thisform.ptovta = loArcaService.ptovta
+	Thisform.nrocbte = loArcaService.nrocbte
+	Thisform.aut_cae = loArcaService.aut_cae
+	Thisform.aut_cae_vto = loArcaService.aut_cae_vto
+	Thisform.aut_motivo = loArcaService.aut_motivo
+	Thisform.aut_numero = loArcaService.aut_numero
+	Thisform.aut_resultado = loArcaService.aut_resultado
+	Thisform.codigo_cbte = loArcaService.aut_tipocbte
+	Thisform.qr_image = loArcaService.aut_qr
+	
+	IF !EMPTY(loArcaService.error_message) THEN
+		MESSAGEBOX("Error de sistema: " + loArcaService.error_message, 0+48, Thisform.Caption)
+	ENDIF
+	
+	MESSAGEBOX("Comprobante aprobado y procesado correctamente." + CHR(13) + CHR(10) ;
+		+ "Resultados: " + CHR(13) + CHR(10) ;
+		+ loArcaService.arca_message, 0+64, Thisform.Caption)
+ELSE
+	MESSAGEBOX("Atención: No se pudo autorizar el comprobante (Intente más tarde)." + CHR(13) + CHR(10) ;
+		+ "MOTIVO: " + loArcaService.arca_message + CHR(13) + CHR(10) ;
+		+ loArcaService.error_message, 0+48, Thisform.Caption)
+ENDIF
+
+loArcaService = NULL
+
+RETURN llAutorizado
+
+ENDPROC
+PROCEDURE calc_digito_verificador
+&& El prefijo E1, E2, En... indica a la etapa del algoritmo que pertenece el coeficiente
+
+PARAMETERS tcCodigo
+
+LOCAL lnDigito
+LOCAL lnSumaE1
+LOCAL lnSumaE3
+LOCAL lnProductoE2
+LOCAL lnSumaE4
+LOCAL lnMin
+LOCAL lnPos
+
+lnDigito = 0
+lnSumaE1 = 0
+lnSumaE3 = 0
+lnSumaE4 = 0
+lnMin = 0
+
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(i, 2) <> 0 THEN
+		&& Etapa 1 (posiciones impares)
+		lnSumaE1 = lnSumaE1 + lnDigito
+	ELSE
+		&& Etapa 3 (posiciones pares)
+		lnSumaE3 = lnSumaE3 + lnDigito
+	ENDIF
+NEXT i
+
+lnProductoE2 = lnSumaE1 * 3 && Etapa 2
+lnSumaE4 = lnProductoE2 + lnSumaE3 && Etapa 4
+
+&& Etapa 5
+lnPos = 0
+FOR i = 1 TO LEN(ALLTRIM(tcCodigo))
+	lnDigito = INT(VAL(SUBSTR(tcCodigo, i, 1)))
+	
+	IF MOD(lnSumaE4 + lnDigito, 10) = 0 THEN
+		IF lnPos = 0 THEN
+			lnMin = lnDigito
+		ELSE
+			IF lnDigito < lnMin THEN
+				lnMin = lnDigito
+			ENDIF
+		ENDIF
+		
+		lnPos = lnPos + 1
+	ENDIF
+NEXT i
+
+RETURN lnMin
+ENDPROC
+PROCEDURE ticket_valido
+LOCAL llTkValido
+LOCAL lcTicket
+LOCAL lcFileTicket
+LOCAL lcTK
+LOCAL hndFile
+LOCAL llModoLocal
+
+llTkValido = .F.
+lcTicket = ""
+lcTK = ""
+lcFileTicket = getGlobalCFG("FE_TICKACC")
+llModoLocal = getGlobalCFG("FELOCAL")
+
+IF !llModoLocal THEN
+	** Si el ticket se está transfiriendo al cloud server, entonces,
+	** Descargo el último ticket que está en el server para validar luego
+	** si es válido o no.
+	IF DATE() > FDATE(lcFileTicket) THEN
+		* Si la fecha del archivo no coincide entonces descargo del FTP
+		descargar_ticket_acceso(lcFileTicket)
+	ENDIF
+ENDIF
+
+IF FILE(ALLTRIM(lcFileTicket)) THEN
+	hndFile = FOPEN(lcFileTicket, 12)
+	IF hndFile < 0 THEN
+		=MESSAGEBOX("Error al intentar leer el ticket de acceso", 0+48, Thisform.Caption)
+		=FCLOSE(hndFile)
+	ELSE
+		=FCLOSE(hndFile)
+		
+		lcTK = FILETOSTR(ALLTRIM(lcFileTicket))
+		Thisform.fe.f1RestaurarTicketAcceso(lcTK)
+		
+		IF Thisform.fe.f1TicketEsValido THEN
+			llTkValido = .T.
+		ELSE
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+	
+	IF !llTkValido THEN
+		** Si el ticket de acceso no es válido, elimino el txt actual y lo vuelvo a
+		** generar con los nuevos datos.
+		DELETE FILE ALLTRIM(lcFileTicket)
+		
+		IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+			lcTK = Thisform.fe.f1GuardarTicketAcceso()
+			hndFile = FCREATE(lcFileTicket)
+			
+			IF hndFile < 0 THEN
+				=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+16, Thisform.Caption)
+			ELSE
+				=FWRITE(hndFile, lcTK)
+				llTkValido = .T.
+			ENDIF
+			
+			=FCLOSE(hndFile)
+			
+			IF !llModoLocal THEN
+				* Envío el ticket de acceso al FTP
+				enviar_ticket_acceso(lcFileTicket)
+			ENDIF
+		ELSE
+			MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+			llTkValido = .F.
+		ENDIF
+	ENDIF
+ELSE
+	** Si no existe el archivo entonces lo creo y lo envío al servidor.
+	IF Thisform.fe.f1ObtenerTicketAcceso() THEN
+		lcTK = Thisform.fe.f1GuardarTicketAcceso()
+		hndFile = FCREATE(lcFileTicket)
+		
+		IF hndFile < 0 THEN
+			=MESSAGEBOX("Error al generar el archivo, por favor verifique la ruta se encuentre accesible", 0+48, Thisform.Caption)
+		ELSE
+			=FWRITE(hndFile, lcTK)
+			llTkValido = .T.
+		ENDIF
+		
+		=FCLOSE(hndFile)
+
+		IF !llModoLocal THEN
+			* Envío el ticket de acceso al FTP
+			enviar_ticket_acceso(lcFileTicket)
+		ENDIF
+	ELSE
+		MESSAGEBOX("Fallo de acceso: " + ALLTRIM(Thisform.fe.ultimoMensajeError), 0+16, Thisform.Caption)
+		llTkValido = .F.			
+	ENDIF	
+ENDIF
+
+RETURN llTkValido
+ENDPROC
+PROCEDURE Init
+DODEFAULT()
+Thisform.oTicket = CREATEOBJECT("cls_tickets")
+Thisform.oTicket.crear_cursor()
+ENDPROC
+PROCEDURE imprimir
+LOCAL m.NroCli, m.RazSoc, m.Telefono, m.direccion, m.localidad, m.codPostal, m.pcia, m.TipoIVA, m.nroCUIT
+LOCAL m.Total, m.tipoDoc, m.NroCbte, m.Fecha, m.leyenda, m.fecVto, m.tipoDoc, m.ptoVta
+LOCAL m.porDesc1, m.porDesc2, m.porDesc3, m.porDesc4
+LOCAL m.impDesc1, m.impDesc2, m.impDesc3, m.impDesc4
+LOCAL m.impIVA105, m.impIVA21, m.impNeto, m.impFinal, m.porIIBB, m.impIIBB, m.observ, m.qr
+LOCAL lcSql, loNumerador, lcPrinterName, lnCantCpia
+LOCAL loResCli, loResLoc, loResPcia
+LOCAL m.cae, m.caevto, lcAnio, lcMes, lcDia
+LOCAL m.codigoCbte, m.barcode, m.code
+LOCAL lnIdNum, loPDF, lcFileName
+LOCAL lcNomEmp, m.vendedor, llUsaTicket
+LOCAL m.motivo, lcRepNameCP
+
+lcNomEmp = getconfig("NOMEMP")
+loNumerador = CREATEOBJECT("odbc_result")
+loResCli = CREATEOBJECT("odbc_result")
+loResLoc = CREATEOBJECT("odbc_result")
+loResPcia = CREATEOBJECT("odbc_result")
+loResSitIVA = CREATEOBJECT("odbc_result")
+lcSql = ""
+lnIdNum = 0
+m.vendedor = ""
+
+m.Total = 0.00
+m.tipoDoc = ""
+m.NroCbte = ""
+m.leyenda = ""
+m.Fecha = DATETIME()
+m.impIVA105 = 0.00
+m.impIVA21 = 0.00
+m.impNeto = 0.00
+m.impFinal = 0.00
+m.tipoDoc = Thisform.tipodocref
+m.ptoVta = Thisform.ptovta
+m.porIIBB = 0.00
+m.impIIBB = 0.00
+m.observ = ""
+m.codigoCbte = Thisform.codigo_cbte
+m.barcode = ""
+m.code = ""
+m.qr = Thisform.qr_image
+lcRepNameCP = ""
+
+lcAnio = SUBSTR(Thisform.aut_cae_vto, 1, 4)
+lcMes = SUBSTR(Thisform.aut_cae_vto, 5, 2)
+lcDia = SUBSTR(Thisform.aut_cae_vto, 7, 2)
+
+&& Me fijo cuantas copias tengo que imprimir
+lcSql = "select * from numerador where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(m.tipoDoc) + "' AND ptoVta = " + ALLTRIM(STR(m.ptoVta))
+
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+
+lnIdNum = cur_num.idNum
+lcRepNameCP = cur_num.repnamecp
+loNumerador.close_query()
+
+lcSql = "SELECT * FROM impresoras WHERE hostName = '" + ALLTRIM(SYS(0)) + "' "
+lcSql = lcSql + " AND idNum = " + ALLTRIM(STR(lnIdNum))
+
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+
+SELECT cur_num
+IF RECCOUNT("cur_num") = 0 THEN
+	MESSAGEBOX("La impresora no está instalada para este puesto de trabajo", 0+48, Thisform.Caption)
+	RETURN
+ENDIF
+
+lcPrinterName = ALLTRIM(cur_num.impresora)
+lnCantCpia = cur_num.copias
+llUsaTicket = cur_num.usa_ticket
+
+loNumerador.Close_Query()
+
+&& Recupero los datos del cliente
+lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
+loResCli.cursor_name = "cur_Cliente"
+loResCli.ActiveConnection = goConn.ActiveConnection
+loResCli.OpenQuery(lcSql)
+
+m.NroCli = cur_Cliente.idCliente
+m.RazSoc = cur_Cliente.razSoc
+m.Telefono = cur_Cliente.telefono
+m.direccion = cur_Cliente.direccion
+
+&& Levanto los datos de la localidad que tiene asignada el cliente
+lcSql = "SELECT * FROM localidad WHERE idLocalid = " + ALLTRIM(STR(cur_Cliente.idLocalid))
+loResLoc.Cursor_Name = "cur_Loc"
+loResLoc.ActiveConnection = goConn.ActiveConnection
+loResLoc.OpenQuery(lcSql)
+
+m.localidad = ALLTRIM(cur_Loc.descripcio)
+m.codPostal = ALLTRIM(cur_Loc.codPostal)
+
+&& Levanto los datos de la provincia que tiene asignada la localidad
+lcSql = "SELECT * FROM provincias WHERE idProvin = " + ALLTRIM(STR(cur_Loc.idProvin))
+loResPcia.Cursor_Name = "cur_Pcia"
+loResPcia.ActiveConnection = goConn.ActiveConnection
+loResPcia.OpenQuery(lcSql)
+
+m.pcia = ALLTRIM(cur_Pcia.descripcio)
+
+loResPcia.Close_Query()
+loResLoc.Close_Query()
+
+m.nroCUIT = cur_Cliente.nroCUIT
+
+&& Levanto los datos de la situación de IVA que tiene el cliente
+lcSql = "SELECT * FROM sitiva WHERE idSitIVA = " + ALLTRIM(STR(cur_Cliente.idSitIVA))
+loResSitIVA.Cursor_Name = "cur_SitIVA"
+loResSitIVA.ActiveConnection = goConn.ActiveConnection
+loResSitIVA.OpenQuery(lcSql)
+
+m.TipoIVA = cur_SitIVA.descripcio
+
+&& Si es monotributista levanto la leyenda
+IF cur_SitIVA.idSitIVA = 6 THEN
+	IF !llUsaTicket THEN
+		m.motivo = "El crédito fiscal discriminado en el presente comprobante, " ;
+			+ "sólo podrá ser computado a efectos del Régimen de Sostenimiento e Inclusión Fiscal para Pequeños Contribuyentes de la Ley Nº 27.618"
+	ELSE
+		m.motivo =   "El crédito fiscal discriminado en el presente" + CHR(13) + CHR(10) ;
+				   + "comprobante, sólo podrá ser computado a " + CHR(13) + CHR(10) ;
+				   + "efectos del Régimen de Sostenimiento e " + CHR(13) + CHR(10) ;
+				   + "Inclusión Fiscal para Pequeños Contri-" + CHR(13) + CHR(10) ;
+				   + "buyentes de la Ley Nº 27.618"
+	ENDIF
+ELSE
+	m.motivo = ""
+ENDIF
+
+loResSitIVA.Close_Query()
+loResCli.Close_Query()
+
+&& Incorporo los datos devueltos por la facturación electrónica
+m.caevto = lcDia + "/" + lcMes + "/" + lcAnio
+m.cae = Thisform.aut_cae
+m.NroCbte = REPLICATE("0", 4 - LEN(ALLTRIM(STR(Thisform.ptovta)))) + ALLTRIM(STR(Thisform.ptovta)) + "-" + REPLICATE("0", 8 - LEN(ALLTRIM(STR(Thisform.nrocbte)))) + ALLTRIM(STR(Thisform.nrocbte))
+
+&& Generación del código de barra
+m.barcode = ALLTRIM(Thisform.cli_cuit)
+m.barcode = m.barcode + ALLTRIM(m.codigoCbte)
+m.barcode = m.barcode + REPLICATE("0", 4 - LEN(ALLTRIM(STR(m.ptovta)))) + ALLTRIM(STR(m.ptovta))
+m.barcode = m.barcode + ALLTRIM(m.cae)
+m.barcode = m.barcode + ALLTRIM(lcAnio)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcMes))) + ALLTRIM(lcMes)
+m.barcode = m.barcode + REPLICATE("0", 2 - LEN(ALLTRIM(lcDia))) + ALLTRIM(lcDia)
+m.barcode = m.barcode + ALLTRIM(STR(Thisform.calc_digito_verificador(m.barcode)))
+m.code = m.barcode
+m.barcode = getcodbarras(m.barcode)
+
+m.impIVA105 = Thisform.txtImpIVA105.Value 
+m.impIVA21 = Thisform.txtImpIVA21.Value 
+m.impNeto = Thisform.txtSubTotal.Value
+m.impFinal = Thisform.txtTotal.Value
+m.porIIBB = Thisform.txtporIIBB.Value 
+m.impIIBB = Thisform.txtImpIIBB.Value
+m.observ = Thisform.txtobserv.Value
+ 
+IF ALLTRIM(Thisform.Cbte) == "NC"
+	m.Leyenda = "NOTA DE CREDITO"
+	m.Total = Thisform.txtTotal.Value
+ELSE
+	IF ALLTRIM(Thisform.Cbte) == "ND"
+		m.leyenda = "NOTA DE DEBITO"
+		m.Total = Thisform.txtTotal.Value
+	ENDIF
+ENDIF
+
+IF thisform.printcbte THEN
+	SET PRINTER TO NAME ALLTRIM(lcPrinterName)
+	SELECT vtadcp
+
+	FOR i = 1 TO lnCantCpia
+		IF ALLTRIM(m.tipodoc) == "A" THEN
+			SELECT vtadcp
+			IF llUsaTicket THEN
+				****************************************************************************
+				* Envío a imprimir el ticket
+				****************************************************************************
+				Thisform.oticket.limpiar_datos()
+				Thisform.oticket.codigo_cbte = m.codigoCbte
+				Thisform.oticket.leyenda = m.leyenda
+				Thisform.oticket.letra = m.tipoDoc
+				Thisform.oticket.nro_cbte = m.nroCbte
+				Thisform.oticket.fecha_cbte = m.fecha
+				Thisform.oticket.fecha_vencimiento = m.fecha
+				Thisform.oticket.numero_cliente = m.NroCli
+				Thisform.oticket.razon_social = m.razSoc
+				Thisform.oticket.direccion = m.direccion
+				Thisform.oticket.codigo_postal = m.codPostal 
+				Thisform.oticket.localidad = m.localidad
+				Thisform.oticket.provincia = m.pcia
+				Thisform.oticket.tipo_iva = m.TipoIVA
+				SELECT vtadcp
+				GO TOP
+				DO WHILE !EOF("vtadcp")
+					Thisform.oticket.add_item(vtadcp.codPlanCta, SUBSTR(vtadcp.descPlan, 1, 60), 0,;
+							vtadcp.ivaPor, vtadcp.impNeto, vtadcp.total)
+					SELECT vtadcp
+					SKIP
+				ENDDO
+				Thisform.oticket.total_neto = m.impNeto
+				Thisform.oticket.total_imp_iva21 = m.impIVA21
+				Thisform.oticket.total_imp_iva105 = m.impIVA105
+				Thisform.oticket.total = m.Total
+				Thisform.oticket.qr_image = Thisform.qr_image
+				Thisform.oticket.nro_cae = m.cae
+				THisform.oticket.vto_cae = m.caevto
+				Thisform.oticket.motivo = m.motivo
+				Thisform.oticket.imprimir()			
+			ELSE
+				REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
+			ENDIF
+		ELSE 
+			SELECT vtadcp
+			IF llUsaTicket THEN
+				****************************************************************************
+				* Envío a imprimir el ticket
+				****************************************************************************
+				Thisform.oticket.limpiar_datos()
+				Thisform.oticket.codigo_cbte = m.codigoCbte
+				Thisform.oticket.leyenda = m.leyenda
+				Thisform.oticket.letra = m.tipoDoc
+				Thisform.oticket.nro_cbte = m.nroCbte
+				Thisform.oticket.fecha_cbte = m.fecha
+				Thisform.oticket.fecha_vencimiento = m.fecha
+				Thisform.oticket.numero_cliente = m.NroCli
+				Thisform.oticket.razon_social = m.razSoc
+				Thisform.oticket.direccion = m.direccion
+				Thisform.oticket.codigo_postal = m.codPostal 
+				Thisform.oticket.localidad = m.localidad
+				Thisform.oticket.provincia = m.pcia
+				Thisform.oticket.tipo_iva = m.TipoIVA
+				SELECT vtadcp
+				GO TOP
+				DO WHILE !EOF("vtadcp")
+					Thisform.oticket.add_item(vtadcp.codPlanCta, SUBSTR(vtadcp.descPlan, 1, 60), 0,;
+							vtadcp.ivaPor, vtadcp.impNeto, vtadcp.total)
+					SELECT vtadcp
+					SKIP
+				ENDDO
+				Thisform.oticket.total_neto = m.impNeto
+				Thisform.oticket.total_imp_iva21 = m.impIVA21
+				Thisform.oticket.total_imp_iva105 = m.impIVA105
+				Thisform.oticket.total = m.Total
+				Thisform.oticket.qr_image = Thisform.qr_image
+				Thisform.oticket.nro_cae = m.cae
+				THisform.oticket.vto_cae = m.caevto
+				Thisform.oticket.motivo = m.motivo
+				Thisform.oticket.imprimir()						
+			ELSE
+				REPORT FORM &lcRepNameCP TO PRINTER NOCONSOLE
+			ENDIF
+		ENDIF
+	NEXT
+ENDIF
+
+&& Envío de mail automático
+IF thisform.envcbte THEN
+	lcFileName = SYS(5) + SYS(2003) + "\wsafip\ComprobantesPDF\" + this.cbte + "_" + m.NroCbte + ".pdf"
+	
+	loPDF = CREATEOBJECT("Bullzip.PDFPrinterSettings")
+		loPDF.SetValue('output', lcFileName)
+		loPDF.SetValue('DisableOptionDialog', 'no') 
+		loPDF.SetValue('ConfirmOverwrite', 'no')
+		loPDF.SetValue('Showsettings', 'never') 
+		loPDF.SetValue('ShowSaveAS', 'nofile') 
+		loPDF.SetValue('ShowPdf', 'no') 
+		loPDF.WriteSettings(.t.)
+	
+	SET CONSOLE OFF
+	SET PRINTER TO NAME("Bullzip PDF Printer")
+	IF ALLTRIM(m.tipodoc) == "A" THEN
+		&& Imprime el comprobante de tipo "A"
+		SELECT vtadcp
+		REPORT FORM &lcRepNameCP NOCONSOLE TO PRINTER
+	ELSE
+		&& Imprime el comprobante de tipo "B"
+		SELECT vtadcp
+		REPORT FORM &lcRepNameCP NOCONSOLE TO PRINTER
+	ENDIF
+	SET PRINTER TO DEFAULT
+	SET CONSOLE ON
+	
+	WAIT WINDOW "El archivo PDF se está generando, aguarde unos segundos..." NOWAIT
+	DO WHILE !FILE(lcFileName)
+		
+	ENDDO
+	
+	&&MESSAGEBOX("Archivo generado en " + lcFileName, 0+64, thisform.Caption)
+	
+	TEXT TO lcMailMsg NOSHOW
+	Estimado cliente,
+	
+	Le adjuntamos el comprobante electrónico de su compra en formato PDF.
+	
+	Muchas gracias!
+	
+	Saludos cordiales,
+	
+	ENDTEXT
+	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILFIRMA") + CHR(13) + CHR(10)
+	lcMailMsg = lcMailMsg + getGlobalCFG("EMAILEMP")
+	
+	&& Procedo a hacer el envío de mail
+	DO LOCFILE("FoxyPreviewer.App")
+	WITH _screen.oFoxyPreviewer	
+		.cEmailType = "PDF"
+		.nEmailMode = 2
+		.cEMailTo = thisform.mailfc
+		.cEmailCC = ALLTRIM(getGlobalCFG("EMAILCC"))
+		.cSMTPServer = getGlobalCFG("EMAILSMTP")
+		.cEmailFrom = getGlobalCFG("EMAILEMP") + " <" + getGlobalCFG("EMAILADDR") + ">"
+		.cEMailSubject = "Comprobante Electrónico " + this.cbte + " " + m.NroCbte
+		.nSMTPPort = getGlobalCFG("EMAILPORT")
+		.lSMTPUseSSL = getGlobalCFG("EMAILSSL")
+		.cSMTPUserName = getGlobalCFG("EMAILUSR")
+		.cSMTPPassword = getGlobalCFG("EMAILPWD")
+		.lReadReceipt  = .F.
+		.lPriority = .F.
+		.cEmailBody = lcMailMsg
+		.SendEmailUsingCDO(lcFileName)
+	ENDWITH	
+ENDIF
+
+DO FoxyPreviewer.App WITH "Release"
+
+ENDPROC
+PROCEDURE btnGrabar.Click
+LOCAL lcSql, loCommand, lnIdVentaC, lnPtoVta, lnIdVtasRel, loResCli
+LOCAL loNumerador, lnPtoVta, lnNroCbte, lnPorIVA21 
+LOCAL lnPorIVA105, lnImpIVA21, lnImpIVA105, lnIdVtaCP, lnIdCC_Cli
+LOCAL lnIdOper, lnSaldo, loDateTime
+LOCAL lnIdCondPago, lnIdSitIVA, lnIdVendedor, lnPorIIBB, lnImpIIBB, lnIdCC_CliOrig
+
+lcSql = ""
+loDateTime = CREATEOBJECT("datetime")
+loCommand = CREATEOBJECT("odbc_command")
+loResCli = CREATEOBJECT("odbc_result")
+lnIdVentaC = 0
+lnPtoVta = INT(VAL(ALLTRIM(getconfig("PTOVTA"))))
+lnNroCbte = 0
+lnIdVtaCP = 0
+lnIdCC_Cli = 0
+lnPorIVA21 = 0.00
+lnImpIVA21 = 0.00
+lnPorIVA105 = 0.00
+lnImpIVA105 = 0.00
+lnIdOper = 0
+lnSaldo = 0.00
+lnIdVtasRel = 0
+lnIdCondPago = 0
+lnIdSitIVA = 0
+lnIdVendedor = 0
+lnPorIIBB = 0.00
+lnImpIIBB = 0.00
+lnIdCC_CliOrig = thisform.idcc_cli
+
+SELECT vtadcp
+IF RECCOUNT("vtadcp") = 0 THEN
+	MESSAGEBOX("Debe ingresar al menos un ítem del detalle", 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+lcSql = "SELECT * FROM clientes WHERE idCliente = " + ALLTRIM(STR(Thisform.idCliente))
+loResCli.ActiveConnection = goConn.ActiveConnection
+loResCli.Cursor_Name = "cur_cli"
+
+IF !loResCli.OpenQuery(lcSql) THEN
+	MESSAGEBOX(loResCli.Error_Message, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+SELECT cur_cli
+lnIdCondPago = cur_cli.idCondPago
+lnIdSitIVA = cur_cli.idSitIVA
+lnIdVendedor = cur_cli.idVendedor
+
+loResCli.Close_Query()
+
+SELECT vtadcp
+DO WHILE !EOF("vtadcp") 
+	IF vtadcp.ivaPor = 21 THEN
+		lnPorIVA21 = vtadcp.ivaPor
+		lnImpIVA21 = lnImpIVA21 + vtadcp.ivaImp
+	ELSE
+		lnPorIVA105 = vtadcp.ivaPor
+		lnImpIVA105 = lnImpIVA105 + vtadcp.ivaImp
+	ENDIF	
+
+	SELECT vtadcp
+	SKIP	
+ENDDO
+
+lnPorIIBB = Thisform.txtporIIBB.Value
+lnImpIIBB = Thisform.txtImpIIBB.Value
+
+goConn.BeginTransaction()	&& Inicio la transacción
+ 
+&& Calculo el tipo de comprobante
+IF INT(VAL(ALLTRIM(getconfig("DEMO")))) == 0 THEN
+	Thisform.Tipodocref = Thisform.calcular_tipodoc()
+ELSE
+	Thisform.Tipodocref = "X"
+ENDIF
+
+lcSql = "SELECT * FROM numerador WHERE cbte = '" + ALLTRIM(Thisform.cbte) + "' AND tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "' AND ptoVta = " + ALLTRIM(STR(lnPtoVta))
+loNumerador = CREATEOBJECT("odbc_result")
+loNumerador.ActiveConnection = goConn.ActiveConnection
+loNumerador.Cursor_Name = "cur_num"
+loNumerador.OpenQuery(lcSql)
+SELECT cur_num
+
+IF RECCOUNT("cur_num") = 0 THEN
+	MESSAGEBOX("No se encuentra configurado el numerador del comprobante " + ALLTRIM(Thisform.cbte) + " Punto de Venta: " + ALLTRIM(STR(lnPtoVta)) + " Letra: " + ALLTRIM(thisform.tipodocref), 0+48, thisform.Caption)
+	loNumerador.close_query()
+	RETURN .F.
+ENDIF
+
+SELECT cur_num
+lnNroCbte = 0
+THisform.ptovta = lnPtoVta
+Thisform.nrocbte = lnNroCbte
+Thisform.printerDevice = cur_num.impresora
+
+loNumerador.close_query()
+
+&& Actualizo el numerador
+lcSql = "update numerador set numActual = " + ALLTRIM(STR(lnNroCbte)) + ;
+	" where cbte = '" + ALLTRIM(Thisform.cbte) + "' and tipoDoc = '" + ALLTRIM(thisform.tipodocref) + "'"
+
+loCommand.ActiveConnection = goConn.ActiveConnection
+loCommand.CommandText = lcSql
+
+IF !loCommand.Execute()
+	goConn.Rollback()
+	RETURN .F.
+ENDIF
+
+lnIdVentaC = goConn.GetNextId("ventascab", "idVentasC")
+Thisform.id_ventasc = lnIdVentaC
+
+lcSql = "INSERT INTO ventascab ( "
+lcSql = lcSql + "idVentasC, idCliente, razSoc, idTipoDoc, nroDoc, fecEmision, fecVto, cbte, tipoDoc, ptoVta, numCbte, anulado, idCondPago, idSitIVA, idVendedor, "
+lcSql = lcSql + "impNeto, impFinal, porIVA21, impIVA21, porIVA105, impIVA105, porDesc1, "
+lcSql = lcSql + "porDesc2, porDesc3, porDesc4, impDesc1, impDesc2, impDesc3, impDesc4, totFact, Saldo, usuAlta, fecAlta, idHostAlta, porIIBB, impIIBB, observ) VALUES ("
+lcSql = lcSql + ALLTRIM(STR(lnIdVentaC)) + ", "
+lcSql = lcSql + ALLTRIM(STR(Thisform.idCliente)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_razsoc) + "', "
+lcSql = lcSql + ALLTRIM(STR(Thisform.cli_idTipoDoc)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.cli_cuit) + "', "
+lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
+lcSql = lcSql + IIF(Thisform.sqlsrv, "GETDATE(), " , "current_date, ")
+lcSql = lcSql + "'" + ALLTRIM(Thisform.cbte) + "', "
+lcSql = lcSql + "'" + ALLTRIM(Thisform.tipodocref) + "', "
+lcSql = lcSql + ALLTRIM(STR(lnPtoVta)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnNroCbte)) + ", "
+lcSql = lcSql + "0, "
+lcSql = lcSql + ALLTRIM(STR(lnIdCondPago)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdSitIVA)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnIdVendedor)) + ", "
+lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(Thisform.txtSubTotal.Value, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorIVA21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIVA21, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnPorIVA105, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIVA105, 10, 2)) + ", "
+lcSql = lcSql + "0, 0, 0, 0, 0, 0, 0, 0, "
+lcSql = lcSql + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", 0, "
+lcSql = lcSql + "'" + ALLTRIM(gcCodUsu) + "', "
+lcSql = lcSql + loDateTime.getDateTime() + ", "
+lcSql = lcSql + "'" + SYS(0) + "', "
+lcSql = lcSql + ALLTRIM(STR(lnPorIIBB, 10, 2)) + ", "
+lcSql = lcSql + ALLTRIM(STR(lnImpIIBB, 10, 2)) + ", "
+lcSql = lcSql + "'" + ALLTRIM(thisform.txtobserv.Value) + "') "
+*lcSql = lcSql + ALLTRIM(STR(lnIdCC_CliOrig)) + ")"
+
+loCommand.commandText = lcSql
+loCommand.ActiveConnection = goConn.ActiveConnection
+
+IF !loCommand.Execute() then
+	goConn.Rollback()
+	MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+	RETURN .F.
+ENDIF
+
+&& Grabar el detalle en VTADCP
+SELECT vtadcp
+GO TOP
+DO WHILE !EOF("vtadcp")
+	lnIdVtaCP = goConn.GetNextID("vtadcp", "id_vtadcp")
+	
+	lcSql = "INSERT INTO vtadcp ( "
+	lcSql = lcSql + "id_vtadcp, idVentasC, idPlanCta, impNeto, ivaPor, ivaImp, total) VALUES "
+	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtaCP)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ", " + ALLTRIM(STR(vtadcp.idPlanCta)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(vtadcp.impNeto, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaPor, 10, 2)) + ", " + ALLTRIM(STR(vtadcp.ivaImp, 10, 2)) + ", "
+	lcSql = lcSql + ALLTRIM(STR(vtadcp.total, 10, 2)) + ")"
+	
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+	
+	IF !loCommand.Execute() THEN
+		goConn.Rollback()
+		MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+		RETURN .F.
+	ENDIF
+	
+	&& Marco el cheque como cheque rechazado
+	IF ALLTRIM(vtadcp.cheque_nro) != "" THEN
+		lcSql = "UPDATE cheques SET estado = 'R' WHERE chq_nro = '" + ALLTRIM(vtadcp.cheque_nro) + "' AND idBanco = " + ALLTRIM(STR(vtadcp.idBanco))
+		loCommand.ActiveConnection = goConn.ActiveConnection
+		loCommand.CommandText = lcSql
+		
+		IF !loCommand.Execute() THEN
+			goConn.Rollback()
+			MESSAGEBOX(loCommand.ErrorMessage, 0+48, Thisform.Caption)
+			RETURN .F.
+		ENDIF
+	ENDIF	
+
+	SELECT vtadcp
+	SKIP
+ENDDO
+
+IF Thisform.idVentascab <> - 1 THEN
+	&& Generar el registro de vinculación de comprobantes
+	lnIdVtasRel = goConn.GetNextId("ventasrel", "idvtarel")
+
+	&& Vinculo el comprobante de venta
+	lcSql = "INSERT INTO ventasrel (idVtaRel, idVtaCO, idVtaCD) VALUES "
+	lcSql = lcSql + "(" + ALLTRIM(STR(lnIdVtasRel)) + ", " + ALLTRIM(STR(Thisform.idventascab)) + ", " + ALLTRIM(STR(lnIdVentaC)) + ")"
+
+	loCommand.ActiveConnection = goConn.ActiveConnection
+	loCommand.CommandText = lcSql
+
+	IF !loCommand.Execute()
+		goConn.Rollback()
+		RETURN .F.
+	ENDIF
+ENDIF 
+
+&& Actualizar el saldo de la factura seleccionada
+IF ALLTRIM(thisform.cbte) == "NC" THEN
+	lcSql = "UPDATE ventascab SET Saldo = Saldo - " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
+	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
+	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
+ELSE 
+	lcSql = "UPDATE ventascab SET Saldo = Saldo + " + ALLTRIM(STR(Thisform.txtTotal.Value, 10, 2)) + ", "
+	lcSql = lcSql + "usuModi = '" + ALLTRIM(gcCodUsu) + "', "
+	lcSql = lcSql + "fecModi = " + loDateTime.getDateTime() + ", "
+	lcSql = lcSql + "idHostModi = '" + ALLTRIM(SYS(0)) + "' "
+	lcSql = lcSql + "WHERE idVentasC IN (SELECT IdVentasC FROM cc_cli WHERE IdOper = " +  ALLTRIM(STR(lnIdOper)) + " AND cbte like 'FC%')"
+ENDIF
+	
+loCommand.CommandText = lcSql
+loCommand.ActiveConnection = goConn.ActiveConnection
+
+IF !loCommand.Execute()
+	goConn.Rollback()
+	RETURN .F.
+ENDIF 
+
+goConn.Commit()
+
+Thisform.ptovta = lnPtoVta
+
+IF !thisform.enviar_wsafipfe() THEN
+	MESSAGEBOX("Este comprobante no ha sido autorizado, por favor, vuelva a intentarlo desde la autorización diferida", 0+48, Thisform.Caption)
+	RETURN .F.
+ELSE
+	IF thisform.fe_set_cae() THEN
+		IF thisform.grabar_ctacte(Thisform.id_ventasc) THEN
+			Thisform.imprimir()
+		ENDIF
+	ENDIF
+ENDIF
+
+Thisform.Release()
+RETURN .T.
+ENDPROC
+
+
+************************************************************
+OBJETO: fe
+************************************************************
+*** PROPIEDADES ***
+Top = 468
+Left = 612
+Height = 24
+Width = 36
+Name = "fe"
+
+*** METODOS ***
+
+
+************************************************************
+OBJETO: frm_ncnd_cc_fe
+************************************************************
+*** PROPIEDADES ***
+Arial, 0, 8, 5, 14, 11, 29, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
 
 *** METODOS ***
 

@@ -1546,183 +1546,6 @@ Arial, 0, 9, 5, 15, 12, 32, 3, 0
 
 
 ************************************************************
-OBJETO: cls_impresion_remitos
-************************************************************
-*** PROPIEDADES ***
-cprintername = 
-ncopias = 0
-creportfile = 
-lesticket = .F.
-oticket = 
-vista_previa = .F.
-Name = "cls_impresion_remitos"
-
-*** METODOS ***
-PROCEDURE imprimir
-PARAMETERS loData 
-
-LOCAL lnI, lcAliasAnterior        
-lcAliasAnterior = ALIAS()   
-*!*	IF !THIS.ValidarConfiguracion()
-*!*		RETURN .F.        
-*!*	ENDIF
-* Configurar Impresora
-IF !EMPTY(THIS.cPrinterName)            
-	SET PRINTER TO NAME (ALLTRIM(THIS.cPrinterName))        
-ENDIF
-       
-IF THIS.lEsTicket            
-	THIS.ImprimirFormatoTicket(loData)        
-
-ELSE
-	THIS.ImprimirFormatoFRX(loData)        
-
-ENDIF        
-
-IF !EMPTY(lcAliasAnterior) AND USED(lcAliasAnterior)            
-	SELECT (lcAliasAnterior)        
-ENDIF
-ENDPROC
-PROCEDURE imprimirformatofrx
-PARAMETERS loData
-LOCAL lcReportName
-
-PRIVATE m.fecha, m.nrocli, m.razsoc, m.direccion, m.codPostal, ;
-	m.localidad, m.pcia, m.tipoiva, m.fecvto, m.nrocuit, ;                
-	m.nrooc, m.tipodoc, m.nrocbte, m.razSocTransp, ;                
-	m.direccionTransp, m.Total, m.nroCopia, m.nroRto, m.observ        
-
-*!*	THIS.MapearVariables(loData)
-
-m.fecha     = loData.fecEmision
-m.nrocli    = loData.idCliente        
-m.razsoc    = ALLTRIM(loData.razsoc)        
-m.direccion = loData.direccion        
-m.codPostal = loData.codPostal        
-m.localidad = loData.localidad        
-m.pcia      = loData.provincia        
-m.tipoiva   = loData.tipoiva        
-m.fecvto    = loData.fecvto        
-m.nrocuit   = loData.nrocuit        
-m.nrooc     = loData.nrooc        
-m.tipodoc   = loData.tipodoc        
-m.nrocbte   = loData.nrocbte        
-m.Total     = loData.Total        
-m.nroRto    = loData.nroRto        
-m.razSocTransp    = loData.razSocTransp        
-m.direccionTransp = loData.direccionTransp        
-m.observ    = loData.observ
-
-IF !This.vista_previa THEN
-	SELECT cur_aux
-	FOR lnI = 1 TO THIS.nCopias            
-		m.nroCopia = lnI       
-		lcReportName = This.cReportFile
-
-		REPORT FORM &lcReportName NOCONSOLE TO PRINTER        
-	ENDFOR
-ELSE
-	SELECT cur_aux
-	lcReportName = This.cReportFile
-	REPORT FORM &lcReportName TO PRINTER PROMPT PREVIEW
-ENDIF
-ENDPROC
-PROCEDURE imprimirformatoticket
-PARAMETERS loData
-
-this.oticket.crear_cursor()
-
-m.fecha     = loData.fecEmision
-m.nrocli    = loData.idCliente        
-m.razsoc    = ALLTRIM(loData.razsoc)        
-m.direccion = loData.direccion        
-m.codPostal = loData.codPostal        
-m.localidad = loData.localidad        
-m.pcia      = loData.provincia        
-m.tipoiva   = loData.tipoiva        
-m.fecvto    = loData.fecvto        
-m.nrocuit   = loData.nrocuit        
-m.nrooc     = loData.nrooc        
-m.tipodoc   = loData.tipodoc        
-m.nrocbte   = loData.nrocbte        
-m.Total     = loData.Total        
-m.nroRto    = loData.nroRto        
-m.razSocTransp    = loData.razSocTransp        
-m.direccionTransp = loData.direccionTransp        
-m.observ    = loData.observ
-
-
-this.oticket.limpiar_datos()
-this.oticket.codigo_cbte = "R"
-this.oticket.leyenda = "REMITO"
-this.oticket.letra = m.tipoDoc
-this.oticket.nro_cbte = m.NroRto
-this.oticket.fecha_cbte = m.fecha
-this.oticket.fecha_vencimiento = m.fecVto
-this.oticket.numero_cliente = m.NroCli
-this.oticket.razon_social = m.razSoc
-this.oticket.direccion = m.direccion
-this.oticket.codigo_postal = m.codPostal 
-this.oticket.localidad = m.localidad
-this.oticket.provincia = m.pcia
-this.oticket.tipo_iva = m.TipoIVA
-    
-SELECT cur_aux
-GO TOP
-DO WHILE !EOF("cur_aux")
-	this.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
-		cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
-	SELECT cur_aux
-	SKIP
-ENDDO
-
-this.oticket.total_neto = 0
-this.oticket.total_imp_iva21 = 0
-this.oticket.total_imp_iva105 = 0
-this.oticket.total = m.Total
-this.oticket.qr_image = ""
-this.oticket.nro_cae = ""
-this.oticket.vto_cae = ""
-this.oticket.imprimir_remito()   
-
-
-ENDPROC
-PROCEDURE mapearvariables
-PARAMETERS loData
-
-m.fecha     = loData.fecEmision
-m.nrocli    = loData.idCliente        
-m.razsoc    = ALLTRIM(loData.razsoc)        
-m.direccion = loData.direccion        
-m.codPostal = loData.codPostal        
-m.localidad = loData.localidad        
-m.pcia      = loData.provincia        
-m.tipoiva   = loData.tipoiva        
-m.fecvto    = loData.fecvto        
-m.nrocuit   = loData.nrocuit        
-m.nrooc     = loData.nrooc        
-m.tipodoc   = loData.tipodoc        
-m.nrocbte   = loData.nrocbte        
-m.Total     = loData.Total        
-m.nroRto    = loData.nroRto        
-m.razSocTransp    = loData.razSocTransp        
-m.direccionTransp = loData.direccionTransp        
-m.observ    = loData.observ
-ENDPROC
-PROCEDURE validarconfiguracion
-IF !THIS.lEsTicket .AND. !empty(THIS.cReportFile)            
-	MESSAGEBOX("Error: No se encuentra el archivo de reporte " + THIS.cReportFile, 16)           
- 	RETURN .F.        
-ENDIF        
-RETURN .T.
-ENDPROC
-PROCEDURE Init
-*/Instancio el objeto de la clase cls_tickets/*
-this.oTicket = CREATEOBJECT("cls_tickets")
-ENDPROC
-
-
-************************************************************
 OBJETO: cls_frm_consulta_remitos
 ************************************************************
 *** PROPIEDADES ***
@@ -3767,6 +3590,184 @@ ENDIF
 IF USED("cur_rtos") THEN
 	USE IN cur_rtos
 ENDIF
+ENDPROC
+
+
+************************************************************
+OBJETO: cls_impresion_remitos
+************************************************************
+*** PROPIEDADES ***
+cprintername = 
+ncopias = 0
+creportfile = 
+lesticket = .F.
+oticket = 
+vista_previa = .F.
+Name = "cls_impresion_remitos"
+
+*** METODOS ***
+PROCEDURE imprimir
+PARAMETERS loData 
+
+LOCAL lnI, lcAliasAnterior        
+lcAliasAnterior = ALIAS()   
+*!*	IF !THIS.ValidarConfiguracion()
+*!*		RETURN .F.        
+*!*	ENDIF
+* Configurar Impresora
+IF !EMPTY(THIS.cPrinterName)            
+	SET PRINTER TO NAME (ALLTRIM(THIS.cPrinterName))        
+ENDIF
+       
+IF THIS.lEsTicket            
+	THIS.ImprimirFormatoTicket(loData)        
+
+ELSE
+	THIS.ImprimirFormatoFRX(loData)        
+
+ENDIF        
+
+IF !EMPTY(lcAliasAnterior) AND USED(lcAliasAnterior)            
+	SELECT (lcAliasAnterior)        
+ENDIF
+ENDPROC
+PROCEDURE imprimirformatofrx
+PARAMETERS loData
+LOCAL lcReportName
+
+PRIVATE m.fecha, m.nrocli, m.razsoc, m.direccion, m.codPostal, ;
+	m.localidad, m.pcia, m.tipoiva, m.fecvto, m.nrocuit, ;                
+	m.nrooc, m.tipodoc, m.nrocbte, m.razSocTransp, ;                
+	m.direccionTransp, m.Total, m.nroCopia, m.nroRto, m.observ        
+
+*!*	THIS.MapearVariables(loData)
+
+m.fecha     = loData.fecEmision
+m.nrocli    = loData.idCliente        
+m.razsoc    = ALLTRIM(loData.razsoc)        
+m.direccion = loData.direccion        
+m.codPostal = loData.codPostal        
+m.localidad = loData.localidad        
+m.pcia      = loData.provincia        
+m.tipoiva   = loData.tipoiva        
+m.fecvto    = loData.fecvto        
+m.nrocuit   = loData.nrocuit        
+m.nrooc     = loData.nrooc        
+m.tipodoc   = loData.tipodoc        
+m.nrocbte   = loData.nrocbte        
+m.Total     = loData.Total        
+m.nroRto    = loData.nroRto        
+m.razSocTransp    = loData.razSocTransp        
+m.direccionTransp = loData.direccionTransp        
+m.observ    = loData.observ
+
+IF !This.vista_previa THEN
+	SELECT cur_aux
+	FOR lnI = 1 TO THIS.nCopias            
+		m.nroCopia = lnI       
+		lcReportName = This.cReportFile
+
+		REPORT FORM &lcReportName NOCONSOLE TO PRINTER        
+	ENDFOR
+ELSE
+	SELECT cur_aux
+	m.nroCopia = this.nCopias
+	lcReportName = This.cReportFile
+	REPORT FORM &lcReportName TO PRINTER PROMPT PREVIEW
+ENDIF
+ENDPROC
+PROCEDURE imprimirformatoticket
+PARAMETERS loData
+
+this.oticket.crear_cursor()
+
+m.fecha     = loData.fecEmision
+m.nrocli    = loData.idCliente        
+m.razsoc    = ALLTRIM(loData.razsoc)        
+m.direccion = loData.direccion        
+m.codPostal = loData.codPostal        
+m.localidad = loData.localidad        
+m.pcia      = loData.provincia        
+m.tipoiva   = loData.tipoiva        
+m.fecvto    = loData.fecvto        
+m.nrocuit   = loData.nrocuit        
+m.nrooc     = loData.nrooc        
+m.tipodoc   = loData.tipodoc        
+m.nrocbte   = loData.nrocbte        
+m.Total     = loData.Total        
+m.nroRto    = loData.nroRto        
+m.razSocTransp    = loData.razSocTransp        
+m.direccionTransp = loData.direccionTransp        
+m.observ    = loData.observ
+
+
+this.oticket.limpiar_datos()
+this.oticket.codigo_cbte = "R"
+this.oticket.leyenda = "REMITO"
+this.oticket.letra = m.tipoDoc
+this.oticket.nro_cbte = m.NroRto
+this.oticket.fecha_cbte = m.fecha
+this.oticket.fecha_vencimiento = m.fecVto
+this.oticket.numero_cliente = m.NroCli
+this.oticket.razon_social = m.razSoc
+this.oticket.direccion = m.direccion
+this.oticket.codigo_postal = m.codPostal 
+this.oticket.localidad = m.localidad
+this.oticket.provincia = m.pcia
+this.oticket.tipo_iva = m.TipoIVA
+    
+SELECT cur_aux
+GO TOP
+DO WHILE !EOF("cur_aux")
+	this.oticket.add_item(cur_aux.codArt, cur_aux.descripcio, cur_aux.cantidad,;
+		cur_aux.alicIVA, cur_aux.impNeto, cur_aux.totNeto)
+	SELECT cur_aux
+	SKIP
+ENDDO
+
+this.oticket.total_neto = 0
+this.oticket.total_imp_iva21 = 0
+this.oticket.total_imp_iva105 = 0
+this.oticket.total = m.Total
+this.oticket.qr_image = ""
+this.oticket.nro_cae = ""
+this.oticket.vto_cae = ""
+this.oticket.imprimir_remito()   
+
+
+ENDPROC
+PROCEDURE mapearvariables
+PARAMETERS loData
+
+m.fecha     = loData.fecEmision
+m.nrocli    = loData.idCliente        
+m.razsoc    = ALLTRIM(loData.razsoc)        
+m.direccion = loData.direccion        
+m.codPostal = loData.codPostal        
+m.localidad = loData.localidad        
+m.pcia      = loData.provincia        
+m.tipoiva   = loData.tipoiva        
+m.fecvto    = loData.fecvto        
+m.nrocuit   = loData.nrocuit        
+m.nrooc     = loData.nrooc        
+m.tipodoc   = loData.tipodoc        
+m.nrocbte   = loData.nrocbte        
+m.Total     = loData.Total        
+m.nroRto    = loData.nroRto        
+m.razSocTransp    = loData.razSocTransp        
+m.direccionTransp = loData.direccionTransp        
+m.observ    = loData.observ
+ENDPROC
+PROCEDURE validarconfiguracion
+IF !THIS.lEsTicket .AND. !empty(THIS.cReportFile)            
+	MESSAGEBOX("Error: No se encuentra el archivo de reporte " + THIS.cReportFile, 16)           
+ 	RETURN .F.        
+ENDIF        
+RETURN .T.
+ENDPROC
+PROCEDURE Init
+*/Instancio el objeto de la clase cls_tickets/*
+this.oTicket = CREATEOBJECT("cls_tickets")
 ENDPROC
 
 
