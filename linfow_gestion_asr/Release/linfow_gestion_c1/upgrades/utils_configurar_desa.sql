@@ -51,7 +51,7 @@ CALL globalcfg_insert('FCDESC3', 'L', 'false', 1);
 CALL globalcfg_insert('FCDESC4', 'L', 'false', 1);
 
 -- Agrego el parámetro MODOMOST
-CALL globalcfg_insert('MODOMOST', 'L', 'true', 1);
+CALL globalcfg_insert('MODOMOST', 'L', 'false', 1);
 
 -- Configuro a todos los clientes con mi mail para testear
 UPDATE

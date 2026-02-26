@@ -773,13 +773,13 @@ CREATE CURSOR cur_iva ( ;
 	provincia varchar(30),;
 	categ varchar(3),;
 	nroDoc varchar(13),;
-	no_grav float(10, 2),;
-	grav_p_21 float(10,2),;
-	grav_p_105 float(10,2),;
-	perIIBB float(10,2),;
-	iva_21 float(10,2),;
-	iva_105 float(10,2),;
-	total float(10,2))
+	no_grav N(20, 2),;
+	grav_p_21 N(20,2),;
+	grav_p_105 N(20,2),;
+	perIIBB N(20,2),;
+	iva_21 N(20,2),;
+	iva_105 N(20,2),;
+	total N(20,2))
 	
 CREATE CURSOR cur_citivtas ( ;
 	campo1 	varchar(1),;
@@ -854,16 +854,16 @@ CREATE CURSOR cur_vtabycbte ( ;
 	cbte		varchar(3)	,;
 	tipoDoc		varchar(1)	,;
 	ptoVta		varchar(4)	,;
-	impNeto		float(10, 2),;
-	impIVA		float(10, 2),;
-	impRNI		float(10, 2),;
-	noGrav		float(10, 2),;
-	exentos		float(10, 2),;
-	impInt		float(10, 2),;
-	exporta		float(10, 2),;
-	impuest		float(10, 2),;
-	retIVA		float(10, 2),;
-	total		float(10, 2))
+	impNeto		N(20, 2),;
+	impIVA		N(20, 2),;
+	impRNI		N(20, 2),;
+	noGrav		N(20, 2),;
+	exentos		N(20, 2),;
+	impInt		N(20, 2),;
+	exporta		N(20, 2),;
+	impuest		N(20, 2),;
+	retIVA		N(20, 2),;
+	total		N(20, 2))
 
 ENDPROC
 

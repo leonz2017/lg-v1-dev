@@ -4280,142 +4280,272 @@ MESSAGEBOX("Los artículos fueron deshabilitados con éxito", 0+64, Thisform.Capti
 
 
 ENDPROC
-PROCEDURE configurargrilla
+PROCEDURE Load
 DODEFAULT()
-SELECT cur_codiart
-thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.alias_name = "cur_codiart"
-thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.RecordSource = "cur_codiart"
-thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.list_controlsource = "circuito,tipo,codigos,cantiDesp"
-thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.lista_ancho_cols = "50,50,200,70"
-thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.titulos_cabeceras = "Circuito,Tipo,Código,Cantidad"
-thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.generar_grid()
-ENDPROC
-PROCEDURE Init
-&& Inicializo los objetos de equivalencias
+SET DELETED ON 
 
-CREATE CURSOR cur_artequiv ( ;
+&& Creo el cursor donde voy a tener los datos de las unidades de despacho
+CREATE CURSOR cur_codiart (	;
+	idCodiArt	int,;
 	idArticulo	int,;
 	codArt		varchar(20),;
-	descripcio	varchar(200),;
-	esNuevo		L DEFAULT .F.)
+	codigos		varchar(20),;
+	tipo		varchar(2),;
+	cantiDesp	double,;
+	circuito	varchar(2))
+
+
+CREATE CURSOR cur_mrcsv (	;
+	idMarcaV	int,;
+	descripcio	varchar(60))
 	
-&& Inicializo checkbox
-thisform.pgf.page2.cnt_fields.internalPgf.page1.chkUsarImpuestosInternos.Value = 0
-thisform.pgf.page2.cnt_fields.internalPgf.page1.chkHabilitarMonedaExtrangera.Value = 0
-thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = 0
-
-&& Valido si el modulo de stock esta habilitado en la base de datos para mostrar el lleva stock
-IF getGlobalCFG("STK_MODULE") THEN
-	thisform.pgf.page2.cnt_fields.chkLlevaStock.Visible = .T.
-	
-ELSE
-	thisform.pgf.page2.cnt_fields.chkLlevaStock.Visible = .F.
-
-ENDIF
-
-SELECT cur_artequiv
-thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.alias_name = "cur_artequiv"
-thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.RecordSource = "cur_artequiv"
-thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.titulos_cabeceras = "Código,Descripción"
-thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.lista_ancho_cols = "100,500"
-thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.list_controlsource = "codArt,descripcio"
-thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.generar_grid()
-
-CREATE CURSOR cur_delequiv (;
-	idArtic	int,;
-	codArt	varchar(20)) 
-
-SELECT cur_mrcsv
-thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.alias_name = "cur_mrcsv"
-thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.RecordSource = "cur_mrcsv"
-thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.titulos_cabeceras = "Código,Descripción"
-thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.lista_ancho_cols = "100,250"
-thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.list_controlsource = "idMarcaV,descripcio"
-thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.generar_grid()
-
-DODEFAULT()
-
-WITH thisform.pgf.page2.cnt_fields.internalPgf.page1
-	.cmbTipoMon.AddItem("PSO")
-	.cmbTipoMon.AddItem("DOL")
-	.cmbTipoMon.AddItem("EUR")
-	.cmbTipoMon.ListIndex = 1
-ENDWITH
-
-WITH thisform.pgf.page2.cnt_fields.InternalPgf.page3
-	.cboCircuito.AddItem("V")	&& Circuito de Ventas
-	.cboCircuito.AddItem("C")	&& Circuito de Compras
-	.cboCircuito.AddItem("CV")	&& Circuito de Ventas y Compras
-	
-	.cboTipo.AddItem("CP")		&& Código de Pack
-	.cboTipo.AddItem("CO")		&& Código de Original
-	.cboTipo.AddItem("CB")		&& Código de Barra
-	
-	.cboCircuito.ListIndex = 1
-	.cboTipo.ListIndex = 1
-ENDWITH
-
-This.Pgf.Page1.grdDatos.SetAll("DynamicBackColor", "IIF(!cur_Tempo.habilitado, RGB(244, 197, 168), RGB(255, 255, 255))")
-This.Pgf.Page1.grdDatos.SetFocus()
-This.Pgf.page1.btnHabilitar.Enabled = .F.
-This.Pgf.Page1.btnDeshabilitar.Enabled = .F.
 
 
 ENDPROC
-PROCEDURE validardatos
+PROCEDURE actualizar_cursor
+LOCAL loRes
+LOCAL lcSql
+LOCAL ldFecActuPre
+
+* Recupero la última fecha de actualización de precios.
+ldFecActuPre = {}
+loRes = CREATEOBJECT("odbc_result")
+
+TEXT TO lcSql NOSHOW
+	SELECT
+		fecActuPre
+	FROM
+		articulos
+	WHERE
+		articulos.idarticulo = ?xid
+ENDTEXT
+
+lcSql = loRes.addParameter(lcSql, "xid", ALLTRIM(STR(this.idarticulo)), .f., .f.)
+loRes.Cursor_Name = "cur_fap"
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.OpenQuery(lcSql)
+
+SELECT cur_fap
+ldFecActuPre = cur_fap.fecActuPre
+
+loRes.Close_Query()
+
+DODEFAULT()
+SELECT cur_Tempo
+LOCK()
+REPLACE cur_Tempo.observ		WITH ""
+REPLACE cur_Tempo.prListaExt 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtprExt.Value ADDITIVE
+REPLACE cur_Tempo.prLista 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrLista.Value ADDITIVE
+REPLACE cur_Tempo.bonif1 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif1.Value ADDITIVE
+REPLACE cur_Tempo.bonif2 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif2.Value ADDITIVE
+REPLACE cur_Tempo.bonif3 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif3.Value ADDITIVE
+REPLACE cur_Tempo.bonif4 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif4.Value ADDITIVE
+REPLACE cur_Tempo.costoRep 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtCostoRep.Value ADDITIVE
+REPLACE cur_Tempo.margenMax 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtMargenMax.Value ADDITIVE
+REPLACE cur_Tempo.margenMin 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtMargenMin.Value ADDITIVE
+REPLACE cur_Tempo.prVentaMax 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrVentaMax.Value ADDITIVE
+REPLACE cur_Tempo.prVentaMin 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrVentaMin.Value ADDITIVE
+REPLACE cur_Tempo.prFinalMax 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrFinalMax.Value ADDITIVE
+REPLACE cur_Tempo.prFinalMin 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrFinalMin.Value ADDITIVE
+REPLACE cur_Tempo.observ		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page2.txtObserv.Value ADDITIVE
+REPLACE cur_Tempo.idmarca		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_marca.valcpoid ADDITIVE
+REPLACE cur_Tempo.marca			WITH Thisform.Pgf.Page2.Cnt_Fields.sel_marca.txtDescripcion.Value ADDITIVE
+REPLACE cur_Tempo.idfamilia		WITH Thisform.Pgf.Page2.Cnt_fields.sel_Familia.valcpoid ADDITIVE
+REPLACE cur_Tempo.familia		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_familia.txtDescripcion.Value ADDITIVE
+REPLACE cur_Tempo.idsubfam		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_SubFamilia.valcpoid ADDITIVE
+REPLACE cur_Tempo.subfam		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_SubFamilia.txtDescripcion.Value ADDITIVE
+REPLACE cur_Tempo.tmon			WITH Thisform.Pgf.Page2.cnt_fields.InternalPGF.page1.cmbTipoMon.Value ADDITIVE
+REPLACE cur_Tempo.fecActuPre	WITH ldFecActuPre ADDITIVE
+replace cur_Tempo.llevastk		WITH IIF(thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = 1, .t., .f.) additive
+
+
+&& Agrego el refresco de los campos de no gravado y activación de moneda extranjera
+WITH THisform.pgf.page2.Cnt_Fields.internalPgf.Page1
+	REPLACE cur_Tempo.usarMonExt	WITH IIF(.chkHabilitarMonedaExtrangera.value = 1, .T., .F.) ADDITIVE
+	REPLACE cur_Tempo.usarImpuIn	WITH .chkUsarImpuestosInternos.value ADDITIVE
+	REPLACE cur_Tempo.porImpuIn		WITH .txtPorImpuIn.value ADDITIVE
+	REPLACE cur_Tempo.impImInMay	WITH .txtImpImpuIntMay.value ADDITIVE
+	REPLACE cur_Tempo.impImInMin	WITH .txtImpImpuIntMin.value ADDITIVE
+ENDWITH
+
+UNLOCK
+
+ENDPROC
+PROCEDURE asignarcampos
+LOCAL i, cRef, cBaseClass
+LOCAL lcFoto
+
+i = 0
+cRef = ""
+cBaseClass = ""
+
 DODEFAULT()
 
-IF Thisform.Pgf.Page2.cnt_Fields.sel_Familia.txtCodigo.Value = 0 THEN
-	RETURN .F.
-ENDIF
+&& Formateo la ruta de la foto para que no saque las barras al editar
+lcFoto = STRTRAN(ALLTRIM(Thisform.Pgf.Page2.cnt_fields.txtPathFoto.Value), "\", "\\")
+Thisform.object_dataservice.linkfoto = lcFoto
 
-IF Thisform.Pgf.Page2.cnt_FIELDS.sel_SubFamilia.txtCodigo.Value = 0 THEN
-	RETURN .F.
-ENDIF
+&&Asigno los campos de la solapa "Precios"
+FOR i = 1 TO Thisform.Pgf.page2.cnt_fields.internalPgf.page1.ControlCount
+	cBaseClass = LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].BaseClass))
+	
+	IF ALLTRIM(cBaseClass) == "textbox" .OR. ALLTRIM(cBaseClass) == "editbox" .OR. ;
+			ALLTRIM(cBaseClass) == "checkbox"
 
-IF Thisform.Pgf.Page2.cnt_Fields.sel_Marca.txtCodigo.Value = 0 THEN
-	RETURN .F.
-ENDIF
-
-IF Thisform.Pgf.Page2.cnt_Fields.sel_Proveedor.txtCodigo.Value = 0 THEN
-	RETURN .F.
-ENDIF
-
-IF Thisform.lnuevo THEN
-	IF !Thisform.verificar_codigo() THEN
-		Thisform.msgerror = "Este código ya se encuentra cargado en el sistema"
-		RETURN .F.
+		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].cFieldName)
+		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].value
 	ENDIF
-ENDIF
+	
+	IF LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].Class)) == "selector_tabla"
+		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].cFieldName)
+		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].ValCpoID
+	ENDIF
+ENDFOR
 
-RETURN .T.
+&&Asigno los campos de la solapa "Observaciones"
+FOR i = 1 TO Thisform.Pgf.page2.cnt_fields.internalPgf.page2.ControlCount
+	cBaseClass = LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].BaseClass))
+	
+	IF ALLTRIM(cBaseClass) == "textbox" .OR. ALLTRIM(cBaseClass) == "editbox" .OR. ;
+			ALLTRIM(cBaseClass) == "checkbox"
+
+		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].cFieldName)
+		
+		IF ALLTRIM(thisform.pgf.page2.cnt_fields.internalPgf.page2.Controls[i].name) == "txtObserv" THEN
+			&cRef = ""
+		ENDIF
+		
+		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].value
+	ENDIF
+	
+	IF LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].Class)) == "selector_tabla"
+		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].cFieldName)
+		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].ValCpoID
+	ENDIF
+ENDFOR
 
 
 ENDPROC
-PROCEDURE validar_eliminar
-&& Valida si el artículo está siendo utilizado
-&& en alguna tabla relacional
+PROCEDURE blanquear
+DODEFAULT()
 
-LOCAL loData, lcSql
+WITH Thisform.Pgf.Page2.cnt_fields.internalPgf.page1
+	FOR EACH ctrl IN .Controls
+		DO CASE
+			CASE LOWER(ctrl.BaseClass) == "textbox"
+				ctrl.Blanquear()
 
-loData = CREATEOBJECT("odbc_result")
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "editbox"
+				ctrl.Blanquear()
 
-lcSql = "select idArticulo from ventasdet where idArticulo = " + ALLTRIM(STR(cur_Tempo.idarticulo))
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "selector_tabla"
+				ctrl.Blanquear()
 
-loData.ActiveConnection = goConn.ActiveConnection
-loData.Cursor_Name = "cur_Det"
-loData.OpenQuery(lcSql)
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "checkbox"
+				ctrl.value = 0
 
-SELECT cur_Det
-IF RECCOUNT() > 0
-	MESSAGEBOX("No se puede eliminar este artículo debido a que tiene comprobantes vinculados", 0+64, Thisform.Caption)
-	RETURN .F.
-ENDIF
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "container" .and. LOWER(ctrl.Tag) == "edit"
+				ctrl.Blanquear()
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "image"
+				ctrl.picture = ""
+		ENDCASE
+		
+	ENDFOR
+ENDWITH
 
-loData.Close_Query()
 
-RETURN .T.
+WITH Thisform.Pgf.Page2.cnt_fields.internalPgf.page2
+	FOR EACH ctrl IN .Controls
+		DO CASE
+			CASE LOWER(ctrl.BaseClass) == "textbox"
+				ctrl.Blanquear()
 
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "editbox"
+				ctrl.Blanquear()
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "selector_tabla"
+				ctrl.Blanquear()
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "checkbox"
+				ctrl.value = 0
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "container" .and. LOWER(ctrl.Tag) == "edit"
+				ctrl.Blanquear()
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "image"
+				ctrl.picture = ""
+		ENDCASE
+	ENDFOR
+ENDWITH
+
+WITH Thisform.Pgf.Page2.cnt_fields.internalPgf.page3
+	FOR EACH ctrl IN .Controls
+		DO CASE
+			CASE LOWER(ctrl.BaseClass) == "textbox"
+				ctrl.Blanquear()
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "editbox"
+				ctrl.Blanquear()
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "selector_tabla"
+				ctrl.Blanquear()
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "checkbox"
+				ctrl.value = 0
+
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "container" .and. LOWER(ctrl.Tag) == "edit"
+				ctrl.Blanquear()
+				IF ctrl.TabIndex = 1
+					ctrl.SetFocus()
+				ENDIF
+			CASE LOWER(ctrl.BaseClass) == "image"
+				ctrl.picture = ""
+		ENDCASE
+	ENDFOR
+ENDWITH
+Thisform.Pgf.Page2.cnt_fields.internalPgf.page1.cmbTipoMon.ListIndex = 1
+Thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = 0
 ENDPROC
 PROCEDURE recuperardatos
 **
@@ -4606,405 +4736,142 @@ Thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = estandarizar_checkbox_value(
 
 SELECT cur_tempo
 ENDPROC
-PROCEDURE blanquear
-DODEFAULT()
+PROCEDURE validar_eliminar
+&& Valida si el artículo está siendo utilizado
+&& en alguna tabla relacional
 
-WITH Thisform.Pgf.Page2.cnt_fields.internalPgf.page1
-	FOR EACH ctrl IN .Controls
-		DO CASE
-			CASE LOWER(ctrl.BaseClass) == "textbox"
-				ctrl.Blanquear()
+LOCAL loData, lcSql
 
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "editbox"
-				ctrl.Blanquear()
+loData = CREATEOBJECT("odbc_result")
 
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "selector_tabla"
-				ctrl.Blanquear()
+lcSql = "select idArticulo from ventasdet where idArticulo = " + ALLTRIM(STR(cur_Tempo.idarticulo))
 
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "checkbox"
-				ctrl.value = 0
+loData.ActiveConnection = goConn.ActiveConnection
+loData.Cursor_Name = "cur_Det"
+loData.OpenQuery(lcSql)
 
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "container" .and. LOWER(ctrl.Tag) == "edit"
-				ctrl.Blanquear()
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "image"
-				ctrl.picture = ""
-		ENDCASE
-		
-	ENDFOR
-ENDWITH
-
-
-WITH Thisform.Pgf.Page2.cnt_fields.internalPgf.page2
-	FOR EACH ctrl IN .Controls
-		DO CASE
-			CASE LOWER(ctrl.BaseClass) == "textbox"
-				ctrl.Blanquear()
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "editbox"
-				ctrl.Blanquear()
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "selector_tabla"
-				ctrl.Blanquear()
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "checkbox"
-				ctrl.value = 0
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "container" .and. LOWER(ctrl.Tag) == "edit"
-				ctrl.Blanquear()
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "image"
-				ctrl.picture = ""
-		ENDCASE
-	ENDFOR
-ENDWITH
-
-WITH Thisform.Pgf.Page2.cnt_fields.internalPgf.page3
-	FOR EACH ctrl IN .Controls
-		DO CASE
-			CASE LOWER(ctrl.BaseClass) == "textbox"
-				ctrl.Blanquear()
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "editbox"
-				ctrl.Blanquear()
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "selector_tabla"
-				ctrl.Blanquear()
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "checkbox"
-				ctrl.value = 0
-
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "container" .and. LOWER(ctrl.Tag) == "edit"
-				ctrl.Blanquear()
-				IF ctrl.TabIndex = 1
-					ctrl.SetFocus()
-				ENDIF
-			CASE LOWER(ctrl.BaseClass) == "image"
-				ctrl.picture = ""
-		ENDCASE
-	ENDFOR
-ENDWITH
-Thisform.Pgf.Page2.cnt_fields.internalPgf.page1.cmbTipoMon.ListIndex = 1
-Thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = 0
-ENDPROC
-PROCEDURE asignarcampos
-LOCAL i, cRef, cBaseClass
-LOCAL lcFoto
-
-i = 0
-cRef = ""
-cBaseClass = ""
-
-DODEFAULT()
-
-&& Formateo la ruta de la foto para que no saque las barras al editar
-lcFoto = STRTRAN(ALLTRIM(Thisform.Pgf.Page2.cnt_fields.txtPathFoto.Value), "\", "\\")
-Thisform.object_dataservice.linkfoto = lcFoto
-
-&&Asigno los campos de la solapa "Precios"
-FOR i = 1 TO Thisform.Pgf.page2.cnt_fields.internalPgf.page1.ControlCount
-	cBaseClass = LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].BaseClass))
-	
-	IF ALLTRIM(cBaseClass) == "textbox" .OR. ALLTRIM(cBaseClass) == "editbox" .OR. ;
-			ALLTRIM(cBaseClass) == "checkbox"
-
-		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].cFieldName)
-		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].value
-	ENDIF
-	
-	IF LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].Class)) == "selector_tabla"
-		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].cFieldName)
-		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page1.Controls[i].ValCpoID
-	ENDIF
-ENDFOR
-
-&&Asigno los campos de la solapa "Observaciones"
-FOR i = 1 TO Thisform.Pgf.page2.cnt_fields.internalPgf.page2.ControlCount
-	cBaseClass = LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].BaseClass))
-	
-	IF ALLTRIM(cBaseClass) == "textbox" .OR. ALLTRIM(cBaseClass) == "editbox" .OR. ;
-			ALLTRIM(cBaseClass) == "checkbox"
-
-		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].cFieldName)
-		
-		IF ALLTRIM(thisform.pgf.page2.cnt_fields.internalPgf.page2.Controls[i].name) == "txtObserv" THEN
-			&cRef = ""
-		ENDIF
-		
-		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].value
-	ENDIF
-	
-	IF LOWER(ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].Class)) == "selector_tabla"
-		cRef = "Thisform.Object_DataService." + ALLTRIM(Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].cFieldName)
-		&cRef = Thisform.Pgf.page2.cnt_fields.internalPgf.page2.Controls[i].ValCpoID
-	ENDIF
-ENDFOR
-
-
-ENDPROC
-PROCEDURE actualizar_cursor
-LOCAL loRes
-LOCAL lcSql
-LOCAL ldFecActuPre
-
-* Recupero la última fecha de actualización de precios.
-ldFecActuPre = {}
-loRes = CREATEOBJECT("odbc_result")
-
-TEXT TO lcSql NOSHOW
-	SELECT
-		fecActuPre
-	FROM
-		articulos
-	WHERE
-		articulos.idarticulo = ?xid
-ENDTEXT
-
-lcSql = loRes.addParameter(lcSql, "xid", ALLTRIM(STR(this.idarticulo)), .f., .f.)
-loRes.Cursor_Name = "cur_fap"
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.OpenQuery(lcSql)
-
-SELECT cur_fap
-ldFecActuPre = cur_fap.fecActuPre
-
-loRes.Close_Query()
-
-DODEFAULT()
-SELECT cur_Tempo
-LOCK()
-REPLACE cur_Tempo.observ		WITH ""
-REPLACE cur_Tempo.prListaExt 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtprExt.Value ADDITIVE
-REPLACE cur_Tempo.prLista 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrLista.Value ADDITIVE
-REPLACE cur_Tempo.bonif1 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif1.Value ADDITIVE
-REPLACE cur_Tempo.bonif2 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif2.Value ADDITIVE
-REPLACE cur_Tempo.bonif3 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif3.Value ADDITIVE
-REPLACE cur_Tempo.bonif4 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtBonif4.Value ADDITIVE
-REPLACE cur_Tempo.costoRep 		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtCostoRep.Value ADDITIVE
-REPLACE cur_Tempo.margenMax 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtMargenMax.Value ADDITIVE
-REPLACE cur_Tempo.margenMin 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtMargenMin.Value ADDITIVE
-REPLACE cur_Tempo.prVentaMax 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrVentaMax.Value ADDITIVE
-REPLACE cur_Tempo.prVentaMin 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrVentaMin.Value ADDITIVE
-REPLACE cur_Tempo.prFinalMax 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrFinalMax.Value ADDITIVE
-REPLACE cur_Tempo.prFinalMin 	WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page1.txtPrFinalMin.Value ADDITIVE
-REPLACE cur_Tempo.observ		WITH Thisform.Pgf.Page2.Cnt_Fields.InternalPgf.Page2.txtObserv.Value ADDITIVE
-REPLACE cur_Tempo.idmarca		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_marca.valcpoid ADDITIVE
-REPLACE cur_Tempo.marca			WITH Thisform.Pgf.Page2.Cnt_Fields.sel_marca.txtDescripcion.Value ADDITIVE
-REPLACE cur_Tempo.idfamilia		WITH Thisform.Pgf.Page2.Cnt_fields.sel_Familia.valcpoid ADDITIVE
-REPLACE cur_Tempo.familia		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_familia.txtDescripcion.Value ADDITIVE
-REPLACE cur_Tempo.idsubfam		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_SubFamilia.valcpoid ADDITIVE
-REPLACE cur_Tempo.subfam		WITH Thisform.Pgf.Page2.Cnt_Fields.sel_SubFamilia.txtDescripcion.Value ADDITIVE
-REPLACE cur_Tempo.tmon			WITH Thisform.Pgf.Page2.cnt_fields.InternalPGF.page1.cmbTipoMon.Value ADDITIVE
-REPLACE cur_Tempo.fecActuPre	WITH ldFecActuPre ADDITIVE
-replace cur_Tempo.llevastk		WITH IIF(thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = 1, .t., .f.) additive
-
-
-&& Agrego el refresco de los campos de no gravado y activación de moneda extranjera
-WITH THisform.pgf.page2.Cnt_Fields.internalPgf.Page1
-	REPLACE cur_Tempo.usarMonExt	WITH IIF(.chkHabilitarMonedaExtrangera.value = 1, .T., .F.) ADDITIVE
-	REPLACE cur_Tempo.usarImpuIn	WITH .chkUsarImpuestosInternos.value ADDITIVE
-	REPLACE cur_Tempo.porImpuIn		WITH .txtPorImpuIn.value ADDITIVE
-	REPLACE cur_Tempo.impImInMay	WITH .txtImpImpuIntMay.value ADDITIVE
-	REPLACE cur_Tempo.impImInMin	WITH .txtImpImpuIntMin.value ADDITIVE
-ENDWITH
-
-UNLOCK
-
-ENDPROC
-PROCEDURE Load
-DODEFAULT()
-SET DELETED ON 
-
-&& Creo el cursor donde voy a tener los datos de las unidades de despacho
-CREATE CURSOR cur_codiart (	;
-	idCodiArt	int,;
-	idArticulo	int,;
-	codArt		varchar(20),;
-	codigos		varchar(20),;
-	tipo		varchar(2),;
-	cantiDesp	double,;
-	circuito	varchar(2))
-
-
-CREATE CURSOR cur_mrcsv (	;
-	idMarcaV	int,;
-	descripcio	varchar(60))
-	
-
-
-ENDPROC
-PROCEDURE HERRAMIENTAS.excel
-LOCAL loRes, lcSql, lcWhere, lcValorBuscado
-
-loRes = CREATEOBJECT("odbc_result")
-
-* Construye la cláusula WHERE basándose en los filtros del formulario
-lcWhere = ""
-
-* Filtra por palabras clave en varios campos
-lcValorBuscado = STRTRAN(ALLTRIM(Thisform.pgf.Page1.cnt_busqueda.txtValorBuscado.Value), " ", "%")
-IF !EMPTY(lcValorBuscado) THEN
-    lcWhere = lcWhere + " WHERE (articulos.CodArt LIKE '%" + lcValorBuscado + "%' " + ;
-              "OR subfam.descripcio LIKE '%" + lcValorBuscado + "%' " + ;
-              "OR marcas.descripcio LIKE '%" + lcValorBuscado + "%' " + ;
-              "OR articulos.descripcio LIKE '%" + lcValorBuscado + "%') "
+SELECT cur_Det
+IF RECCOUNT() > 0
+	MESSAGEBOX("No se puede eliminar este artículo debido a que tiene comprobantes vinculados", 0+64, Thisform.Caption)
+	RETURN .F.
 ENDIF
 
-* Filtra por marca
-IF Thisform.Pgf.Page1.cnt_busqueda.sel_Marca.valcpoid <> 0 THEN
-    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
-    lcWhere = lcWhere + "articulos.idmarca = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_Marca.valcpoid))
-ENDIF
-
-* Filtra por familia
-IF Thisform.Pgf.page1.cnt_busqueda.sel_Familia.valcpoid <> 0 THEN
-    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
-    lcWhere = lcWhere + "articulos.idFamilia = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_Familia.valcpoid))
-ENDIF
-
-* Filtra por subfamilia
-IF Thisform.Pgf.Page1.cnt_busqueda.sel_subfam.valcpoid <> 0 THEN
-    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
-    lcWhere = lcWhere + "articulos.idsubfam = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_subfam.valcpoid))
-ENDIF
-
-* Filtra por proveedor
-IF Thisform.Pgf.page1.cnt_busqueda.sel_proveedores.valcpoid <> 0 THEN
-    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
-    lcWhere = lcWhere + "articulos.idprov = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_proveedores.valcpoid))
-ENDIF
-
-* Construye la consulta SQL completa
-TEXT TO lcSql NOSHOW
-    SELECT    idArticulo, CodArt, CodArtPv, articulos.descripcio, marcas.descripcio AS marca,
-              familias.descripcio AS familia, subfam.descripcio AS subfam, proveedor.razSoc AS proveedor,
-              alicIVA, articulos.tmon, usarMonExt, prListaExt, articulos.cotizac, prLista,
-              bonif1, bonif2, bonif3, bonif4, costoRep, margenMax,
-              margenMin, prVentaMax, prVentaMin, prfinalMax, prfinalMin,
-              articulos.habilitado, articulos.usuAlta, articulos.fecAlta, articulos.idHostAlta,
-              articulos.usuModi, articulos.fecModi, articulos.idHostModi
-    FROM    
-        articulos        
-            INNER JOIN marcas ON marcas.idMarca = articulos.idMarca
-            INNER JOIN familias ON familias.idFamilia = articulos.idFamilia
-            INNER JOIN subfam ON subfam.idSubFam = articulos.idSubFam
-            LEFT JOIN proveedor ON proveedor.idProv = articulos.idProv
-ENDTEXT
-
-* Agrega la cláusula WHERE
-lcSql = lcSql + lcWhere + " ORDER BY idArticulo ASC"
-
-loRes.ActiveConnection = goConn.ActiveConnection
-loRes.Cursor_Name = "cur_x"
-loRes.OpenQuery(lcSql)
-
-genexcel("cur_x","Listado")
-
-loRes.Close_Query()
-ENDPROC
-PROCEDURE HERRAMIENTAS.eliminar
-LOCAL lnResp, lcAlias, cRef, lcSql
-
-WITH Thisform
-	lcAlias = .cNombreTabla
-	lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el registro?", 4+32, .Caption)
-		
-	IF lnResp = 6
-			
-		cRef = Thisform.pk_fieldname
-		cRef = "Thisform.object_DataService." + cRef + " = " + "cur_Tempo." + cRef
-		&cRef
-	
-		IF(!.object_dataservice.Delete())
-			RETURN .F.
-		ENDIF
-		
-		SELECT cur_Tempo
-		DELETE
-		
-		IF RECCOUNT() > 0 .AND. !(BOF("cur_Tempo") .AND. BOF("cur_Tempo"))
-			SKIP -1
-		ENDIF
-		
-		Thisform.Pgf.page1.grdDatos.Refresh()
-		Thisform.recuperardatos()
-	ENDIF
-ENDWITH
+loData.Close_Query()
 
 RETURN .T.
+
 ENDPROC
-PROCEDURE HERRAMIENTAS.nuevo
+PROCEDURE validardatos
+DODEFAULT()
+
+IF Thisform.Pgf.Page2.cnt_Fields.sel_Familia.txtCodigo.Value = 0 THEN
+	RETURN .F.
+ENDIF
+
+IF Thisform.Pgf.Page2.cnt_FIELDS.sel_SubFamilia.txtCodigo.Value = 0 THEN
+	RETURN .F.
+ENDIF
+
+IF Thisform.Pgf.Page2.cnt_Fields.sel_Marca.txtCodigo.Value = 0 THEN
+	RETURN .F.
+ENDIF
+
+IF Thisform.Pgf.Page2.cnt_Fields.sel_Proveedor.txtCodigo.Value = 0 THEN
+	RETURN .F.
+ENDIF
+
+IF Thisform.lnuevo THEN
+	IF !Thisform.verificar_codigo() THEN
+		Thisform.msgerror = "Este código ya se encuentra cargado en el sistema"
+		RETURN .F.
+	ENDIF
+ENDIF
+
+RETURN .T.
+
+
+ENDPROC
+PROCEDURE Init
+&& Inicializo los objetos de equivalencias
+
+CREATE CURSOR cur_artequiv ( ;
+	idArticulo	int,;
+	codArt		varchar(20),;
+	descripcio	varchar(200),;
+	esNuevo		L DEFAULT .F.)
+	
+&& Inicializo checkbox
+thisform.pgf.page2.cnt_fields.internalPgf.page1.chkUsarImpuestosInternos.Value = 0
+thisform.pgf.page2.cnt_fields.internalPgf.page1.chkHabilitarMonedaExtrangera.Value = 0
+thisform.pgf.page2.cnt_fields.chkLlevaStock.Value = 0
+
+&& Valido si el modulo de stock esta habilitado en la base de datos para mostrar el lleva stock
+IF getGlobalCFG("STK_MODULE") THEN
+	thisform.pgf.page2.cnt_fields.chkLlevaStock.Visible = .T.
+	
+ELSE
+	thisform.pgf.page2.cnt_fields.chkLlevaStock.Visible = .F.
+
+ENDIF
+
+SELECT cur_artequiv
+thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.alias_name = "cur_artequiv"
+thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.RecordSource = "cur_artequiv"
+thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.titulos_cabeceras = "Código,Descripción"
+thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.lista_ancho_cols = "100,500"
+thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.list_controlsource = "codArt,descripcio"
+thisform.pgf.page2.cnt_fields.internalPgf.page4.grdEquivs.generar_grid()
+
+CREATE CURSOR cur_delequiv (;
+	idArtic	int,;
+	codArt	varchar(20)) 
+
+SELECT cur_mrcsv
+thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.alias_name = "cur_mrcsv"
+thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.RecordSource = "cur_mrcsv"
+thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.titulos_cabeceras = "Código,Descripción"
+thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.lista_ancho_cols = "100,250"
+thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.list_controlsource = "idMarcaV,descripcio"
+thisform.pgf.page2.cnt_fields.internalPgf.page5.grdMarcasV.generar_grid()
+
+DODEFAULT()
+
+WITH thisform.pgf.page2.cnt_fields.internalPgf.page1
+	.cmbTipoMon.AddItem("PSO")
+	.cmbTipoMon.AddItem("DOL")
+	.cmbTipoMon.AddItem("EUR")
+	.cmbTipoMon.ListIndex = 1
+ENDWITH
+
+WITH thisform.pgf.page2.cnt_fields.InternalPgf.page3
+	.cboCircuito.AddItem("V")	&& Circuito de Ventas
+	.cboCircuito.AddItem("C")	&& Circuito de Compras
+	.cboCircuito.AddItem("CV")	&& Circuito de Ventas y Compras
+	
+	.cboTipo.AddItem("CP")		&& Código de Pack
+	.cboTipo.AddItem("CO")		&& Código de Original
+	.cboTipo.AddItem("CB")		&& Código de Barra
+	
+	.cboCircuito.ListIndex = 1
+	.cboTipo.ListIndex = 1
+ENDWITH
+
+This.Pgf.Page1.grdDatos.SetAll("DynamicBackColor", "IIF(!cur_Tempo.habilitado, RGB(244, 197, 168), RGB(255, 255, 255))")
+This.Pgf.Page1.grdDatos.SetFocus()
+This.Pgf.page1.btnHabilitar.Enabled = .F.
+This.Pgf.Page1.btnDeshabilitar.Enabled = .F.
+
+
+ENDPROC
+PROCEDURE configurargrilla
 DODEFAULT()
 SELECT cur_codiart
-ZAP 
-SELECT cur_artequiv
-ZAP
-SELECT cur_mrcsv
-ZAP
-
-WITH thisform.pgf.page2.cnt_fields
-	.chkHabilitado.value = 1
-	.chkMerchandising.value = 0
-	.chkEsServicio.value = 0
-	.chkMostrador.value = 0
-	.chkLlevaStock.value = 0
-ENDWITH 
-
-Thisform.Pgf.page2.cnt_fields.internalPgf.page1.chkUsarImpuestosInternos.Value = 0
-Thisform.idarticulo = 0
-Thisform.Cambiar_estado_2(.F.)
-Thisform.Pgf.Page2.cnt_fields.txtCodigo.SetFocus()
-
-
-ENDPROC
-PROCEDURE HERRAMIENTAS.cancelar
-DODEFAULT()
-Thisform.Cambiar_estado_2(.T.)
-ENDPROC
-PROCEDURE HERRAMIENTAS.modificar
-DODEFAULT()
-Thisform.Cambiar_estado_2(.F.)
-Thisform.Pgf.Page2.cnt_fields.txtCodigo.SetFocus()
+thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.alias_name = "cur_codiart"
+thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.RecordSource = "cur_codiart"
+thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.list_controlsource = "circuito,tipo,codigos,cantiDesp"
+thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.lista_ancho_cols = "50,50,200,70"
+thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.titulos_cabeceras = "Circuito,Tipo,Código,Cantidad"
+thisform.pgf.page2.cnt_fields.internalpgf.page3.grdCodigos.generar_grid()
 ENDPROC
 PROCEDURE HERRAMIENTAS.grabar
 PARAMETERS tl_AutoAssing
@@ -5115,6 +4982,143 @@ Thisform.Pgf.Page1.grdDatos.SetFocus()
 
 RETURN .T.
 
+ENDPROC
+PROCEDURE HERRAMIENTAS.modificar
+DODEFAULT()
+Thisform.Cambiar_estado_2(.F.)
+Thisform.Pgf.Page2.cnt_fields.txtCodigo.SetFocus()
+ENDPROC
+PROCEDURE HERRAMIENTAS.cancelar
+DODEFAULT()
+Thisform.Cambiar_estado_2(.T.)
+ENDPROC
+PROCEDURE HERRAMIENTAS.nuevo
+DODEFAULT()
+SELECT cur_codiart
+ZAP 
+SELECT cur_artequiv
+ZAP
+SELECT cur_mrcsv
+ZAP
+
+WITH thisform.pgf.page2.cnt_fields
+	.chkHabilitado.value = 1
+	.chkMerchandising.value = 0
+	.chkEsServicio.value = 0
+	.chkMostrador.value = 0
+	.chkLlevaStock.value = 0
+ENDWITH 
+
+Thisform.Pgf.page2.cnt_fields.internalPgf.page1.chkUsarImpuestosInternos.Value = 0
+Thisform.idarticulo = 0
+Thisform.Cambiar_estado_2(.F.)
+Thisform.Pgf.Page2.cnt_fields.txtCodigo.SetFocus()
+
+
+ENDPROC
+PROCEDURE HERRAMIENTAS.eliminar
+LOCAL lnResp, lcAlias, cRef, lcSql
+
+WITH Thisform
+	lcAlias = .cNombreTabla
+	lnResp = MESSAGEBOX("¿Está seguro que desea eliminar el registro?", 4+32, .Caption)
+		
+	IF lnResp = 6
+			
+		cRef = Thisform.pk_fieldname
+		cRef = "Thisform.object_DataService." + cRef + " = " + "cur_Tempo." + cRef
+		&cRef
+	
+		IF(!.object_dataservice.Delete())
+			RETURN .F.
+		ENDIF
+		
+		SELECT cur_Tempo
+		DELETE
+		
+		IF RECCOUNT() > 0 .AND. !(BOF("cur_Tempo") .AND. BOF("cur_Tempo"))
+			SKIP -1
+		ENDIF
+		
+		Thisform.Pgf.page1.grdDatos.Refresh()
+		Thisform.recuperardatos()
+	ENDIF
+ENDWITH
+
+RETURN .T.
+ENDPROC
+PROCEDURE HERRAMIENTAS.excel
+LOCAL loRes, lcSql, lcWhere, lcValorBuscado
+
+loRes = CREATEOBJECT("odbc_result")
+
+* Construye la cláusula WHERE basándose en los filtros del formulario
+lcWhere = ""
+
+* Filtra por palabras clave en varios campos
+lcValorBuscado = STRTRAN(ALLTRIM(Thisform.pgf.Page1.cnt_busqueda.txtValorBuscado.Value), " ", "%")
+IF !EMPTY(lcValorBuscado) THEN
+    lcWhere = lcWhere + " WHERE (articulos.CodArt LIKE '%" + lcValorBuscado + "%' " + ;
+              "OR subfam.descripcio LIKE '%" + lcValorBuscado + "%' " + ;
+              "OR marcas.descripcio LIKE '%" + lcValorBuscado + "%' " + ;
+              "OR articulos.descripcio LIKE '%" + lcValorBuscado + "%') "
+ENDIF
+
+* Filtra por marca
+IF Thisform.Pgf.Page1.cnt_busqueda.sel_Marca.valcpoid <> 0 THEN
+    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
+    lcWhere = lcWhere + "articulos.idmarca = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_Marca.valcpoid))
+ENDIF
+
+* Filtra por familia
+IF Thisform.Pgf.page1.cnt_busqueda.sel_Familia.valcpoid <> 0 THEN
+    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
+    lcWhere = lcWhere + "articulos.idFamilia = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_Familia.valcpoid))
+ENDIF
+
+* Filtra por subfamilia
+IF Thisform.Pgf.Page1.cnt_busqueda.sel_subfam.valcpoid <> 0 THEN
+    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
+    lcWhere = lcWhere + "articulos.idsubfam = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_subfam.valcpoid))
+ENDIF
+
+* Filtra por proveedor
+IF Thisform.Pgf.page1.cnt_busqueda.sel_proveedores.valcpoid <> 0 THEN
+    lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
+    lcWhere = lcWhere + "articulos.idprov = " + ALLTRIM(STR(Thisform.Pgf.Page1.cnt_busqueda.sel_proveedores.valcpoid))
+ENDIF
+
+* Construye la consulta SQL completa
+TEXT TO lcSql PRETEXT 15 NOSHOW
+    SELECT    idArticulo, CodArt, CodArtPv, articulos.descripcio, marcas.descripcio AS marca,
+              familias.descripcio AS familia, subfam.descripcio AS subfam, proveedor.razSoc AS proveedor,
+              alicIVA, articulos.tmon, usarMonExt, prListaExt, articulos.cotizac, prLista,
+              bonif1, bonif2, bonif3, bonif4, costoRep, margenMax,
+              margenMin, prVentaMax, prVentaMin, prfinalMax, prfinalMin,
+              articulos.habilitado, articulos.usuAlta, articulos.fecAlta, articulos.idHostAlta,
+              articulos.usuModi, articulos.fecModi, articulos.idHostModi
+    FROM    
+        articulos        
+            INNER JOIN marcas ON marcas.idMarca = articulos.idMarca
+            INNER JOIN familias ON familias.idFamilia = articulos.idFamilia
+            INNER JOIN subfam ON subfam.idSubFam = articulos.idSubFam
+            LEFT JOIN proveedor ON proveedor.idProv = articulos.idProv
+ENDTEXT
+
+&& Agrego la condición para que no levante eliminados ni deshabilitados
+lcWhere = IIF(EMPTY(lcWhere), " WHERE ", lcWhere + " AND ")
+lcWhere = lcWhere + " articulos.fecBaja IS NULL AND articulos.habilitado = 1 "
+
+* Agrega la cláusula WHERE
+lcSql = lcSql + lcWhere + " ORDER BY idArticulo ASC"
+
+loRes.ActiveConnection = goConn.ActiveConnection
+loRes.Cursor_Name = "cur_x"
+loRes.OpenQuery(lcSql)
+
+genexcel("cur_x","Listado")
+
+loRes.Close_Query()
 ENDPROC
 PROCEDURE PGF.Page1.Activate
 * Anulo la cadena de herencia para que no se ejecute
@@ -5617,6 +5621,10 @@ requerido = .F.
 Name = "txtBonif1"
 
 *** METODOS ***
+PROCEDURE LostFocus
+DODEFAULT()
+thisform.calcular_precios()
+ENDPROC
 PROCEDURE Valid
 IF this.Value > 500 then
 	MESSAGEBOX("Por favor, revise el valor en el campo Bonificacion 1", 0+48, thisform.Caption)
@@ -5624,10 +5632,6 @@ IF this.Value > 500 then
 ENDIF
 
 RETURN .t.
-ENDPROC
-PROCEDURE LostFocus
-DODEFAULT()
-thisform.calcular_precios()
 ENDPROC
 
 
@@ -6180,15 +6184,6 @@ cfieldname = porImpuIn
 Name = "txtPorImpuIn"
 
 *** METODOS ***
-PROCEDURE Valid
-IF this.Value > 1000 then
-	MESSAGEBOX("Por favor, revise el Impuesto Interno", 0+48, thisform.Caption)
-	RETURN .F.
-ENDIF
-
-RETURN .t.
-
-ENDPROC
 PROCEDURE calcular
 && Indico que calcule los montos de impuestos internos a partir del
 && porcentaje.
@@ -6198,6 +6193,15 @@ Thisform.impimpuintmay_changed = .f.
 Thisform.impimpuintmin_changed = .f.
 
 Thisform.calcular_impuestos_internos()
+ENDPROC
+PROCEDURE Valid
+IF this.Value > 1000 then
+	MESSAGEBOX("Por favor, revise el Impuesto Interno", 0+48, thisform.Caption)
+	RETURN .F.
+ENDIF
+
+RETURN .t.
+
 ENDPROC
 
 

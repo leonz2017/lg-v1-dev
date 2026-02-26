@@ -37,6 +37,7 @@ SET CLASSLIB TO "promociones.vcx"		ADDITIVE
 Set Classlib To "automatizaciones.vcx"	Additive
 Set Classlib To "update_version_utils.vcx" additive
 SET CLASSLIB TO "logistica.vcx"			ADDITIVE && Módulo para emisión de remitos
+SET CLASSLIB TO "arca_services.vcx"		ADDITIVE && Módulo nuevo para autorizar comprobantes.
 
 SET PROCEDURE TO "ErrorTrap"			ADDITIVE	&& Capturador de errores inesperados
 SET PROCEDURE TO "calcular_costo"		ADDITIVE	&& Permite calcular el costo de reposicion

@@ -34,6 +34,7 @@ SET CLASSLIB TO "articulos_extra.vcx"	ADDITIVE
 Set Classlib To "automatizaciones.vcx"	Additive
 Set Classlib To "update_version_utils.vcx" additive
 SET CLASSLIB TO "logistica.vcx"			ADDITIVE && Módulo para emisión de remitos
+SET CLASSLIB TO "arca_services.vcx"		ADDITIVE
 
 SET PROCEDURE TO "ErrorTrap"			ADDITIVE	&& Capturador de errores inesperados
 SET PROCEDURE TO "CalcularPorcentaje"	ADDITIVE	&& Permite calcular un porcentaje

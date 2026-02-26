@@ -34,9 +34,10 @@ SET CLASSLIB TO "reparaciones.vcx"		ADDITIVE
 SET CLASSLIB TO "dbmanager.vcx"			ADDITIVE
 SET CLASSLIB TO "promociones.vcx"		ADDITIVE
 Set Classlib To "automatizaciones.vcx"	Additive
-Set Classlib To "update_version_utils.vcx" additive
+Set Classlib To "update_version_utils.vcx" ADDITIVE
 SET CLASSLIB TO "ventas-procesos.vcx" ADDITIVE
 SET CLASSLIB TO "logistica.vcx"			ADDITIVE && Módulo para emisión de remitos
+SET CLASSLIB TO "arca_services.vcx"		ADDITIVE
 
 SET PROCEDURE TO "ErrorTrap"					ADDITIVE	&& Capturador de errores inesperados
 SET PROCEDURE TO "CalcularPorcentaje"			ADDITIVE	&& Permite calcular un porcentaje

@@ -746,7 +746,7 @@ PROCEDURE exportar_a_excel
 	                *-- Para los campos numéricos, se inserta el valor como texto
 	                *-- reemplazando el punto decimal por una coma.
 	                loWorkSheet.Cells(lnRowCount, lnCol).NumberFormat = "0.00"
-	                loWorkSheet.Cells(lnRowCount, lnCol).Value = STRTRAN(STR(EVAL(laFields[lnCol, 1])), ".", ",")
+	                loWorkSheet.Cells(lnRowCount, lnCol).Value = STRTRAN(TRANSFORM(EVAL(laFields[lnCol, 1])), ".", ",")
 	            OTHERWISE
 	                loWorkSheet.Cells(lnRowCount, lnCol).Value = EVAL(laFields[lnCol, 1])
 	        ENDCASE
